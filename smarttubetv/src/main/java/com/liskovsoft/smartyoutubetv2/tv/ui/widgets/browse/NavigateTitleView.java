@@ -1,5 +1,6 @@
 package com.liskovsoft.smartyoutubetv2.tv.ui.widgets.browse;
 
+import com.liskovsoft.smartyoutubetv2.tv.ui.browse.BrowseActivity;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.BrowsePresenter;
 import android.app.Activity;
@@ -56,6 +57,7 @@ import static androidx.leanback.widget.TitleViewAdapter.SEARCH_VIEW_VISIBLE;
 public class NavigateTitleView extends TitleView implements OnDataChange, AccountChangeListener {
     private LongClickSearchOrbView mAccountView;
     private SearchOrbView mLanguageView;
+    private SearchOrbView mSettingsView;
     private SearchOrbView mExitPip;
     private TextView mPipTitle;
     private int mSearchVisibility = View.INVISIBLE;
@@ -121,6 +123,39 @@ public class NavigateTitleView extends TitleView implements OnDataChange, Accoun
             // No focusable view found in layout...propagate to super (should invoke the BrowseFrameLayout.OnFocusSearchListener
             return super.focusSearch(focused, direction);
         }
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+
+        // Only the browse screen switches sections, other screens keep the plain gear
+        if (getContext() instanceof BrowseActivity) {
+            BrowsePresenter.instance(getContext()).setOnSectionChange(this::updateSettingsButton);
+        }
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+
+        if (getContext() instanceof BrowseActivity) {
+            BrowsePresenter.instance(getContext()).setOnSectionChange(null);
+        }
+    }
+
+    /**
+     * Gear opens Settings. While in Settings it turns into a Home button.
+     */
+    private void updateSettingsButton() {
+        if (mSettingsView == null) {
+            return;
+        }
+
+        boolean inSettings = getContext() instanceof BrowseActivity && BrowsePresenter.instance(getContext()).isSettingsSection();
+
+        mSettingsView.setOrbIcon(ContextCompat.getDrawable(getContext(), inSettings ? R.drawable.ic_orb_home : R.drawable.search_bar_settings_orb));
+        TooltipCompatHandler.setTooltipText(mSettingsView, getContext().getString(inSettings ? R.string.header_home : R.string.header_settings));
     }
 
     @Override
@@ -204,9 +239,12 @@ public class NavigateTitleView extends TitleView implements OnDataChange, Accoun
         });
         TooltipCompatHandler.setTooltipText(mAccountView, getContext().getString(R.string.settings_accounts));
 
-        SearchOrbView settingsView = findViewById(R.id.settings_orb);
-        settingsView.setOnOrbClickedListener(v -> BrowsePresenter.instance(getContext()).selectSection(MediaGroup.TYPE_SETTINGS));
-        TooltipCompatHandler.setTooltipText(settingsView, getContext().getString(R.string.header_settings));
+        mSettingsView = findViewById(R.id.settings_orb);
+        mSettingsView.setOnOrbClickedListener(v -> {
+            BrowsePresenter presenter = BrowsePresenter.instance(getContext());
+            presenter.selectSection(presenter.isSettingsSection() ? MediaGroup.TYPE_HOME : MediaGroup.TYPE_SETTINGS);
+        });
+        updateSettingsButton();
 
         mLanguageView = findViewById(R.id.language_orb);
         mLanguageView.setOnOrbClickedListener(v -> LanguageSettingsPresenter.instance(getContext()).show());

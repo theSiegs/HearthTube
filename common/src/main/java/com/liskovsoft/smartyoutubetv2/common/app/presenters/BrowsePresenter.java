@@ -69,6 +69,7 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
     private final Map<Integer, Callable<List<Video>>> mLocalGridMappings;
     private final Map<Integer, BrowseSection> mSectionsMapping;
     private final AppDataSourceManager mDataSourcePresenter;
+    private Runnable mOnSectionChange;
     private final BrowseProcessorManager mBrowseProcessor;
     private final List<Disposable> mActions;
     private final Runnable mRefreshSection = this::refresh;
@@ -497,6 +498,17 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
         mCurrentVideo = null; // fast scroll through the sections (fix empty selected item)
         updateCurrentSection();
         restoreSelectedItems(); // Don't place anywhere else
+
+        if (mOnSectionChange != null) {
+            mOnSectionChange.run();
+        }
+    }
+
+    /**
+     * Single listener (the title bar), notified after the visible section changes
+     */
+    public void setOnSectionChange(Runnable onSectionChange) {
+        mOnSectionChange = onSectionChange;
     }
 
     @Override
