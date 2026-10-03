@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Local protection behind a label drawn on the daily image: only the text gets darker, not the photo -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <corners android:radius="100dp"/>
+    <solid android:color="@color/text_on_image_pill"/>
+</shape>

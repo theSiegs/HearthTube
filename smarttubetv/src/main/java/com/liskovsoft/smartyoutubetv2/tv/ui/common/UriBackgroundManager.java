@@ -15,9 +15,12 @@ import com.bumptech.glide.request.RequestOptions;
 import com.bumptech.glide.request.target.SimpleTarget;
 import com.bumptech.glide.request.transition.Transition;
 import com.liskovsoft.sharedutils.helpers.Helpers;
+import com.liskovsoft.sharedutils.rx.RxHelper;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
+import com.liskovsoft.smartyoutubetv2.common.utils.DailyBackground;
 import com.liskovsoft.smartyoutubetv2.tv.R;
 import com.liskovsoft.smartyoutubetv2.tv.util.ViewUtil;
+import io.reactivex.disposables.Disposable;
 
 public class UriBackgroundManager {
     private static final String TAG = UriBackgroundManager.class.getSimpleName();
@@ -30,6 +33,7 @@ public class UriBackgroundManager {
     private final Activity mActivity;
     private final Handler mHandler;
     private int mBackgroundColor = -1;
+    private Disposable mDailyBackgroundAction;
 
     public UriBackgroundManager(Activity activity) {
         mActivity = activity;
@@ -79,6 +83,7 @@ public class UriBackgroundManager {
 
     public void onDestroy() {
         mHandler.removeCallbacks(mBackgroundTask);
+        RxHelper.disposeActions(mDailyBackgroundAction);
         mBackgroundManager = null;
     }
 
@@ -88,6 +93,21 @@ public class UriBackgroundManager {
 
     public void setDefaultBackground() {
         mBackgroundManager.setDrawable(mDefaultBackground);
+        showDailyBackground();
+    }
+
+    /**
+     * Today's image replaces the plain theme color. Screens that set their own background (the player) are left alone.
+     */
+    private void showDailyBackground() {
+        RxHelper.disposeActions(mDailyBackgroundAction);
+        mDailyBackgroundAction = DailyBackground.load(mActivity, result -> {
+            if (mBackgroundManager == null || mBackgroundURI != null || mBackgroundColor != -1) {
+                return;
+            }
+
+            mBackgroundManager.setBitmap(result.image);
+        });
     }
 
     public void setBackgroundColor(int color) {

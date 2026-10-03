@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="profile_avatar_size">136dp</dimen>
+    <dimen name="profile_ring_size">156dp</dimen>
+    <dimen name="profile_name_max_width">200dp</dimen>
+    <dimen name="profile_tile_spacing">20dp</dimen>
+    <dimen name="text_on_image_pill_padding_h">14dp</dimen>
+    <dimen name="text_on_image_pill_padding_v">4dp</dimen>
+
+    <!-- Top right clock on browse screens, a step up from the shared pip_title sizes (24sp/12sp) -->
+    <dimen name="browse_clock_time_size">30sp</dimen>
+    <dimen name="browse_clock_date_size">15sp</dimen>
+</resources>

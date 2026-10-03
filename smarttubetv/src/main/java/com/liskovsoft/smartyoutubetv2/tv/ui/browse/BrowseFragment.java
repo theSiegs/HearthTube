@@ -513,6 +513,13 @@ public class BrowseFragment extends BrowseSupportFragment implements BrowseView 
             return;
         }
 
+        // No top right corner logo, the clock stands alone.
+        // Early exit rather than deleting upstream's code below, so their changes to it still merge cleanly.
+        if (true) {
+            setBadgeDrawable(null);
+            return;
+        }
+
         SplashPresenter splashPresenter = SplashPresenter.instance(getContext());
 
         if (splashPresenter == null) {

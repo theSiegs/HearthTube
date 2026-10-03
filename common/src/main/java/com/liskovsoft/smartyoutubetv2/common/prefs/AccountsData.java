@@ -7,6 +7,7 @@ import com.liskovsoft.mediaserviceinterfaces.oauth.Account;
 import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager;
 import com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager.AccountChangeListener;
+import com.liskovsoft.smartyoutubetv2.common.utils.PinDialog;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -18,7 +19,9 @@ public class AccountsData implements AccountChangeListener {
     private final Context mContext;
     private final AppPrefs mAppPrefs;
     private boolean mIsSelectAccountOnBootEnabled;
-    private boolean mIsPasswordAccepted;
+    // Account unlocked during this session. Kept per account because the account change
+    // event arrives asynchronously, after the unlock has already been recorded.
+    private String mPasswordAcceptedFor;
     private final Map<String, PasswordItem> mPasswords = new HashMap<>();
 
     private static class PasswordItem {
@@ -78,21 +81,32 @@ public class AccountsData implements AccountChangeListener {
     }
 
     public String getAccountPassword() {
-        if (getAccountName() == null) {
+        return getAccountPassword(getAccountName());
+    }
+
+    public String getAccountPassword(String accountName) {
+        if (accountName == null) {
             return null;
         }
 
-        PasswordItem passwordItem = mPasswords.get(getAccountName());
+        PasswordItem passwordItem = mPasswords.get(accountName);
 
         return passwordItem != null ? passwordItem.password : null;
     }
 
     public boolean isPasswordAccepted() {
-        return mIsPasswordAccepted || getAccountPassword() == null;
+        return getAccountPassword() == null || Helpers.equals(mPasswordAcceptedFor, getAccountName());
     }
 
     public void setPasswordAccepted(boolean accepted) {
-        mIsPasswordAccepted = accepted;
+        mPasswordAcceptedFor = accepted ? getAccountName() : null;
+    }
+
+    /**
+     * Account passwords are numeric PINs entered with {@link PinDialog}.
+     */
+    public static boolean isValidPin(String password) {
+        return password != null && password.matches("\\d{" + PinDialog.PIN_LENGTH + "}");
     }
 
     private void restoreState() {
@@ -105,11 +119,24 @@ public class AccountsData implements AccountChangeListener {
         // mAccountPassword
         String[] passwords = Helpers.parseArray(split, 3);
 
+        boolean hasLegacyPasswords = false;
+
         if (passwords != null) {
             for (String passwordSpec : passwords) {
                 PasswordItem item = PasswordItem.fromString(passwordSpec);
+
+                // Passwords from before the PIN pad can't be typed anymore. Drop them.
+                if (item.password != null && !isValidPin(item.password)) {
+                    hasLegacyPasswords = true;
+                    continue;
+                }
+
                 mPasswords.put(item.accountName, item);
             }
+        }
+
+        if (hasLegacyPasswords) {
+            persistState();
         }
     }
 
@@ -126,6 +153,8 @@ public class AccountsData implements AccountChangeListener {
 
     @Override
     public void onAccountChanged(Account account) {
-        mIsPasswordAccepted = false;
+        if (account == null || !Helpers.equals(mPasswordAcceptedFor, account.getName())) {
+            mPasswordAcceptedFor = null;
+        }
     }
 }

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Profile picker (Google TV look) -->
+    <color name="profile_bg_center">#26292E</color>
+    <color name="profile_bg_edge">#0E0F11</color>
+    <color name="profile_surface">#303236</color>
+    <color name="profile_text">#E3E3E3</color>
+    <color name="profile_ring">#FFFFFF</color>
+
+    <!-- Text drawn on the daily background image -->
+    <color name="text_on_image_shadow">#E6000000</color>
+    <color name="text_on_image_pill">#8C000000</color>
+</resources>

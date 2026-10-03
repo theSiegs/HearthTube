@@ -18,6 +18,7 @@ import com.liskovsoft.smartyoutubetv2.common.app.presenters.base.BasePresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.AccountSelectionPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.BootDialogPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.views.BrowseView;
+import com.liskovsoft.smartyoutubetv2.common.app.views.ProfilePickerView;
 import com.liskovsoft.smartyoutubetv2.common.app.views.SplashView;
 import com.liskovsoft.smartyoutubetv2.common.app.views.ViewManager;
 import com.liskovsoft.smartyoutubetv2.common.misc.GDriveBackupWorker;
@@ -108,9 +109,12 @@ public class SplashPresenter extends BasePresenter<SplashView> {
         Utils.postDelayed(mCheckForUpdates, APP_INIT_DELAY_MS);
         Utils.updateRemoteControlService(getContext());
 
+        // Read before checkMasterPassword(): it may finish the view, leaving getView() null
+        Intent newIntent = getView().getNewIntent();
+
         checkMasterPassword(() -> applyNewIntent(getView().getNewIntent()));
 
-        showAccountSelectionIfNeeded(); // should be placed after Intent chain
+        showAccountSelectionIfNeeded(newIntent); // should be placed after Intent chain
         checkAccountPassword();
     }
 
@@ -122,8 +126,15 @@ public class SplashPresenter extends BasePresenter<SplashView> {
         LocalDriveBackupWorker.schedule(getContext());
     }
 
-    private void showAccountSelectionIfNeeded() {
-        AccountSelectionPresenter.instance(getContext()).show();
+    private void showAccountSelectionIfNeeded(Intent newIntent) {
+        if (!ProfilePickerPresenter.isEnabled(getContext())) {
+            AccountSelectionPresenter.instance(getContext()).show();
+        } else if (ProfilePickerPresenter.shouldShow(getContext(), newIntent)) {
+            // The picker fully replaces the native dialog, warm launches included.
+            // The activity itself attaches as the ProfilePickerPresenter's view and triggers
+            // show() once it's created - same relationship as SplashActivity/SplashPresenter.
+            getViewManager().startView(ProfilePickerView.class);
+        }
     }
 
     private void checkAccountPassword() {

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Text drawn straight on the daily background image (Material "text protection"):
+         a soft halo, plus a translucent pill where the image behind can be bright -->
+    <style name="TextOnImage">
+        <item name="android:shadowColor">@color/text_on_image_shadow</item>
+        <item name="android:shadowDx">0</item>
+        <item name="android:shadowDy">1</item>
+        <item name="android:shadowRadius">4</item>
+    </style>
+
+    <style name="TextOnImage.Pill">
+        <item name="android:background">@drawable/text_on_image_pill</item>
+        <item name="android:paddingLeft">@dimen/text_on_image_pill_padding_h</item>
+        <item name="android:paddingRight">@dimen/text_on_image_pill_padding_h</item>
+        <item name="android:paddingTop">@dimen/text_on_image_pill_padding_v</item>
+        <item name="android:paddingBottom">@dimen/text_on_image_pill_padding_v</item>
+    </style>
+
+    <!-- Overrides leanback's row header style (same name) so every theme gets the pill -->
+    <style name="Widget.Leanback.Row.Header" parent="Widget.Leanback.Header">
+        <item name="android:textAppearance">@style/TextAppearance.Leanback.Row.Header</item>
+        <item name="android:shadowColor">@color/text_on_image_shadow</item>
+        <item name="android:shadowDx">0</item>
+        <item name="android:shadowDy">1</item>
+        <item name="android:shadowRadius">4</item>
+        <item name="android:background">@drawable/text_on_image_pill</item>
+        <item name="android:paddingLeft">@dimen/text_on_image_pill_padding_h</item>
+        <item name="android:paddingRight">@dimen/text_on_image_pill_padding_h</item>
+        <item name="android:paddingTop">@dimen/text_on_image_pill_padding_v</item>
+        <item name="android:paddingBottom">@dimen/text_on_image_pill_padding_v</item>
+    </style>
+
+    <!-- Leanback fades unfocused row headers to 50%, too faint over a photo -->
+    <item name="lb_browse_header_unselect_alpha" type="fraction">85%</item>
+</resources>

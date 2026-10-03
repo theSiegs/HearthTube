@@ -21,7 +21,7 @@ import com.liskovsoft.smartyoutubetv2.common.prefs.AccountsData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.AppPrefs;
 import com.liskovsoft.smartyoutubetv2.common.utils.AppDialogUtil;
 import com.liskovsoft.smartyoutubetv2.common.utils.GlideIconFetcher;
-import com.liskovsoft.smartyoutubetv2.common.utils.SimpleEditDialog;
+import com.liskovsoft.smartyoutubetv2.common.utils.PinDialog;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 
 import java.util.ArrayList;
@@ -154,7 +154,7 @@ public class AccountSettingsPresenter extends BasePresenter<Void> {
     }
 
     private void appendProtectAccountWithPassword(AppDialogPresenter settingsPresenter) {
-        settingsPresenter.appendSingleSwitch(UiOptionItem.from(getContext().getString(R.string.protect_account_with_password), optionItem -> {
+        settingsPresenter.appendSingleSwitch(UiOptionItem.from(getContext().getString(R.string.protect_account_with_pin), optionItem -> {
             if (optionItem.isSelected()) {
                 showAddPasswordDialog(settingsPresenter);
             } else {
@@ -195,14 +195,33 @@ public class AccountSettingsPresenter extends BasePresenter<Void> {
 
     private void showAddPasswordDialog(AppDialogPresenter settingsPresenter) {
         settingsPresenter.closeDialog();
-        SimpleEditDialog.showPassword(
+        showSetPinDialog(null);
+    }
+
+    private void showSetPinDialog(String message) {
+        PinDialog.show(
                 getContext(),
-                getContext().getString(R.string.enter_account_password),
-                null,
+                getContext().getString(R.string.set_profile_pin),
+                message,
+                newPin -> {
+                    // Dismiss first, then ask again to catch a mistyped digit
+                    Utils.post(() -> showConfirmPinDialog(newPin));
+                    return true;
+                });
+    }
+
+    private void showConfirmPinDialog(String newPin) {
+        PinDialog.show(
+                getContext(),
+                getContext().getString(R.string.confirm_profile_pin),
                 newValue -> {
-                    AccountsData.instance(getContext()).setAccountPassword(newValue);
-                    BrowsePresenter.instance(getContext()).updateSections();
-                    //onSuccess.run();
+                    if (newPin.equals(newValue)) {
+                        AccountsData.instance(getContext()).setAccountPassword(newPin);
+                        AccountsData.instance(getContext()).setPasswordAccepted(true); // the one who set it is already in
+                        BrowsePresenter.instance(getContext()).updateSections();
+                    } else {
+                        Utils.post(() -> showSetPinDialog(getContext().getString(R.string.pin_mismatch)));
+                    }
                     return true;
                 });
     }
@@ -215,15 +234,13 @@ public class AccountSettingsPresenter extends BasePresenter<Void> {
         }
 
         settingsPresenter.closeDialog();
-        SimpleEditDialog.showPassword(
+        PinDialog.show(
                 getContext(),
-                getContext().getString(R.string.enter_account_password),
-                null,
+                getContext().getString(R.string.enter_profile_pin),
                 newValue -> {
                     if (Utils.passwordMatch(password, newValue)) {
                         AccountsData.instance(getContext()).setAccountPassword(null);
                         BrowsePresenter.instance(getContext()).updateSections();
-                        //onSuccess.run();
                         return true;
                     }
                     return false;
@@ -237,15 +254,13 @@ public class AccountSettingsPresenter extends BasePresenter<Void> {
             return;
         }
 
-        SimpleEditDialog.showPassword(
+        PinDialog.show(
                 getContext(),
-                getContext().getString(R.string.enter_account_password),
-                null,
+                getContext().getString(R.string.enter_profile_pin),
                 newValue -> {
                     if (Utils.passwordMatch(password, newValue)) {
                         AccountsData.instance(getContext()).setPasswordAccepted(true);
                         BrowsePresenter.instance(getContext()).updateSections();
-                        //onSuccess.run();
                         return true;
                     }
                     return false;

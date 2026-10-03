@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              xmlns:tools="http://schemas.android.com/tools"
+              android:layout_width="wrap_content"
+              android:layout_height="wrap_content"
+              android:layout_marginLeft="@dimen/profile_tile_spacing"
+              android:layout_marginRight="@dimen/profile_tile_spacing"
+              android:orientation="vertical"
+              android:gravity="center_horizontal"
+              android:focusable="true"
+              android:focusableInTouchMode="true"
+              android:clickable="true">
+
+    <!-- The focus ring sits in the gap around the avatar -->
+    <FrameLayout
+        android:layout_width="@dimen/profile_ring_size"
+        android:layout_height="@dimen/profile_ring_size"
+        android:duplicateParentState="true">
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:duplicateParentState="true"
+            android:background="@drawable/profile_focus_ring"/>
+
+        <ImageView
+            android:id="@+id/profile_avatar"
+            android:layout_width="@dimen/profile_avatar_size"
+            android:layout_height="@dimen/profile_avatar_size"
+            android:layout_gravity="center"
+            android:background="@drawable/profile_avatar_placeholder"
+            android:scaleType="centerCrop"
+            tools:ignore="ContentDescription"/>
+
+        <ImageView
+            android:id="@+id/profile_lock_badge"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_gravity="bottom|end"
+            android:layout_marginRight="4dp"
+            android:layout_marginBottom="4dp"
+            android:padding="10dp"
+            android:background="@drawable/profile_lock_badge_background"
+            android:src="@drawable/ic_lock_small"
+            android:visibility="gone"
+            tools:ignore="ContentDescription"/>
+    </FrameLayout>
+
+    <TextView
+        android:id="@+id/profile_name"
+        style="@style/TextOnImage.Pill"
+        android:layout_width="wrap_content"
+        android:maxWidth="@dimen/profile_name_max_width"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:duplicateParentState="true"
+        android:gravity="center"
+        android:fontFamily="sans-serif-medium"
+        android:textSize="18sp"
+        android:textColor="@color/profile_name_color"
+        android:singleLine="true"
+        android:ellipsize="end"/>
+</LinearLayout>

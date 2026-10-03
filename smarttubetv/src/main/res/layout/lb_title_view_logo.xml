@@ -3,10 +3,24 @@
 <!-- Title Logo with embedded clock -->
 
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              xmlns:app="http://schemas.android.com/apk/res-auto"
               android:layout_width="wrap_content"
               android:layout_height="wrap_content"
               android:layout_gravity="center_vertical|end"
               android:orientation="horizontal">
+    <!-- Settings gear next to the clock, like the Google TV home screen -->
+    <androidx.leanback.widget.SearchOrbView
+        android:id="@+id/settings_orb"
+        android:nextFocusLeft="@id/exit_pip"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:layout_marginEnd="@dimen/search_bar_right_items_margin"
+        app:searchOrbIcon="@drawable/search_bar_settings_orb"
+        app:searchOrbColor="@color/orb_color"
+        app:searchOrbBrightColor="@color/orb_bright_color"
+        app:searchOrbIconColor="@color/orb_icon_color"/>
+
     <!-- Global clock -->
     <LinearLayout android:layout_width="wrap_content"
                   android:layout_height="wrap_content"
@@ -17,7 +31,7 @@
             android:id="@+id/global_time"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="@dimen/pip_title_size"
+            android:textSize="@dimen/browse_clock_time_size"
             android:textColor="@color/white"
             android:shadowColor="@color/black"
             android:shadowDx="1.5"
@@ -30,7 +44,7 @@
             android:id="@+id/global_date"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="@dimen/pip_title_date_size"
+            android:textSize="@dimen/browse_clock_date_size"
             android:textColor="@color/white"
             android:shadowColor="@color/black"
             android:shadowDx="1.5"

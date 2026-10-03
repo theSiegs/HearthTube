@@ -71,6 +71,7 @@
             android:transitionGroup="true"
             android:layout_marginStart="@dimen/search_bar_right_items_margin"
             android:nextFocusLeft="@id/language_orb"
+            android:nextFocusRight="@id/settings_orb"
             app:searchOrbIcon="@drawable/browse_title_pip"
             app:searchOrbColor="@color/orb_color"
             app:searchOrbBrightColor="@color/orb_bright_color"

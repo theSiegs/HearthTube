@@ -23,6 +23,6 @@ public class PasswordError implements ErrorFragmentData {
 
     @Override
     public String getActionText() {
-        return mContext.getString(R.string.enter_account_password);
+        return mContext.getString(R.string.enter_profile_pin);
     }
 }

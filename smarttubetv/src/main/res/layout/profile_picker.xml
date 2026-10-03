@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+             android:layout_width="match_parent"
+             android:layout_height="match_parent"
+             android:background="@drawable/profile_picker_background">
+
+    <!-- Daily image fades in over the gradient once loaded; the gradient stays as the offline fallback -->
+    <ImageView
+        android:id="@+id/profile_background_image"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:alpha="0"
+        android:contentDescription="@null"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:orientation="vertical"
+        android:gravity="center_horizontal">
+
+        <TextView
+            android:id="@+id/profile_picker_title"
+            style="@style/TextOnImage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="40dp"
+            android:text="@string/profile_picker_title"
+            android:fontFamily="sans-serif"
+            android:textSize="36sp"
+            android:textColor="@color/profile_text"/>
+
+        <!-- A plain row rather than a grid: it centers itself and there are only a handful of tiles.
+             Scrolling only kicks in when there are more accounts than fit on screen. -->
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fillViewport="true"
+            android:scrollbars="none"
+            android:clipChildren="false"
+            android:clipToPadding="false">
+
+            <LinearLayout
+                android:id="@+id/profile_row"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:orientation="horizontal"
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:paddingLeft="48dp"
+                android:paddingRight="48dp"
+                android:paddingTop="24dp"
+                android:paddingBottom="24dp"/>
+        </HorizontalScrollView>
+    </LinearLayout>
+</FrameLayout>

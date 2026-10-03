@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- PIN dialog, matches the profile picker -->
+    <color name="pin_card">#1F2023</color>
+    <color name="pin_slot">#303236</color>
+    <color name="pin_slot_current">#3C3F43</color>
+    <color name="pin_text">#E3E3E3</color>
+    <color name="pin_text_dim">#8E9196</color>
+    <color name="pin_error">#F2B8B5</color>
+</resources>

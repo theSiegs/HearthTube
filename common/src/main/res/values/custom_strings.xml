@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Profile picker, PIN entry and daily background. Kept apart from strings.xml so upstream merges don't collide. -->
+<resources>
+    <string name="profile_picker_title">Who\'s watching?</string>
+    <string name="profile_guest">Guest</string>
+    <string name="profile_add_account">Add account</string>
+    <string name="protect_account_with_pin">Lock this profile with a PIN</string>
+    <string name="enter_profile_pin">Enter profile PIN</string>
+    <string name="set_profile_pin">Choose a 4-digit PIN</string>
+    <string name="confirm_profile_pin">Enter the PIN again</string>
+    <string name="pin_mismatch">PINs didn\'t match. Try again.</string>
+    <string name="pin_wrong">Wrong PIN</string>
+    <string name="pin_hint">Use the arrows or the number keys</string>
+    <string name="background_image">Background image</string>
+    <string name="background_image_source">Bing image of the day</string>
+</resources>

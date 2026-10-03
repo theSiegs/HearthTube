@@ -199,6 +199,12 @@
                   android:screenOrientation="unspecified"
                   android:theme="@style/App.Theme.Leanback.GuidedStep"/>
 
+        <!-- No GuidedStep theme: inherits the app's dynamic color scheme, same as BrowseActivity. -->
+        <activity android:name="com.liskovsoft.smartyoutubetv2.tv.ui.profile.ProfilePickerActivity"
+                  android:launchMode="singleInstance"
+                  android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation|layoutDirection"
+                  android:screenOrientation="unspecified"/>
+
         <activity
             android:name="com.liskovsoft.smartyoutubetv2.tv.ui.webbrowser.WebBrowserActivity"
             android:launchMode="singleInstance"

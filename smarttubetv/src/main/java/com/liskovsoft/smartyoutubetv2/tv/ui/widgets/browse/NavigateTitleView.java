@@ -1,5 +1,7 @@
 package com.liskovsoft.smartyoutubetv2.tv.ui.widgets.browse;
 
+import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup;
+import com.liskovsoft.smartyoutubetv2.common.app.presenters.BrowsePresenter;
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.Color;
@@ -22,7 +24,7 @@ import com.liskovsoft.mediaserviceinterfaces.oauth.Account;
 import com.liskovsoft.sharedutils.locale.LocaleUtility;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.PlaybackPresenter;
-import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.AccountSelectionPresenter;
+import com.liskovsoft.smartyoutubetv2.common.app.presenters.ProfilePickerPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.settings.AccountSettingsPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.settings.LanguageSettingsPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.views.PlaybackView;
@@ -195,12 +197,16 @@ public class NavigateTitleView extends TitleView implements OnDataChange, Accoun
         mSearchOrbView = findViewById(R.id.title_orb);
 
         mAccountView = findViewById(R.id.account_orb);
-        mAccountView.setOnOrbClickedListener(v -> AccountSelectionPresenter.instance(getContext()).nextAccountOrDialog());
+        mAccountView.setOnOrbClickedListener(v -> ProfilePickerPresenter.instance(getContext()).start());
         mAccountView.setOnOrbLongClickedListener(v -> {
             AccountSettingsPresenter.instance(getContext()).show();
             return true;
         });
         TooltipCompatHandler.setTooltipText(mAccountView, getContext().getString(R.string.settings_accounts));
+
+        SearchOrbView settingsView = findViewById(R.id.settings_orb);
+        settingsView.setOnOrbClickedListener(v -> BrowsePresenter.instance(getContext()).selectSection(MediaGroup.TYPE_SETTINGS));
+        TooltipCompatHandler.setTooltipText(settingsView, getContext().getString(R.string.header_settings));
 
         mLanguageView = findViewById(R.id.language_orb);
         mLanguageView.setOnOrbClickedListener(v -> LanguageSettingsPresenter.instance(getContext()).show());

@@ -15,6 +15,7 @@ import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.AmazonBridge
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.AppUpdatePresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.base.BasePresenter;
 import com.liskovsoft.smartyoutubetv2.common.prefs.GeneralData;
+import com.liskovsoft.smartyoutubetv2.common.utils.DailyBackground;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 
 import java.util.ArrayList;
@@ -49,6 +50,8 @@ public class AboutSettingsPresenter extends BasePresenter<Void> {
         appendAutoUpdateSwitch(settingsPresenter);
 
         appendUpdateChangelogButton(settingsPresenter);
+
+        appendBackgroundCredit(settingsPresenter);
 
         appendUpdateSource(settingsPresenter);
 
@@ -110,6 +113,20 @@ public class AboutSettingsPresenter extends BasePresenter<Void> {
                 AppInfoHelpers.getAppVersionName(getContext()));
 
         settingsPresenter.appendStringsCategory(title, changelog);
+    }
+
+    private void appendBackgroundCredit(AppDialogPresenter settingsPresenter) {
+        String credit = DailyBackground.getCredit(getContext());
+
+        if (credit == null) {
+            return;
+        }
+
+        List<OptionItem> items = new ArrayList<>();
+        items.add(UiOptionItem.from(credit));
+        items.add(UiOptionItem.from(getContext().getString(R.string.background_image_source)));
+
+        settingsPresenter.appendStringsCategory(getContext().getString(R.string.background_image), items);
     }
 
     private void appendLinks(AppDialogPresenter settingsPresenter) {
