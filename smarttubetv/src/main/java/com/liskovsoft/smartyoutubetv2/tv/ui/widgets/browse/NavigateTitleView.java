@@ -58,6 +58,7 @@ public class NavigateTitleView extends TitleView implements OnDataChange, Accoun
     private LongClickSearchOrbView mAccountView;
     private SearchOrbView mLanguageView;
     private SearchOrbView mSettingsView;
+    private final Runnable mOnSectionChange = this::updateSettingsButton;
     private SearchOrbView mExitPip;
     private TextView mPipTitle;
     private int mSearchVisibility = View.INVISIBLE;
@@ -131,7 +132,8 @@ public class NavigateTitleView extends TitleView implements OnDataChange, Accoun
 
         // Only the browse screen switches sections, other screens keep the plain gear
         if (getContext() instanceof BrowseActivity) {
-            BrowsePresenter.instance(getContext()).setOnSectionChange(this::updateSettingsButton);
+            BrowsePresenter.instance(getContext()).addOnSectionChange(mOnSectionChange);
+            updateSettingsButton();
         }
     }
 
@@ -140,7 +142,7 @@ public class NavigateTitleView extends TitleView implements OnDataChange, Accoun
         super.onDetachedFromWindow();
 
         if (getContext() instanceof BrowseActivity) {
-            BrowsePresenter.instance(getContext()).setOnSectionChange(null);
+            BrowsePresenter.instance(getContext()).removeOnSectionChange(mOnSectionChange);
         }
     }
 
@@ -240,6 +242,7 @@ public class NavigateTitleView extends TitleView implements OnDataChange, Accoun
         TooltipCompatHandler.setTooltipText(mAccountView, getContext().getString(R.string.settings_accounts));
 
         mSettingsView = findViewById(R.id.settings_orb);
+        mSettingsView.setVisibility(View.VISIBLE); // hidden in the layout: plain leanback title bars (error pages) reuse it
         mSettingsView.setOnOrbClickedListener(v -> {
             BrowsePresenter presenter = BrowsePresenter.instance(getContext());
             presenter.selectSection(presenter.isSettingsSection() ? MediaGroup.TYPE_HOME : MediaGroup.TYPE_SETTINGS);

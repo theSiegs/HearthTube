@@ -19,7 +19,8 @@
         app:searchOrbIcon="@drawable/search_bar_settings_orb"
         app:searchOrbColor="@color/orb_color"
         app:searchOrbBrightColor="@color/orb_bright_color"
-        app:searchOrbIconColor="@color/orb_icon_color"/>
+        app:searchOrbIconColor="@color/orb_icon_color"
+        android:visibility="gone"/>
 
     <!-- Global clock -->
     <LinearLayout android:layout_width="wrap_content"

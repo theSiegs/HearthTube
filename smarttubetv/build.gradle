@@ -167,6 +167,18 @@ android {
             applicationId "org.smarttube.stable"
             targetSdkVersion project.properties.compileSdkVersion
         }
+        // Personal build: "YouTube+" name/icon (src/stplus), installs next to the official app
+        stplus {
+            applicationId "org.smarttube.plus"
+            targetSdkVersion project.properties.compileSdkVersion
+            matchingFallbacks = ['ststable']
+
+            // Own update feed (src/stplus/res/values/update_urls.xml) only offers a higher versionCode, so:
+            // SmartTube's versionCode * 1000 + our release number (bumped by release.ps1)
+            def releaseNumber = file('src/stplus/release_number.txt').text.trim() as int
+            versionCode android.defaultConfig.versionCode * 1000 + releaseNumber
+            versionNameSuffix "+" + releaseNumber
+        }
         stfdroid {
             applicationId "app.smarttube.fdroid"
             minSdkVersion 21

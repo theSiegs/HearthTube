@@ -39,6 +39,8 @@ public class AboutSimpleSettingsPresenter extends BasePresenter<Void> {
 
         appendInstallBridge(settingsPresenter);
 
+        AboutSettingsPresenter.appendBackgroundCredit(getContext(), settingsPresenter);
+
         settingsPresenter.showDialog(mainTitle);
     }
 

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- YouTube+ variant: own launcher name, icon and banner (shown by TV launchers like Projectivy) -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+          xmlns:tools="http://schemas.android.com/tools">
+    <application
+        android:icon="@drawable/app_icon_plus"
+        android:banner="@drawable/app_banner_plus"
+        tools:replace="android:icon,android:banner"/>
+</manifest>

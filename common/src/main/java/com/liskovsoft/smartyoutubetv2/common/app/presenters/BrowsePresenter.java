@@ -69,7 +69,7 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
     private final Map<Integer, Callable<List<Video>>> mLocalGridMappings;
     private final Map<Integer, BrowseSection> mSectionsMapping;
     private final AppDataSourceManager mDataSourcePresenter;
-    private Runnable mOnSectionChange;
+    private final List<Runnable> mOnSectionChange = new ArrayList<>();
     private final BrowseProcessorManager mBrowseProcessor;
     private final List<Disposable> mActions;
     private final Runnable mRefreshSection = this::refresh;
@@ -499,16 +499,23 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
         updateCurrentSection();
         restoreSelectedItems(); // Don't place anywhere else
 
-        if (mOnSectionChange != null) {
-            mOnSectionChange.run();
+        for (Runnable listener : new ArrayList<>(mOnSectionChange)) {
+            listener.run();
         }
     }
 
     /**
-     * Single listener (the title bar), notified after the visible section changes
+     * Title bars notified after the visible section changes. A list, not a single slot:
+     * a rebuilt title bar attaches before the old one detaches.
      */
-    public void setOnSectionChange(Runnable onSectionChange) {
-        mOnSectionChange = onSectionChange;
+    public void addOnSectionChange(Runnable listener) {
+        if (!mOnSectionChange.contains(listener)) {
+            mOnSectionChange.add(listener);
+        }
+    }
+
+    public void removeOnSectionChange(Runnable listener) {
+        mOnSectionChange.remove(listener);
     }
 
     @Override

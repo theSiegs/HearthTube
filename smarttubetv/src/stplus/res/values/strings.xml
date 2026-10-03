@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string translatable="false" name="app_name">YouTube+</string>
+
+    <!-- TV global search: point at this build's own search provider, not the official app's -->
+    <string name="search_label">YouTube+</string>
+    <string name="settings_description">YouTube+ Videos</string>
+    <string translatable="false" name="search_authority">org.smarttube.plus</string>
+</resources>

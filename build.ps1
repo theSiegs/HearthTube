@@ -1,4 +1,4 @@
-# Builds the stable debug APK and, if a device or emulator is connected, installs it.
+# Builds the YouTube+ (stplus) debug APK and, if a device or emulator is connected, installs it.
 # Usage:  .\build.ps1            build + install
 #         .\build.ps1 -NoInstall build only
 param([switch]$NoInstall)
@@ -11,10 +11,10 @@ $env:ANDROID_HOME = "$env:LOCALAPPDATA\Android\Sdk"
 
 Set-Location $PSScriptRoot
 
-& .\gradlew.bat :smarttubetv:assembleStstableDebug
+& .\gradlew.bat :smarttubetv:assembleStplusDebug
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-$apk = Get-ChildItem smarttubetv\build\outputs\apk\ststable\debug\*universal*.apk | Select-Object -First 1
+$apk = Get-ChildItem smarttubetv\build\outputs\apk\stplus\debug\*universal*.apk | Select-Object -First 1
 Write-Host "APK: $($apk.FullName)"
 
 if (-not $NoInstall) {

@@ -116,7 +116,14 @@ public class AboutSettingsPresenter extends BasePresenter<Void> {
     }
 
     private void appendBackgroundCredit(AppDialogPresenter settingsPresenter) {
-        String credit = DailyBackground.getCredit(getContext());
+        appendBackgroundCredit(getContext(), settingsPresenter);
+    }
+
+    /**
+     * Shared with AboutSimpleSettingsPresenter (builds with a non-official package name)
+     */
+    static void appendBackgroundCredit(Context context, AppDialogPresenter settingsPresenter) {
+        String credit = DailyBackground.getCredit(context);
 
         if (credit == null) {
             return;
@@ -124,9 +131,9 @@ public class AboutSettingsPresenter extends BasePresenter<Void> {
 
         List<OptionItem> items = new ArrayList<>();
         items.add(UiOptionItem.from(credit));
-        items.add(UiOptionItem.from(getContext().getString(R.string.background_image_source)));
+        items.add(UiOptionItem.from(context.getString(R.string.background_image_source)));
 
-        settingsPresenter.appendStringsCategory(getContext().getString(R.string.background_image), items);
+        settingsPresenter.appendStringsCategory(context.getString(R.string.background_image), items);
     }
 
     private void appendLinks(AppDialogPresenter settingsPresenter) {
