@@ -23,6 +23,7 @@
     <string name="parent_pin_setting">Parent PIN for kids profiles</string>
     <string name="set_parent_pin">Choose a parent PIN</string>
     <string name="parent_pin_setting_hint">Needed to change accounts in Google TV kids profiles. Don\'t reuse a kid\'s PIN.</string>
+    <string name="kids_no_shorts">Shorts aren\'t available in kids profiles</string>
     <string name="kids_profile_accounts_locked">Accounts can\'t be changed in a kids profile. A parent can change them from their own Google TV profile.</string>
     <string name="background_image">Background image</string>
     <string name="background_image_source">Bing image of the day</string>

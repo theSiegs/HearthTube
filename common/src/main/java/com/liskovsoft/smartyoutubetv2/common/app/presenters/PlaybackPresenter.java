@@ -114,6 +114,12 @@ public class PlaybackPresenter extends BasePresenter<PlaybackView> implements Pl
             return;
         }
 
+        // HearthTube: no Shorts in Google TV kids profiles, even from a link or a cast
+        if (com.liskovsoft.smartyoutubetv2.common.utils.KidsShorts.isBlocked(getContext(), video.isShorts)) {
+            com.liskovsoft.sharedutils.helpers.MessageHelpers.showMessage(getContext(), com.liskovsoft.smartyoutubetv2.common.R.string.kids_no_shorts);
+            return;
+        }
+
         if (getView() != null && getView().isEmbed()) { // switching from the embed player to the fullscreen one
             // The embed player doesn't disposed properly
             // NOTE: don't release after init check because this depends on timings

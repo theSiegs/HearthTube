@@ -34,20 +34,6 @@ public class SidebarService implements ProfileChangeListener {
         mPrefs.addListener(this);
         initSections();
         restoreState();
-        hideSettingsSectionOnce();
-    }
-
-    /**
-     * HearthTube: settings live in the gear's side panel menu, like the Hearth launcher's, not in a page of tiles.
-     * Hidden once; the user can bring the section back (Player > Tweaks).
-     */
-    private void hideSettingsSectionOnce() {
-        android.content.SharedPreferences prefs = mContext.getSharedPreferences("hearthtube_migrations", Context.MODE_PRIVATE);
-
-        if (!prefs.getBoolean("settings_menu", false)) {
-            prefs.edit().putBoolean("settings_menu", true).apply();
-            enableSettingsSection(false);
-        }
     }
 
     public static SidebarService instance(Context context) {
@@ -238,7 +224,8 @@ public class SidebarService implements ProfileChangeListener {
     }
 
     public boolean isSettingsSectionEnabled() {
-        return mIsSettingsSectionEnabled;
+        // HearthTube: settings live in a side panel menu, like the Hearth launcher's, never in a page of tiles
+        return false;
     }
 
     private int getSectionId(Video item) {

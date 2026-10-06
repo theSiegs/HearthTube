@@ -45,6 +45,11 @@ public class SettingsMenuPresenter {
     }
 
     public static void show(Context context) {
+        // Kids profiles: every setting (Shorts, accounts, PINs) is a parent's call
+        com.liskovsoft.smartyoutubetv2.common.utils.ParentGate.run(context, () -> showUnlocked(context));
+    }
+
+    private static void showUnlocked(Context context) {
         AppDialogPresenter dialog = AppDialogPresenter.instance(context);
 
         for (SettingsItem item : AppDataSourceManager.instance().getSettingItems(context)) {
