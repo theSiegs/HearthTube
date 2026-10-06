@@ -75,8 +75,56 @@ public abstract class SearchTagsFragmentBase extends SearchSupportFragment
         View root = super.onCreateView(inflater, container, savedInstanceState);
 
         mProgressBarManager.setRootView((ViewGroup) root);
+        applyHearthLook(root);
 
         return root;
+    }
+
+    /**
+     * HearthTube: the search bar as one of Hearth's dark pills with readable white text, its buttons beside it, and the
+     * results below it instead of scrolling underneath.
+     */
+    private void applyHearthLook(View root) {
+        android.content.Context context = root.getContext();
+        float density = context.getResources().getDisplayMetrics().density;
+
+        View items = root.findViewById(androidx.leanback.R.id.lb_search_bar_items);
+        if (items != null) {
+            items.setBackgroundResource(com.liskovsoft.smartyoutubetv2.tv.R.drawable.hearth_tab_bar_background);
+        }
+
+        android.widget.EditText editor = root.findViewById(androidx.leanback.R.id.lb_search_text_editor);
+        if (editor != null) {
+            editor.setTextColor(0xFFFFFFFF);
+            editor.setHintTextColor(0x99FFFFFF);
+            editor.setShadowLayer(4 * density, 0, 2 * density, 0x8A000000);
+        }
+
+        // Search and filter buttons right after the bar (not at the far right edge)
+        View searchOrb = root.findViewById(com.liskovsoft.smartyoutubetv2.tv.R.id.lb_search_bar_search_orb);
+        View settingsOrb = root.findViewById(com.liskovsoft.smartyoutubetv2.tv.R.id.search_settings_orb);
+        if (searchOrb != null && searchOrb.getLayoutParams() instanceof android.widget.RelativeLayout.LayoutParams
+                && settingsOrb != null && settingsOrb.getLayoutParams() instanceof android.widget.RelativeLayout.LayoutParams) {
+            android.widget.RelativeLayout.LayoutParams search = (android.widget.RelativeLayout.LayoutParams) searchOrb.getLayoutParams();
+            search.removeRule(android.widget.RelativeLayout.ALIGN_PARENT_END);
+            search.addRule(android.widget.RelativeLayout.END_OF, androidx.leanback.R.id.lb_search_bar_items);
+            search.setMarginStart(Math.round(12 * density));
+            searchOrb.setLayoutParams(search);
+
+            android.widget.RelativeLayout.LayoutParams settings = (android.widget.RelativeLayout.LayoutParams) settingsOrb.getLayoutParams();
+            settings.removeRule(android.widget.RelativeLayout.START_OF);
+            settings.addRule(android.widget.RelativeLayout.END_OF, com.liskovsoft.smartyoutubetv2.tv.R.id.lb_search_bar_search_orb);
+            settings.setMarginStart(Math.round(12 * density));
+            settingsOrb.setLayoutParams(settings);
+        }
+
+        // Results start below the bar
+        View results = root.findViewById(androidx.leanback.R.id.lb_results_frame);
+        if (results != null && results.getLayoutParams() instanceof ViewGroup.MarginLayoutParams) {
+            ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) results.getLayoutParams();
+            params.topMargin = Math.round(150 * density);
+            results.setLayoutParams(params);
+        }
     }
 
     @Override

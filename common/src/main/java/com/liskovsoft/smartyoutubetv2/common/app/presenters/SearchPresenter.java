@@ -184,6 +184,11 @@ public class SearchPresenter extends BasePresenter<SearchView> implements VideoG
                         mediaGroups -> {
                             Log.d(TAG, "Receiving results for '%s'", searchText);
                             for (MediaGroup mediaGroup : mediaGroups) {
+                                // HearthTube: YouTube's own "Shorts" shelf goes too while Shorts are hidden
+                                if (com.liskovsoft.smartyoutubetv2.common.utils.KidsShorts.isShortsShelf(getContext(), mediaGroup.getTitle())) {
+                                    continue;
+                                }
+
                                 VideoGroup group = VideoGroup.from(mediaGroup);
                                 startPlayFirstVideo(group);
                                 getView().updateSearch(group);

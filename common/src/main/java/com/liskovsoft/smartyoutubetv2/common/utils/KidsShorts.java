@@ -83,6 +83,18 @@ public final class KidsShorts {
         return isShorts && ParentGate.isKidsProfile(context);
     }
 
+    /**
+     * A row YouTube titles "Shorts" (search results, Home) while Shorts are hidden: drop it, its videos aren't always
+     * marked as Shorts.
+     */
+    public static boolean isShortsShelf(Context context, String title) {
+        if (context == null || title == null || !"shorts".equalsIgnoreCase(title.trim())) {
+            return false;
+        }
+
+        return ParentGate.isKidsProfile(context) || !isShowShortsEnabled(context);
+    }
+
     private static SharedPreferences prefs(Context context) {
         return context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
     }
