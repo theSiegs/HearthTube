@@ -131,6 +131,9 @@ android {
             arch = arch != null ? arch : "universal"
 
             def newApkName = sprintf("%s_%s_%s_%s.apk", [project, flavor, version, arch])
+            if (variant.productFlavors[-1].name == "hearthtube") {
+                newApkName = sprintf("HearthTube_%s_%s.apk", [version, arch])
+            }
 
             // gradle 4.6 migration
             output.outputFileName = new File(newApkName)
@@ -167,15 +170,15 @@ android {
             applicationId "org.smarttube.stable"
             targetSdkVersion project.properties.compileSdkVersion
         }
-        // Personal build: "HearthTube" name/icon (src/stplus), installs next to the official app
-        stplus {
-            applicationId "org.smarttube.plus"
+        // Personal build: "HearthTube" name/icon (src/hearthtube), installs next to the official app
+        hearthtube {
+            applicationId "com.thesiegs.hearthtube"
             targetSdkVersion project.properties.compileSdkVersion
             matchingFallbacks = ['ststable']
 
-            // Own update feed (src/stplus/res/values/update_urls.xml) only offers a higher versionCode, so:
+            // Own update feed (src/hearthtube/res/values/update_urls.xml) only offers a higher versionCode, so:
             // SmartTube's versionCode * 1000 + our release number (bumped by release.ps1)
-            def releaseNumber = file('src/stplus/release_number.txt').text.trim() as int
+            def releaseNumber = file('src/hearthtube/release_number.txt').text.trim() as int
             versionCode android.defaultConfig.versionCode * 1000 + releaseNumber
             versionNameSuffix "+" + releaseNumber
         }

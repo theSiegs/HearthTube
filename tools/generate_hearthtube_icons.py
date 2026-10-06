@@ -1,4 +1,4 @@
-"""Draws HearthTube's launcher icon and TV banner (the stplus flavor).
+"""Draws HearthTube's launcher icon and TV banner (the hearthtube flavor).
 
 YouTube's red play button resting on Hearth's hearthstone, flames rising behind it, on Hearth's dark ember tile, so it
 sits naturally next to the Hearth launcher. Everything is drawn at 4x and downsampled. Re-run after changing the design:
@@ -14,7 +14,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 ROOT = Path(__file__).resolve().parent.parent
-RES = ROOT / "smarttubetv" / "src" / "stplus" / "res"
+RES = ROOT / "smarttubetv" / "src" / "hearthtube" / "res"
 SS = 4  # supersampling factor
 
 # Hearth's palette (LtvLauncher/tool/generate_icons.py) plus YouTube red.

@@ -1,4 +1,4 @@
-# Publishes a HearthTube release on GitHub (theSiegs/SmartTube, release tag "latest").
+# Publishes a HearthTube release on GitHub (theSiegs/HearthTube, release tag "latest").
 # TVs running HearthTube find it through their update check; Downloader can install from the APK links.
 #
 # Usage:  .\release.ps1 -Notes "What changed"
@@ -12,11 +12,11 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-Location $PSScriptRoot
 
-$repo = 'theSiegs/SmartTube'
+$repo = 'theSiegs/HearthTube'
 $branch = 'my-changes'
 $base = "https://github.com/$repo/releases/download/latest"
 $abis = 'armeabi-v7a', 'arm64-v8a', 'x86'
-$numberFile = 'smarttubetv\src\stplus\release_number.txt'
+$numberFile = 'smarttubetv\src\hearthtube\release_number.txt'
 
 if (-not $DryRun) {
     if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
@@ -33,13 +33,13 @@ if (-not $DryRun) { Set-Content $numberFile $number -Encoding ascii }
 
 $env:JAVA_HOME = "$env:USERPROFILE\dev\tools\jdk-17"
 $env:ANDROID_HOME = "$env:LOCALAPPDATA\Android\Sdk"
-& .\gradlew.bat :smarttubetv:assembleStplusDebug
+& .\gradlew.bat :smarttubetv:assembleHearthtubeDebug
 if ($LASTEXITCODE -ne 0) {
     if (-not $DryRun) { git checkout -- $numberFile }
     exit $LASTEXITCODE
 }
 
-# Same formula as the stplus flavor in smarttubetv\build.gradle
+# Same formula as the hearthtube flavor in smarttubetv\build.gradle
 $gradle = Get-Content smarttubetv\build.gradle -Raw
 $baseCode = [int]([regex]::Match($gradle, 'versionCode (\d+)').Groups[1].Value)
 $baseName = [regex]::Match($gradle, 'versionName "([^"]+)"').Groups[1].Value
@@ -47,24 +47,23 @@ $releaseNumber = [int](Get-Content $numberFile)
 $versionCode = $baseCode * 1000 + $releaseNumber
 $versionName = "$baseName+$releaseNumber"
 
-# Fixed file names (still "youtubeplus" from before the HearthTube rename): installed TVs poll youtubeplus.json,
-# so the links used by Downloader and the update feed must never change
-$dist = Join-Path $env:TEMP 'youtubeplus-release'
+# Fixed file names, so the links used by Downloader and the update feed never change
+$dist = Join-Path $env:TEMP 'hearthtube-release'
 Remove-Item $dist -Recurse -Force -ErrorAction SilentlyContinue
 New-Item -ItemType Directory $dist | Out-Null
-$apkDir = 'smarttubetv\build\outputs\apk\stplus\debug'
+$apkDir = 'smarttubetv\build\outputs\apk\hearthtube\debug'
 foreach ($abi in $abis + 'universal') {
     $apk = Get-ChildItem "$apkDir\*_$abi.apk" | Select-Object -First 1
-    Copy-Item $apk.FullName "$dist\youtubeplus_$abi.apk"
+    Copy-Item $apk.FullName "$dist\hearthtube_$abi.apk"
 }
 
 # Update feed read by the app (format: SharedModules\appupdatechecker2 AppVersionChecker)
-$package = [ordered]@{ downloadUrlList = @("$base/youtubeplus_universal.apk") }
-foreach ($abi in $abis) { $package["downloadUrlList_$abi"] = @("$base/youtubeplus_$abi.apk") }
+$package = [ordered]@{ downloadUrlList = @("$base/hearthtube_universal.apk") }
+foreach ($abi in $abis) { $package["downloadUrlList_$abi"] = @("$base/hearthtube_$abi.apk") }
 $feed = [ordered]@{ package = $package }
 $feed[$versionName] = [ordered]@{ versionCode = $versionCode; changelog = @($Notes) }
 # No BOM: the app's JSON parser rejects it
-[System.IO.File]::WriteAllText("$dist\youtubeplus.json", ($feed | ConvertTo-Json -Depth 5), (New-Object System.Text.UTF8Encoding $false))
+[System.IO.File]::WriteAllText("$dist\hearthtube.json", ($feed | ConvertTo-Json -Depth 5), (New-Object System.Text.UTF8Encoding $false))
 
 Write-Host "HearthTube $versionName (versionCode $versionCode), files in $dist"
 
@@ -88,4 +87,4 @@ gh release create latest (Get-ChildItem $dist).FullName --repo $repo --target $b
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 Write-Host ""
-Write-Host "Published. Downloader link (most TVs): $base/youtubeplus_arm64-v8a.apk"
+Write-Host "Published. Downloader link (most TVs): $base/hearthtube_arm64-v8a.apk"

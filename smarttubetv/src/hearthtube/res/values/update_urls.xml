@@ -2,6 +2,6 @@
 <resources>
     <!-- HearthTube checks its own GitHub releases (published by release.ps1), not SmartTube's -->
     <string-array name="update_urls">
-        <item>https://github.com/theSiegs/SmartTube/releases/download/latest/youtubeplus.json</item>
+        <item>https://github.com/theSiegs/HearthTube/releases/download/latest/hearthtube.json</item>
     </string-array>
 </resources>
