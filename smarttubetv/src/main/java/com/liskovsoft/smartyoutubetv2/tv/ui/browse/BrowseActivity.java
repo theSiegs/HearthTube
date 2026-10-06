@@ -69,6 +69,17 @@ public class BrowseActivity extends LeanbackActivity {
      */
     @Override
     public void onBackPressed() {
+        // The grid behind a More tile goes back to its row first
+        for (androidx.fragment.app.Fragment fragment : getSupportFragmentManager().getFragments()) {
+            if (fragment instanceof BrowseFragment) {
+                androidx.fragment.app.Fragment main = ((BrowseFragment) fragment).getMainFragment();
+                if (main instanceof com.liskovsoft.smartyoutubetv2.tv.ui.browse.video.HearthRowsFragment
+                        && ((com.liskovsoft.smartyoutubetv2.tv.ui.browse.video.HearthRowsFragment) main).onBack()) {
+                    return;
+                }
+            }
+        }
+
         BrowsePresenter presenter = BrowsePresenter.instance(this);
         BrowseSection current = presenter.getCurrentSection();
 

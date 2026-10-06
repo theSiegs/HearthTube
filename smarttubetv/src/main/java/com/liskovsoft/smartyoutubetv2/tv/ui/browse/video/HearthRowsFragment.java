@@ -17,15 +17,23 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
+import androidx.leanback.widget.ArrayObjectAdapter;
+import androidx.leanback.widget.ListRow;
 import androidx.leanback.widget.ListRowPresenter;
+import androidx.leanback.widget.ObjectAdapter;
+import androidx.leanback.widget.Presenter;
+import androidx.leanback.widget.PresenterSelector;
 
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
 import com.liskovsoft.smartyoutubetv2.tv.R;
 import com.liskovsoft.smartyoutubetv2.tv.presenter.LargeVideoCardPresenter;
+import com.liskovsoft.smartyoutubetv2.tv.presenter.MoreTilePresenter;
 import com.liskovsoft.smartyoutubetv2.tv.presenter.VideoCardPresenter;
 
 import java.util.ArrayList;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * HearthTube's browse rows (Home, Music, Ambiance...), the approved concept: a strip of choices under the tabs
@@ -34,6 +42,10 @@ import java.util.List;
  */
 public class HearthRowsFragment extends VideoRowsFragment {
     private static final int ROW_PADDING_DP = 22;
+    /** Videos in the big row before the More tile */
+    private static final int PREVIEW_COUNT = 10;
+    /** The classic grid behind More */
+    private static final int GRID_COLUMNS = 4;
     private LinearLayout mChips;
     private HorizontalScrollView mChipScroll;
     private View mRows;
@@ -42,6 +54,22 @@ public class HearthRowsFragment extends VideoRowsFragment {
     private TextView mDescription;
     private List<String> mTitles = new ArrayList<>();
     private int mSelected;
+    private VideoCardPresenter mLargePresenter;
+    private VideoCardPresenter mGridPresenter;
+    private final MoreTilePresenter mMorePresenter = new MoreTilePresenter();
+    private final Map<ListRow, ListRow> mPreviews = new IdentityHashMap<>();
+    private View mDetails;
+    private int mRowHeight;
+    private int mRowBottomMargin;
+    /** The full row shown as a grid (More), or null */
+    private ObjectAdapter mGridSource;
+    private final List<ListRow> mGridRows = new ArrayList<>();
+    private final ObjectAdapter.DataObserver mGridObserver = new ObjectAdapter.DataObserver() {
+        @Override
+        public void onChanged() {
+            fillGrid();
+        }
+    };
 
     @Override
     protected boolean isStripMode() {
@@ -50,7 +78,125 @@ public class HearthRowsFragment extends VideoRowsFragment {
 
     @Override
     protected VideoCardPresenter createCardPresenter() {
-        return new LargeVideoCardPresenter();
+        mLargePresenter = new LargeVideoCardPresenter();
+        return mLargePresenter;
+    }
+
+    /**
+     * The big row: its first videos, then a More tile when there are more.
+     */
+    @Override
+    protected ListRow toDisplayRow(ListRow row) {
+        ListRow preview = mPreviews.get(row);
+
+        if (preview == null) {
+            preview = new ListRow(row.getHeaderItem(), new PreviewAdapter(row.getAdapter()));
+            mPreviews.put(row, preview);
+        }
+
+        return preview;
+    }
+
+    @Override
+    protected boolean onOtherItemClicked(Object item) {
+        if (item instanceof MoreTilePresenter.More) {
+            showGrid();
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Back in the grid goes back to the big row. True: handled.
+     */
+    public boolean onBack() {
+        if (mGridSource == null) {
+            return false;
+        }
+
+        hideGrid();
+        return true;
+    }
+
+    private void showGrid() {
+        ListRow row = getStripRow(mSelected);
+
+        if (row == null || mRows == null) {
+            return;
+        }
+
+        if (mGridPresenter == null) {
+            mGridPresenter = new VideoCardPresenter();
+            wireCardPresenter(mGridPresenter);
+        }
+
+        mGridSource = row.getAdapter();
+        mGridRows.clear();
+        fillGrid();
+        mGridSource.registerObserver(mGridObserver);
+
+        // The grid takes the screen under the tabs
+        mChipScroll.setVisibility(View.GONE);
+        mDetails.setVisibility(View.GONE);
+        FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) mRows.getLayoutParams();
+        params.height = ViewGroup.LayoutParams.MATCH_PARENT;
+        // First row level with the classic grids (the queue, Watch later)
+        params.topMargin = dp(mRows.getContext(), 124);
+        params.bottomMargin = 0;
+        mRows.setLayoutParams(params);
+
+        showRows(new ArrayList<>(mGridRows));
+        mRows.requestFocus();
+    }
+
+    private void hideGrid() {
+        if (mGridSource != null) {
+            mGridSource.unregisterObserver(mGridObserver);
+            mGridSource = null;
+        }
+
+        mGridRows.clear();
+        mChipScroll.setVisibility(mTitles.size() > 1 ? View.VISIBLE : View.GONE);
+        mDetails.setVisibility(View.VISIBLE);
+        FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) mRows.getLayoutParams();
+        params.height = mRowHeight;
+        params.topMargin = 0;
+        params.bottomMargin = mRowBottomMargin;
+        mRows.setLayoutParams(params);
+
+        showRows(null);
+        mRows.requestFocus();
+    }
+
+    /** Rows of four from the full row; more rows come as SmartTube loads more videos */
+    private void fillGrid() {
+        if (mGridSource == null) {
+            return;
+        }
+
+        boolean showing = !mGridRows.isEmpty();
+        List<ListRow> added = new ArrayList<>();
+
+        for (int i = 0; i < mGridSource.size(); i++) {
+            int rowIndex = i / GRID_COLUMNS;
+
+            if (rowIndex >= mGridRows.size()) {
+                ListRow gridRow = new ListRow(new ArrayObjectAdapter(mGridPresenter));
+                mGridRows.add(gridRow);
+                added.add(gridRow);
+            }
+
+            ArrayObjectAdapter adapter = (ArrayObjectAdapter) mGridRows.get(rowIndex).getAdapter();
+            if (adapter.size() <= i % GRID_COLUMNS) {
+                adapter.add(mGridSource.get(i));
+            }
+        }
+
+        // Already on screen: add the new rows below
+        if (showing && !added.isEmpty()) {
+            appendRows(added);
+        }
     }
 
     @Override
@@ -70,9 +216,11 @@ public class HearthRowsFragment extends VideoRowsFragment {
         int cardHeight = LargeVideoCardPresenter.getLargeCardDimensPx(context).second;
         // The card, plus room for the focus zoom and outline
         int rowHeight = Math.round(cardHeight * 1.12f) + dp(context, 2 * ROW_PADDING_DP);
+        mRowHeight = rowHeight;
         FrameLayout.LayoutParams rowsParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                 rowHeight, Gravity.BOTTOM);
         rowsParams.bottomMargin = dp(context, 20);
+        mRowBottomMargin = rowsParams.bottomMargin;
         root.addView(mRows, rowsParams);
 
         // The strip, under the tabs
@@ -103,6 +251,7 @@ public class HearthRowsFragment extends VideoRowsFragment {
         detailParams.leftMargin = dp(context, 56);
         detailParams.bottomMargin = rowsParams.bottomMargin + rowHeight + dp(context, 4);
         root.addView(details, detailParams);
+        mDetails = details;
 
         showChips();
 
@@ -286,6 +435,60 @@ public class HearthRowsFragment extends VideoRowsFragment {
             }
 
             return false;
+        }
+    }
+
+    /**
+     * The first {@link #PREVIEW_COUNT} videos of a row, then the More tile. Follows the row as it loads.
+     */
+    private class PreviewAdapter extends ObjectAdapter {
+        private final ObjectAdapter mSource;
+
+        PreviewAdapter(ObjectAdapter source) {
+            super(new PresenterSelector() {
+                @Override
+                public Presenter getPresenter(Object item) {
+                    return item instanceof MoreTilePresenter.More ? mMorePresenter : mLargePresenter;
+                }
+
+                @Override
+                public Presenter[] getPresenters() {
+                    return new Presenter[] {mLargePresenter, mMorePresenter};
+                }
+            });
+            mSource = source;
+            mSource.registerObserver(new DataObserver() {
+                @Override
+                public void onChanged() {
+                    notifyChanged();
+                }
+
+                @Override
+                public void onItemRangeInserted(int positionStart, int itemCount) {
+                    notifyChanged();
+                }
+
+                @Override
+                public void onItemRangeRemoved(int positionStart, int itemCount) {
+                    notifyChanged();
+                }
+
+                @Override
+                public void onItemRangeChanged(int positionStart, int itemCount) {
+                    notifyChanged();
+                }
+            });
+        }
+
+        @Override
+        public int size() {
+            int size = mSource.size();
+            return size > PREVIEW_COUNT ? PREVIEW_COUNT + 1 : size;
+        }
+
+        @Override
+        public Object get(int position) {
+            return position < PREVIEW_COUNT ? mSource.get(position) : MoreTilePresenter.More.INSTANCE;
         }
     }
 }

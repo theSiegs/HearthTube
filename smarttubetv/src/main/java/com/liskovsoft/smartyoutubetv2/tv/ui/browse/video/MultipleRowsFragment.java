@@ -97,6 +97,52 @@ public abstract class MultipleRowsFragment extends RowsSupportFragment implement
     protected void onVideoFocused(Video video) {
     }
 
+    /** A card that isn't a video (HearthTube's More tile) was clicked. True: handled. */
+    protected boolean onOtherItemClicked(Object item) {
+        return false;
+    }
+
+    /** Long press opens the video menu on cards from this presenter too (the grid behind More) */
+    protected void wireCardPresenter(VideoCardPresenter presenter) {
+        presenter.setOnItemViewLongPressedListener(new ItemViewLongPressedListener());
+    }
+
+    /** Shows these rows instead of the strip's one row (the grid behind More); null goes back to the strip */
+    protected void showRows(@Nullable List<ListRow> rows) {
+        if (mRowsAdapter == null) {
+            return;
+        }
+
+        for (int i = mRowsAdapter.size() - 1; i >= 0; i--) {
+            if (mRowsAdapter.get(i) instanceof ListRow) {
+                mRowsAdapter.removeItems(i, 1);
+            }
+        }
+
+        if (rows != null) {
+            mRowsAdapter.addAll(mRowsAdapter.size(), rows);
+        } else if (mStripIndex < mStripRows.size()) {
+            mRowsAdapter.add(toDisplayRow(mStripRows.get(mStripIndex)));
+        }
+    }
+
+    /** Adds rows below the ones on show (the grid behind More, as it grows) */
+    protected void appendRows(List<ListRow> rows) {
+        if (mRowsAdapter != null) {
+            mRowsAdapter.addAll(mRowsAdapter.size(), rows);
+        }
+    }
+
+    /** The row as shown in the strip (HearthTube: the first videos and a More tile). Same row in, same row out. */
+    protected ListRow toDisplayRow(ListRow row) {
+        return row;
+    }
+
+    /** The strip's rows, as SmartTube built them (full length) */
+    protected ListRow getStripRow(int index) {
+        return index >= 0 && index < mStripRows.size() ? mStripRows.get(index) : null;
+    }
+
     /** Shows the row at this index of the strip */
     protected void selectStripRow(int index) {
         if (index < 0 || index >= mStripRows.size() || mRowsAdapter == null) {
@@ -104,7 +150,7 @@ public abstract class MultipleRowsFragment extends RowsSupportFragment implement
         }
 
         mStripIndex = index;
-        ListRow row = mStripRows.get(index);
+        ListRow row = toDisplayRow(mStripRows.get(index));
 
         if (mRowsAdapter.indexOf(row) == -1) {
             for (int i = mRowsAdapter.size() - 1; i >= 0; i--) {
@@ -433,7 +479,7 @@ public abstract class MultipleRowsFragment extends RowsSupportFragment implement
 
             if (item instanceof Video) {
                 mMainPresenter.onVideoItemClicked((Video) item);
-            } else {
+            } else if (!onOtherItemClicked(item)) {
                 Toast.makeText(getActivity(), item.toString(), Toast.LENGTH_SHORT).show();
             }
         }
