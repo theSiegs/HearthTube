@@ -16,6 +16,7 @@ import com.liskovsoft.smartyoutubetv2.common.misc.ScreensaverManager;
 import com.liskovsoft.smartyoutubetv2.common.prefs.GeneralData;
 import com.liskovsoft.smartyoutubetv2.common.utils.AppDialogUtil;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
+import com.liskovsoft.smartyoutubetv2.common.utils.WatchNextPublisher;
 import com.liskovsoft.youtubeapi.service.internal.MediaServiceData;
 
 import javax.annotation.Nullable;
@@ -491,7 +492,19 @@ public class VideoStateController extends BasePlayerController {
         if (!isBeginEmbed()) {
             updateHistory();
             syncWithPlaylists();
+            publishWatchNext();
         }
+    }
+
+    /**
+     * HearthTube: launchers (Hearth, Google TV) show it in Continue Watching.
+     */
+    private void publishWatchNext() {
+        if (mIncognito || getPlayer() == null || !getPlayer().containsMedia()) {
+            return;
+        }
+
+        WatchNextPublisher.publish(getContext(), getVideo(), getPlayer().getPositionMs(), getPlayer().getDurationMs());
     }
 
     private void restoreState() {

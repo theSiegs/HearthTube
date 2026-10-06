@@ -55,6 +55,8 @@ dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
     implementation 'androidx.appcompat:appcompat:' + appCompatXVersion
+    // HearthTube: Watch Next (Continue Watching in launchers), WatchNextPublisher
+    implementation 'androidx.tvprovider:tvprovider:' + leanbackXVersion
     testImplementation 'junit:junit:' + junitVersion
     testImplementation 'org.robolectric:robolectric:' + robolectricVersion
 
