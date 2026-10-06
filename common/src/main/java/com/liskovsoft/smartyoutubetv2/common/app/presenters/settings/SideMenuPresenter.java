@@ -123,7 +123,15 @@ public class SideMenuPresenter {
         dialog.showDialog(context.getString(R.string.edit_menu_and_tabs));
     }
 
+    /** The Google TV profile's name (through Hearth), else the account's first name, else the guest */
     private static String firstName(Context context) {
+        com.liskovsoft.smartyoutubetv2.common.utils.HearthProfile profile =
+                com.liskovsoft.smartyoutubetv2.common.utils.HearthProfile.query(context);
+
+        if (profile != null) {
+            return profile.name;
+        }
+
         Account account = MediaServiceManager.instance().getSelectedAccount();
         String name = account != null ? (account.getName() != null ? account.getName() : account.getEmail()) : null;
 

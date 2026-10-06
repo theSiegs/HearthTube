@@ -121,4 +121,6 @@
     <string name="gradient_saint_petersburg">Saint Petersburg (gradient)</string>
     <string name="gradient_african_field">African Field (gradient)</string>
     <string name="gradient_grass_shampoo">Grass Shampoo (gradient)</string>
+    <string name="show_shorts">Show Shorts</string>
+    <string name="show_shorts_hint">Off: no Shorts anywhere. Kids profiles never get them.</string>
 </resources>

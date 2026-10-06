@@ -50,6 +50,7 @@ public class MainUISettingsPresenter extends BasePresenter<Void> {
 
         appendAccentColor(settingsPresenter);
         appendWallpaper(settingsPresenter);
+        appendShowShorts(settingsPresenter);
         appendTopButtonsCategory(settingsPresenter);
         appendColorScheme(settingsPresenter);
         if (Build.VERSION.SDK_INT > 19) {
@@ -127,6 +128,21 @@ public class MainUISettingsPresenter extends BasePresenter<Void> {
         }
 
         settingsPresenter.appendRadioCategory(getContext().getString(R.string.wallpaper), options);
+    }
+
+    /**
+     * HearthTube: Shorts are hidden everywhere unless switched on here. Not offered in kids profiles (never Shorts there).
+     */
+    private void appendShowShorts(AppDialogPresenter settingsPresenter) {
+        if (com.liskovsoft.smartyoutubetv2.common.utils.ParentGate.isKidsProfile(getContext())) {
+            return;
+        }
+
+        settingsPresenter.appendSingleSwitch(UiOptionItem.from(getContext().getString(R.string.show_shorts),
+                getContext().getString(R.string.show_shorts_hint), option -> {
+                    com.liskovsoft.smartyoutubetv2.common.utils.KidsShorts.setShowShortsEnabled(getContext(), option.isSelected());
+                    mRestartApp = true;
+                }, com.liskovsoft.smartyoutubetv2.common.utils.KidsShorts.isShowShortsEnabled(getContext())));
     }
 
     private void appendTopButtonsCategory(AppDialogPresenter settingsPresenter) {

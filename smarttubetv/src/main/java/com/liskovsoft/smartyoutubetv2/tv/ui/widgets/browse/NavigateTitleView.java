@@ -404,6 +404,10 @@ public class NavigateTitleView extends TitleView implements OnDataChange, Accoun
 
         if (hasWindowFocus) { // pip window closed, dialog closed
             applyPipParameters();
+            // The Google TV profile may have changed while we were away
+            if (mAccountName != null && mIsAccountViewEnabled) {
+                mAccountName.setText(getFirstName(MediaServiceManager.instance().getSelectedAccount()));
+            }
         }
     }
 
@@ -446,8 +450,18 @@ public class NavigateTitleView extends TitleView implements OnDataChange, Accoun
         }
     }
 
-    /** "Alex Rivera" -> "Alex", like Google TV names profiles. The guest when nobody's signed in. */
+    /**
+     * Who's watching: the Google TV profile's name (through Hearth), like Hearth's top bar. Without Hearth, the
+     * account's first name ("Alex Rivera" -> "Alex"), or the guest when nobody's signed in.
+     */
     private String getFirstName(Account account) {
+        com.liskovsoft.smartyoutubetv2.common.utils.HearthProfile profile =
+                com.liskovsoft.smartyoutubetv2.common.utils.HearthProfile.query(getContext());
+
+        if (profile != null) {
+            return profile.name;
+        }
+
         String name = account != null ? (account.getName() != null ? account.getName() : account.getEmail()) : null;
 
         if (name == null || name.trim().isEmpty()) {
