@@ -4,6 +4,8 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Settings panel background (leanback_preference_fragment.xml) -->
     <attr name="preferencePanelBackground" format="reference|color"/>
+    <!-- Settings panels on the left edge instead of the right (AppDialogFragment) -->
+    <attr name="preferencePanelOnLeft" format="boolean"/>
     <!-- Focused card outline (CardFocusOutline); unset keeps leanback's white info area -->
     <attr name="cardFocusOutline" format="reference"/>
 
@@ -32,6 +34,7 @@
         <item name="android:colorPrimary" tools:targetApi="21">@color/hearth_surface</item>
         <item name="android:colorAccent" tools:targetApi="21">@color/hearth_accent</item>
         <item name="preferencePanelBackground">@drawable/hearth_panel_background</item>
+        <item name="preferencePanelOnLeft">true</item>
         <!-- The title sits on the panel itself, no colored header bar -->
         <item name="defaultBrandColor">@android:color/transparent</item>
         <item name="android:selectableItemBackground">@drawable/hearth_list_item_background</item>

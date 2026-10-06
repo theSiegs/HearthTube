@@ -122,6 +122,13 @@ public class AppDialogFragment extends LeanbackSettingsFragment implements AppDi
         return fragment;
     }
 
+    private boolean isPanelOnLeft() {
+        android.content.res.TypedArray attrs = getActivity().obtainStyledAttributes(new int[] {R.attr.preferencePanelOnLeft});
+        boolean onLeft = attrs.getBoolean(0, false);
+        attrs.recycle();
+        return onLeft;
+    }
+
     @Override
     public void show(List<OptionCategory> categories, CharSequence title, boolean isExpandable, boolean isTransparent, boolean isOverlay, int id) {
         if (!Utils.checkActivity(getActivity())) {
@@ -133,6 +140,11 @@ public class AppDialogFragment extends LeanbackSettingsFragment implements AppDi
         mIsTransparent = stackIsEmpty ? isTransparent : mIsTransparent;
         mIsOverlay = isOverlay;
         mId = id;
+
+        // HearthTube: panels open on the left like the Hearth launcher's settings (overlays on a playing video stay right)
+        if (!mIsTransparent && isPanelOnLeft()) {
+            ViewUtil.enableLeftDialog(getActivity(), getView());
+        }
 
         if (isExpandable && categories != null && categories.size() == 1) {
             OptionCategory category = categories.get(0);
