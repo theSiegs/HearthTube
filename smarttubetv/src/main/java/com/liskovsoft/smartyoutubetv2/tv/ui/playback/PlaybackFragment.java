@@ -1258,6 +1258,9 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
     public void hideControlsOverlay(boolean runAnimation) {
         super.hideControlsOverlay(mIsUIAnimationsEnabled);
 
+        // HearthTube: the extra buttons fold away with the controls
+        com.liskovsoft.smartyoutubetv2.tv.ui.mod.leanback.playerglue.tweaks.HearthControlsCollapser.collapse(getView());
+
         // Do throttle. Called so many times. Rely on boxing because initial state is unknown.
         if (mIsControlsShownPreviously != null && !mIsControlsShownPreviously) {
             return;

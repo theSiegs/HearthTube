@@ -26,6 +26,8 @@ import java.lang.ref.WeakReference;
 public class ScreensaverManager {
     private static final String TAG = ScreensaverManager.class.getSimpleName();
     private static final int MODE_SCREENSAVER = 0;
+    /** Works with Hearth: how often a playing video is checked for having been paused */
+    private static final long HEARTH_RECHECK_MS = 30_000;
     private static final int MODE_SCREEN_OFF = 1;
     private static final WeakHashSet<ScreensaverManager> sInstances = new WeakHashSet<>();
     private static boolean sLockInstance;
@@ -287,8 +289,15 @@ public class ScreensaverManager {
 
         // Disable screensaver on certain circumstances
         // Fix screen off before the video started
-        if (show && (isPlaying() || isSigning() || getGeneralData().isScreensaverDisabled() || (mMode == MODE_SCREEN_OFF && getPosition() == 0))) {
+        if (show && (isPlaying() || isSigning() || (getGeneralData().isScreensaverDisabled() && !isHearthScreensaver()) || (mMode == MODE_SCREEN_OFF && getPosition() == 0))) {
             Helpers.disableScreensaver(activity);
+
+            // HearthTube: no key press may come after the video is paused (e.g. paused from a phone, or the player
+            // still reported playing a moment after Pause), so look again until the screen can be let go
+            if (isHearthScreensaver() && mMode == MODE_SCREENSAVER) {
+                Utils.removeCallbacks(mDimScreen);
+                Utils.postDelayed(mDimScreen, HEARTH_RECHECK_MS);
+            }
             return;
         }
 
@@ -301,6 +310,7 @@ public class ScreensaverManager {
 
     /**
      * Works with Hearth: a paused video just lets the screen go, so the TV's screensaver (Hearth's clock) starts
+     * (even with SmartTube's "disable screensaver", on by default: that one still holds while a video plays)
      * after the TV's usual wait, instead of HearthTube dimming the picture itself.
      */
     private boolean isHearthScreensaver() {

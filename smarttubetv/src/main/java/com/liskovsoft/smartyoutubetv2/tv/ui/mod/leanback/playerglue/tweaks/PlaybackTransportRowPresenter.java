@@ -1057,6 +1057,8 @@ public class PlaybackTransportRowPresenter extends PlaybackRowPresenter {
         vh.mSecondaryControlsVh = (ControlBarPresenter.ViewHolder) mSecondaryControlsPresenter
                 .onCreateViewHolder(vh.mSecondaryControlsDock);
         vh.mSecondaryControlsDock.addView(vh.mSecondaryControlsVh.view);
+        // HearthTube: only play/pause, previous, next and More until More is chosen
+        HearthControlsCollapser.attach(vh.view.findViewById(R.id.transport_row), vh.mControlsDock, vh.mSecondaryControlsDock);
         ((PlaybackTransportRowView) vh.view.findViewById(R.id.transport_row))
                 .setOnUnhandledKeyListener(new PlaybackTransportRowView.OnUnhandledKeyListener() {
                 @Override
