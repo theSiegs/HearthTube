@@ -119,7 +119,7 @@ public class AppDialogFragment extends LeanbackSettingsFragment implements AppDi
         AppPreferenceFragment fragment = new AppPreferenceFragment();
         fragment.setCategories(categories);
         fragment.setTitle(title);
-        fragment.enableLogoHeader(mId == SettingsMenuPresenter.DIALOG_ID);
+        fragment.enableLogoHeader(mId == SettingsMenuPresenter.DIALOG_ID || mId == com.liskovsoft.smartyoutubetv2.common.app.presenters.settings.SideMenuPresenter.DIALOG_ID);
         fragment.enableTransparent(mIsTransparent);
         return fragment;
     }

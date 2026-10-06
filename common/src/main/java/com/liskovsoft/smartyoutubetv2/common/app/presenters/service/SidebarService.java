@@ -7,9 +7,11 @@ import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup;
 import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.smartyoutubetv2.common.R;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
+import com.liskovsoft.smartyoutubetv2.common.app.presenters.HearthSections;
 import com.liskovsoft.smartyoutubetv2.common.prefs.AppPrefs;
 import com.liskovsoft.smartyoutubetv2.common.prefs.AppPrefs.ProfileChangeListener;
 import com.liskovsoft.smartyoutubetv2.common.prefs.GeneralData;
+import com.liskovsoft.smartyoutubetv2.common.prefs.HearthTabsData;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -25,6 +27,8 @@ public class SidebarService implements ProfileChangeListener {
     private final Map<Integer, Integer> mDefaultSections = new LinkedHashMap<>();
     private final AppPrefs mPrefs;
     private boolean mIsSettingsSectionEnabled;
+    /** This profile has HearthTube's sections (HearthTabsData) rather than SmartTube's */
+    private boolean mIsHearthDefaultsApplied;
     private int mBootSectionId;
     private final static int RESERVED_ID = 100;
 
@@ -243,7 +247,7 @@ public class SidebarService implements ProfileChangeListener {
         mDefaultSections.put(R.string.header_trending, MediaGroup.TYPE_TRENDING);
         mDefaultSections.put(R.string.header_kids_home, MediaGroup.TYPE_KIDS_HOME);
         mDefaultSections.put(R.string.header_sports, MediaGroup.TYPE_SPORTS);
-        mDefaultSections.put(R.string.badge_live, MediaGroup.TYPE_LIVE);
+        mDefaultSections.put(R.string.header_live, MediaGroup.TYPE_LIVE); // HearthTube: "Live", not the "LIVE" badge
         mDefaultSections.put(R.string.header_gaming, MediaGroup.TYPE_GAMING);
         mDefaultSections.put(R.string.header_news, MediaGroup.TYPE_NEWS);
         mDefaultSections.put(R.string.header_music, MediaGroup.TYPE_MUSIC);
@@ -255,9 +259,20 @@ public class SidebarService implements ProfileChangeListener {
         mDefaultSections.put(R.string.my_videos, MediaGroup.TYPE_MY_VIDEOS);
         mDefaultSections.put(R.string.playback_queue_category_title, MediaGroup.TYPE_PLAYBACK_QUEUE);
         mDefaultSections.put(R.string.header_settings, MediaGroup.TYPE_SETTINGS);
+        // HearthTube's own
+        mDefaultSections.put(R.string.header_ambiance, HearthSections.TYPE_AMBIANCE);
+        mDefaultSections.put(R.string.header_library, HearthSections.TYPE_LIBRARY);
+        mDefaultSections.put(R.string.header_watch_later, HearthSections.TYPE_WATCH_LATER);
+        mDefaultSections.put(R.string.header_podcasts, HearthSections.TYPE_PODCASTS);
     }
 
     private void initPinnedItems() {
+        // HearthTube's choice of sections (HearthTabsData) instead of SmartTube's
+        if (true) {
+            applyHearthDefaults();
+            return;
+        }
+
         for (int sectionId : mDefaultSections.values()) {
             // Hidden sections
             enableSection(sectionId, !Helpers.equalsAny(sectionId, new int[] {
@@ -266,6 +281,17 @@ public class SidebarService implements ProfileChangeListener {
                     MediaGroup.TYPE_TRENDING,
                     MediaGroup.TYPE_BLOCKED_CHANNELS
             }));
+        }
+    }
+
+    /**
+     * HearthTube's sections: the pill's tabs and the side menu's few, without Shorts, Kids, Gaming and the like.
+     */
+    private void applyHearthDefaults() {
+        mIsHearthDefaultsApplied = true;
+
+        for (int sectionId : mDefaultSections.values()) {
+            enableSection(sectionId, HearthTabsData.isOnByDefault(sectionId));
         }
     }
 
@@ -296,11 +322,17 @@ public class SidebarService implements ProfileChangeListener {
         mPinnedItems = Helpers.parseList(split, 0, Video::fromString);
         mBootSectionId = Helpers.parseInt(split, 1, MediaGroup.TYPE_HOME);
         mIsSettingsSectionEnabled = Helpers.parseBoolean(split, 2, true);
+        mIsHearthDefaultsApplied = Helpers.parseBoolean(split, 3, false);
 
         transferOldPinnedItems();
 
         if (mPinnedItems.isEmpty()) {
             initPinnedItems();
+        }
+
+        // Profiles from before HearthTube's sections get them once (pinned channels and playlists stay)
+        if (!mIsHearthDefaultsApplied) {
+            applyHearthDefaults();
         }
 
         // Backward compatibility
@@ -322,7 +354,7 @@ public class SidebarService implements ProfileChangeListener {
     }
 
     public void persistState() {
-        mPrefs.setSidebarData(Helpers.mergeData(mPinnedItems, mBootSectionId, mIsSettingsSectionEnabled));
+        mPrefs.setSidebarData(Helpers.mergeData(mPinnedItems, mBootSectionId, mIsSettingsSectionEnabled, mIsHearthDefaultsApplied));
     }
 
     @Override

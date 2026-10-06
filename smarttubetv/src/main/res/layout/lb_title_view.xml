@@ -27,23 +27,12 @@
                   android:layout_height="wrap_content"
                   android:orientation="horizontal"
                   android:layout_gravity="center_vertical|start">
-        <androidx.leanback.widget.SearchOrbView
-            android:id="@+id/title_orb"
-            android:layout_height="wrap_content"
-            android:layout_width="wrap_content"
-            android:transitionGroup="true"
-            android:layout_gravity="center_vertical|start"
-            android:nextFocusRight="@id/account_orb"
-            android:visibility="invisible" />
 
         <com.liskovsoft.smartyoutubetv2.tv.ui.widgets.search.LongClickSearchOrbView
             android:id="@+id/account_orb"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:transitionGroup="true"
-            android:layout_marginStart="@dimen/search_bar_right_items_margin"
-            android:nextFocusLeft="@id/title_orb"
-            android:nextFocusRight="@id/language_orb"
             app:searchOrbIcon="@drawable/browse_title_account"
             app:searchOrbColor="@color/orb_color"
             app:searchOrbBrightColor="@color/orb_bright_color"
@@ -68,13 +57,29 @@
             android:shadowRadius="4"
             android:visibility="gone" />
 
+        <!-- HearthTube: the tabs, then search, like the Google TV home screen -->
+        <com.liskovsoft.smartyoutubetv2.tv.ui.widgets.browse.HearthTabBar
+            android:id="@+id/hearth_tabs"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:layout_marginStart="14dp" />
+
+        <androidx.leanback.widget.SearchOrbView
+            android:id="@+id/title_orb"
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            android:transitionGroup="true"
+            android:layout_gravity="center_vertical"
+            android:layout_marginStart="@dimen/search_bar_right_items_margin"
+            android:visibility="invisible" />
+
         <androidx.leanback.widget.SearchOrbView
             android:id="@+id/language_orb"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:transitionGroup="true"
             android:layout_marginStart="@dimen/search_bar_right_items_margin"
-            android:nextFocusLeft="@id/account_orb"
             android:nextFocusRight="@id/exit_pip"
             app:searchOrbIcon="@drawable/search_bar_language_orb"
             app:searchOrbColor="@color/orb_color"

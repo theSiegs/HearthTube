@@ -83,7 +83,10 @@ public class SettingsMenuPresenter {
                     withIcon(context, ICONS.get(item.imageResId, 0), title), option -> item.onClick.run()));
         }
 
-        dialog.setId(DIALOG_ID);
+        // The logo heads the first panel only: opened from the side menu, Settings sits under its logo
+        if (!dialog.isDialogShown()) {
+            dialog.setId(DIALOG_ID);
+        }
         dialog.showDialog(context.getString(R.string.header_settings));
     }
 
@@ -127,7 +130,7 @@ public class SettingsMenuPresenter {
         return -1;
     }
 
-    private static CharSequence withIcon(Context context, int iconResId, CharSequence title) {
+    static CharSequence withIcon(Context context, int iconResId, CharSequence title) {
         Drawable icon = iconResId != 0 ? ContextCompat.getDrawable(context, iconResId) : null;
 
         if (icon == null) {

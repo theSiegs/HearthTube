@@ -211,6 +211,8 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
         if (getSidebarService().isSettingsSectionEnabled()) {
             mSectionsMapping.put(MediaGroup.TYPE_SETTINGS, new BrowseSection(MediaGroup.TYPE_SETTINGS, getContext().getString(R.string.header_settings), BrowseSection.TYPE_SETTINGS_GRID, R.drawable.icon_settings));
         }
+
+        HearthSections.addSections(getContext(), mSectionsMapping);
     }
 
     private void initRowAndGridMapping() {
@@ -230,6 +232,9 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
         mGridMapping.put(MediaGroup.TYPE_CHANNEL_UPLOADS, getContentService().getSubscribedChannelsByNewContentObserve());
         mGridMapping.put(MediaGroup.TYPE_NOTIFICATIONS, getNotificationsService().getNotificationItemsObserve());
         mGridMapping.put(MediaGroup.TYPE_MY_VIDEOS, getContentService().getMyVideosObserve());
+
+        // HearthTube: Ambiance, Podcasts, Library, Watch later
+        HearthSections.addMappings(getContext(), getContentService(), mRowMapping, mGridMapping);
     }
 
     private void initPinnedSections() {
@@ -270,6 +275,9 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
     private void initLocalGridMapping() {
         mLocalGridMappings.put(MediaGroup.TYPE_PLAYBACK_QUEUE, () -> Playlist.instance().getAllReversed());
         mLocalGridMappings.put(MediaGroup.TYPE_BLOCKED_CHANNELS, this::getBlockedChannels);
+
+        // HearthTube: the queue is what's waiting to play
+        mLocalGridMappings.put(MediaGroup.TYPE_PLAYBACK_QUEUE, HearthSections::getQueued);
     }
 
     private List<Video> getBlockedChannels() {
@@ -962,6 +970,22 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
     }
 
     @Nullable
+    /**
+     * HearthTube: the sections that are switched on, in order (pinned channels and playlists included),
+     * for the tabs at the top and the side menu.
+     */
+    public List<BrowseSection> getSections() {
+        List<BrowseSection> sections = new ArrayList<>();
+
+        for (BrowseSection section : mSections) {
+            if (section.isEnabled()) {
+                sections.add(section);
+            }
+        }
+
+        return sections;
+    }
+
     public BrowseSection getCurrentSection() {
         return mCurrentSection;
     }

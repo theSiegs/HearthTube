@@ -51,4 +51,39 @@
     <string name="credit_libraries">Glide, OkHttp, Retrofit, Rhino, Conscrypt, AndroidX Leanback</string>
     <string name="credit_icons">Menu icons: Material Symbols by Google</string>
     <string name="credit_hearth">Designed to match the Hearth launcher</string>
+    <string name="header_ambiance">Ambiance</string>
+    <string name="header_library">Library</string>
+    <string name="header_watch_later">Watch later</string>
+    <string name="header_podcasts">Podcasts</string>
+    <string name="header_live">Live</string>
+    <string name="header_queued">Queued (%d)</string>
+    <string name="ambiance_fireplace">Fireplace</string>
+    <string name="ambiance_fireplace_query" translatable="false">fireplace crackling 4k 10 hours</string>
+    <string name="ambiance_rain">Rain</string>
+    <string name="ambiance_rain_query" translatable="false">rain sounds window 4k 10 hours</string>
+    <string name="ambiance_ocean">Ocean</string>
+    <string name="ambiance_ocean_query" translatable="false">ocean waves beach 4k 10 hours</string>
+    <string name="ambiance_forest">Forest</string>
+    <string name="ambiance_forest_query" translatable="false">forest ambience birds 4k</string>
+    <string name="ambiance_snow">Snow</string>
+    <string name="ambiance_snow_query" translatable="false">snowfall cabin ambience 4k</string>
+    <string name="ambiance_aquarium">Aquarium</string>
+    <string name="ambiance_aquarium_query" translatable="false">aquarium coral reef 4k relaxing</string>
+    <string name="ambiance_cafe">Cafe</string>
+    <string name="ambiance_cafe_query" translatable="false">cozy coffee shop ambience jazz</string>
+    <string name="podcasts_popular">Popular podcasts</string>
+    <string name="podcasts_popular_query" translatable="false">full podcast episode</string>
+    <string name="podcasts_comedy">Comedy</string>
+    <string name="podcasts_comedy_query" translatable="false">comedy podcast full episode</string>
+    <string name="podcasts_news">News and politics</string>
+    <string name="podcasts_news_query" translatable="false">news podcast full episode</string>
+    <string name="podcasts_science">Science and history</string>
+    <string name="podcasts_science_query" translatable="false">science history podcast full episode</string>
+    <string name="podcasts_sports">Sports talk</string>
+    <string name="podcasts_sports_query" translatable="false">sports podcast full episode</string>
+    <string name="side_menu_who">%s · Switch account</string>
+    <string name="edit_menu_and_tabs">Edit menu and tabs</string>
+    <string name="edit_tabs_at_top">Tabs at the top</string>
+    <string name="edit_shown_sections">Show (the rest go in this menu)</string>
+    <string name="notifications_bell">Notifications</string>
 </resources>

@@ -1,6 +1,7 @@
 package com.liskovsoft.smartyoutubetv2.tv.util;
 
 import android.content.Context;
+import android.text.TextUtils;
 import android.graphics.ColorMatrix;
 import android.graphics.ColorMatrixColorFilter;
 import android.os.Build.VERSION;
@@ -239,6 +240,8 @@ public class ViewUtil {
         TextView title = rootView.findViewById(R.id.decor_title);
         if (title != null) {
             title.setGravity(Gravity.CENTER);
+            // A panel without a title (the side menu): just the logo, then the divider
+            title.post(() -> titleContainer.setVisibility(TextUtils.isEmpty(title.getText()) ? View.GONE : View.VISIBLE));
         }
 
         View divider = new View(context);

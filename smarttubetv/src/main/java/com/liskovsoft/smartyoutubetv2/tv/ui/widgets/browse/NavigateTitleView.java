@@ -9,7 +9,9 @@ import android.graphics.Color;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
+import android.view.FocusFinder;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -28,7 +30,6 @@ import com.liskovsoft.smartyoutubetv2.common.app.presenters.PlaybackPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.ProfilePickerPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.settings.AccountSettingsPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.settings.LanguageSettingsPresenter;
-import com.liskovsoft.smartyoutubetv2.common.app.presenters.settings.SettingsMenuPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.views.PlaybackView;
 import com.liskovsoft.smartyoutubetv2.common.app.views.ViewManager;
 import com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager;
@@ -123,6 +124,11 @@ public class NavigateTitleView extends TitleView implements OnDataChange, Accoun
             } else {
                 return focusSearch(nextFoundFocusableViewInLayout, direction);
             }
+        } else if (direction == View.FOCUS_LEFT || direction == View.FOCUS_RIGHT) {
+            // HearthTube: left and right stay in the top bar (tabs, search, bell). Nothing further left: null, and
+            // BrowseActivity slides the side menu in. Nothing further right: stay.
+            View next = FocusFinder.getInstance().findNextFocus(this, focused, direction);
+            return next != null ? next : direction == View.FOCUS_RIGHT ? focused : null;
         } else {
             // No focusable view found in layout...propagate to super (should invoke the BrowseFrameLayout.OnFocusSearchListener
             return super.focusSearch(focused, direction);
@@ -150,21 +156,94 @@ public class NavigateTitleView extends TitleView implements OnDataChange, Accoun
     }
 
     /**
-     * Gear opens Settings. While in Settings it turns into a Home button.
+     * The bell, where the gear was: notifications, like the Hearth launcher's. Settings live in the side menu
+     * (Left at the left edge).
      */
     private void updateSettingsButton() {
         if (mSettingsView == null) {
             return;
         }
 
-        boolean inSettings = getContext() instanceof BrowseActivity && BrowsePresenter.instance(getContext()).isSettingsSection();
+        mSettingsView.setOrbIcon(ContextCompat.getDrawable(getContext(), R.drawable.ic_orb_bell));
+        TooltipCompatHandler.setTooltipText(mSettingsView, getContext().getString(R.string.notifications_bell));
+    }
 
-        mSettingsView.setOrbIcon(ContextCompat.getDrawable(getContext(), inSettings ? R.drawable.ic_orb_home : R.drawable.search_bar_settings_orb));
-        TooltipCompatHandler.setTooltipText(mSettingsView, getContext().getString(inSettings ? R.string.header_home : R.string.header_settings));
+    /** 0: everything shows. 1: no name by the avatar. 2: no date in the clock either. */
+    private int mCompactLevel;
+    private int mNameWidth;
+    private int mDateWidth;
+
+    /**
+     * HearthTube: the left side (avatar, tabs, search) and the right side (bell, clock) share one bar. When they'd
+     * overlap (a long name, the Queued tab), the name goes first, then the date; they come back when there's room.
+     */
+    @Override
+    protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+        super.onLayout(changed, left, top, right, bottom);
+
+        if (mAccountView == null || mSettingsView == null || mAccountName == null || mGlobalDate == null) {
+            return;
+        }
+
+        View leftGroup = (View) mAccountView.getParent();
+        View rightGroup = (View) mSettingsView.getParent();
+
+        if (leftGroup == null || rightGroup == null || rightGroup.getWidth() == 0) {
+            return;
+        }
+
+        int gap = Math.round(16 * getResources().getDisplayMetrics().density);
+        int room = rightGroup.getLeft() - gap - leftGroup.getLeft();
+        // Up to the last child that shows (the background video button is invisible, not gone, and takes space)
+        int needed = 0;
+        if (leftGroup instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) leftGroup;
+            for (int i = 0; i < group.getChildCount(); i++) {
+                View child = group.getChildAt(i);
+                if (child.getVisibility() == View.VISIBLE) {
+                    needed = Math.max(needed, child.getRight());
+                }
+            }
+        }
+        // Hidden views measure 0: remember their widths from when they showed
+        if (mAccountName.getVisibility() == View.VISIBLE) {
+            mNameWidth = mAccountName.getMeasuredWidth() + ((MarginLayoutParams) mAccountName.getLayoutParams()).getMarginStart();
+        }
+        if (mGlobalDate.getVisibility() == View.VISIBLE) {
+            mDateWidth = mGlobalDate.getMeasuredWidth() + ((MarginLayoutParams) mGlobalDate.getLayoutParams()).getMarginEnd();
+        }
+
+        // Width the left side would need with the name showing, and the room it would have with the date showing
+        int fullNeeded = needed + (mAccountName.getVisibility() != View.VISIBLE ? mNameWidth : 0);
+        int roomWithDate = room - (mGlobalDate.getVisibility() != View.VISIBLE ? mDateWidth : 0);
+
+        int level = fullNeeded <= roomWithDate ? 0 : fullNeeded - mNameWidth <= roomWithDate ? 1 : 2;
+
+        if (level != mCompactLevel) {
+            mCompactLevel = level;
+            post(this::applyCompactLevel);
+        }
+    }
+
+    private void applyCompactLevel() {
+        if (mIsAccountViewEnabled) {
+            mAccountName.setVisibility(mCompactLevel >= 1 ? View.GONE : mSearchVisibility);
+        }
+
+        if (mIsGlobalClockEnabled) {
+            mGlobalDate.setVisibility(mCompactLevel >= 2 ? View.GONE : mBrandingVisibility);
+        }
     }
 
     @Override
     protected boolean onRequestFocusInDescendants(int direction, Rect previouslyFocusedRect) {
+        // HearthTube: up from the videos lands on the open tab
+        HearthTabBar tabs = findViewById(R.id.hearth_tabs);
+        View tab = tabs != null && tabs.getVisibility() == View.VISIBLE ? tabs.getSelectedTab() : null;
+        if (tab != null && tab.requestFocus()) {
+            return true;
+        }
+
         // Gives focus to the SearchOrb first....if not...default to normal descendant focus search
         return getSearchAffordanceView().requestFocus() || super.onRequestFocusInDescendants(direction, previouslyFocusedRect);
     }
@@ -196,7 +275,7 @@ public class NavigateTitleView extends TitleView implements OnDataChange, Accoun
 
         if (mIsAccountViewEnabled) {
             mAccountView.setVisibility(mSearchVisibility);
-            mAccountName.setVisibility(mSearchVisibility);
+            mAccountName.setVisibility(mCompactLevel >= 1 ? View.GONE : mSearchVisibility);
         }
 
         if (mIsLanguageViewEnabled) {
@@ -213,7 +292,7 @@ public class NavigateTitleView extends TitleView implements OnDataChange, Accoun
         }
 
         if (mIsGlobalClockEnabled) {
-            mGlobalDate.setVisibility(mBrandingVisibility);
+            mGlobalDate.setVisibility(mCompactLevel >= 2 ? View.GONE : mBrandingVisibility);
             mGlobalClockPill.setVisibility(mBrandingVisibility);
         }
     }
@@ -249,16 +328,7 @@ public class NavigateTitleView extends TitleView implements OnDataChange, Accoun
 
         mSettingsView = findViewById(R.id.settings_orb);
         mSettingsView.setVisibility(View.VISIBLE); // hidden in the layout: plain leanback title bars (error pages) reuse it
-        mSettingsView.setOnOrbClickedListener(v -> {
-            BrowsePresenter presenter = BrowsePresenter.instance(getContext());
-
-            if (presenter.isSettingsSection()) {
-                presenter.selectSection(MediaGroup.TYPE_HOME);
-            } else {
-                // The Hearth launcher's way: a side panel menu over whatever is on screen
-                SettingsMenuPresenter.show(getContext());
-            }
-        });
+        mSettingsView.setOnOrbClickedListener(v -> BrowsePresenter.instance(getContext()).selectSection(MediaGroup.TYPE_NOTIFICATIONS));
         updateSettingsButton();
 
         mLanguageView = findViewById(R.id.language_orb);

@@ -123,6 +123,8 @@ public class BrowseFragment extends BrowseSupportFragment implements BrowseView 
     }
 
     private void setupEventListeners() {
+        setOnSearchClickedListener(view -> SearchPresenter.instance(getContext()).startSearch(null));
+
         getHeadersSupportFragment().setOnHeaderClickedListener(
                 (viewHolder, row) -> {
                     long headerId = row.getHeaderItem().getId();
@@ -146,14 +148,12 @@ public class BrowseFragment extends BrowseSupportFragment implements BrowseView 
                     mBrowsePresenter.onSectionLongPressed((int) headerId);
                 }
         );
-
-        setOnSearchClickedListener(view -> SearchPresenter.instance(getContext()).startSearch(null));
     }
 
     private void setupFragmentFactory() {
         mSectionFragmentFactory = new BrowseSectionFragmentFactory(
                 (row) -> {
-                    focusOnContentIfNeeded();
+                                focusOnContentIfNeeded();
                     mBrowsePresenter.onSectionFocused(getSelectedHeaderId());
                 }
         );
@@ -185,8 +185,10 @@ public class BrowseFragment extends BrowseSupportFragment implements BrowseView 
             return;
         }
 
-        setHeadersState(HEADERS_ENABLED);
-        setHeadersTransitionOnBackEnabled(true);
+        // HearthTube: tabs at the top and a side menu (Left at the left edge) replace the sidebar. It stays hidden
+        // rather than disabled: leanback only shows page sections (PageRow) while a sidebar exists.
+        setHeadersState(HEADERS_HIDDEN);
+        setHeadersTransitionOnBackEnabled(false);
 
         int brandColorRes = Helpers.getThemeAttr(getContext(), R.attr.brandColor);
         int brandAccentColorRes = Helpers.getThemeAttr(getContext(), R.attr.brandAccentColor);
@@ -199,8 +201,11 @@ public class BrowseFragment extends BrowseSupportFragment implements BrowseView 
         // Set fastLane (or headers) background color
         setBrandColor(ContextCompat.getColor(getContext(), brandColorRes));
 
-        // Set search icon color.
-        setSearchAffordanceColor(ContextCompat.getColor(getContext(), brandAccentColorRes));
+        // Set search icon color. HearthTube: the same dark circle as the avatar and the bell, not the accent
+        setSearchAffordanceColors(new androidx.leanback.widget.SearchOrbView.Colors(
+                ContextCompat.getColor(getContext(), R.color.orb_color),
+                ContextCompat.getColor(getContext(), R.color.orb_bright_color),
+                ContextCompat.getColor(getContext(), R.color.orb_icon_color)));
 
         setHeaderPresenterSelector(new PresenterSelector() {
             private final Map<Integer, Presenter> mPresenterMap = new HashMap<>();
