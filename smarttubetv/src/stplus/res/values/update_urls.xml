@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- YouTube+ checks its own GitHub releases (published by release.ps1), not SmartTube's -->
+    <!-- HearthTube checks its own GitHub releases (published by release.ps1), not SmartTube's -->
     <string-array name="update_urls">
         <item>https://github.com/theSiegs/SmartTube/releases/download/latest/youtubeplus.json</item>
     </string-array>

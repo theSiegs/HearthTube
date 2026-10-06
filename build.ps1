@@ -1,4 +1,4 @@
-# Builds the YouTube+ (stplus) debug APK and, if a device or emulator is connected, installs it.
+# Builds the HearthTube (stplus) debug APK and, if a device or emulator is connected, installs it.
 # Usage:  .\build.ps1            build + install
 #         .\build.ps1 -NoInstall build only
 param([switch]$NoInstall)

@@ -1,11 +1,11 @@
-# Publishes a YouTube+ release on GitHub (theSiegs/SmartTube, release tag "latest").
-# TVs running YouTube+ find it through their update check; Downloader can install from the APK links.
+# Publishes a HearthTube release on GitHub (theSiegs/SmartTube, release tag "latest").
+# TVs running HearthTube find it through their update check; Downloader can install from the APK links.
 #
 # Usage:  .\release.ps1 -Notes "What changed"
 #         .\release.ps1 -DryRun     build and write the files, but publish nothing
 # Needs:  GitHub CLI (winget install GitHub.cli), signed in once with: gh auth login
 param(
-    [string]$Notes = "YouTube+ update",
+    [string]$Notes = "HearthTube update",
     [switch]$DryRun
 )
 
@@ -47,7 +47,8 @@ $releaseNumber = [int](Get-Content $numberFile)
 $versionCode = $baseCode * 1000 + $releaseNumber
 $versionName = "$baseName+$releaseNumber"
 
-# Fixed file names, so the links used by Downloader and the update feed never change
+# Fixed file names (still "youtubeplus" from before the HearthTube rename): installed TVs poll youtubeplus.json,
+# so the links used by Downloader and the update feed must never change
 $dist = Join-Path $env:TEMP 'youtubeplus-release'
 Remove-Item $dist -Recurse -Force -ErrorAction SilentlyContinue
 New-Item -ItemType Directory $dist | Out-Null
@@ -65,7 +66,7 @@ $feed[$versionName] = [ordered]@{ versionCode = $versionCode; changelog = @($Not
 # No BOM: the app's JSON parser rejects it
 [System.IO.File]::WriteAllText("$dist\youtubeplus.json", ($feed | ConvertTo-Json -Depth 5), (New-Object System.Text.UTF8Encoding $false))
 
-Write-Host "YouTube+ $versionName (versionCode $versionCode), files in $dist"
+Write-Host "HearthTube $versionName (versionCode $versionCode), files in $dist"
 
 if ($DryRun) {
     Write-Host "Dry run: nothing published."
@@ -74,7 +75,7 @@ if ($DryRun) {
 
 # Record the release number in git first, so the release points at the exact code it was built from
 git add $numberFile
-git commit -m "YouTube+ release $versionName"
+git commit -m "HearthTube release $versionName"
 git push
 
 # Replace the previous "latest" release (tools print to stderr when there's none yet; that's fine)
@@ -83,7 +84,7 @@ gh release delete latest --repo $repo --yes --cleanup-tag 2>&1 | Out-Null
 $ErrorActionPreference = 'Stop'
 
 gh release create latest (Get-ChildItem $dist).FullName --repo $repo --target $branch `
-    --title "YouTube+ $versionName" --notes $Notes
+    --title "HearthTube $versionName" --notes $Notes
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 Write-Host ""

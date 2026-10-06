@@ -167,7 +167,7 @@ android {
             applicationId "org.smarttube.stable"
             targetSdkVersion project.properties.compileSdkVersion
         }
-        // Personal build: "YouTube+" name/icon (src/stplus), installs next to the official app
+        // Personal build: "HearthTube" name/icon (src/stplus), installs next to the official app
         stplus {
             applicationId "org.smarttube.plus"
             targetSdkVersion project.properties.compileSdkVersion
