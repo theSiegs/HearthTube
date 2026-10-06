@@ -52,13 +52,16 @@ public abstract class MultipleRowsFragment extends RowsSupportFragment implement
     private ShortsCardPresenter mShortsPresenter;
     private int mSelectedRowIndex = -1;
     private ChannelHeaderCallback mChannelHeaderCallback;
+    /** HearthTube strip mode: every row is kept here, one shows at a time (see {@link #isStripMode()}) */
+    private final List<ListRow> mStripRows = new ArrayList<>();
+    private int mStripIndex;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
         mMainPresenter = getMainPresenter();
-        mCardPresenter = new VideoCardPresenter();
+        mCardPresenter = createCardPresenter();
         mShortsPresenter = new ShortsCardPresenter();
         mBackgroundManager = ((LeanbackActivity) getActivity()).getBackgroundManager();
 
@@ -72,6 +75,80 @@ public abstract class MultipleRowsFragment extends RowsSupportFragment implement
     }
 
     protected abstract VideoGroupPresenter getMainPresenter();
+
+    // HearthTube: hooks for HearthRowsFragment (strip mode: a chip per row above one big row)
+
+    /** One row at a time, chosen from a strip of row titles. Off: SmartTube's stack of rows. */
+    protected boolean isStripMode() {
+        return false;
+    }
+
+    protected VideoCardPresenter createCardPresenter() {
+        return new VideoCardPresenter();
+    }
+
+    protected void onRowPresenterCreated(ListRowPresenter presenter) {
+    }
+
+    /** The rows (titles) or the shown one changed */
+    protected void onStripChanged(List<String> titles, int selected) {
+    }
+
+    protected void onVideoFocused(Video video) {
+    }
+
+    /** Shows the row at this index of the strip */
+    protected void selectStripRow(int index) {
+        if (index < 0 || index >= mStripRows.size() || mRowsAdapter == null) {
+            return;
+        }
+
+        mStripIndex = index;
+        ListRow row = mStripRows.get(index);
+
+        if (mRowsAdapter.indexOf(row) == -1) {
+            for (int i = mRowsAdapter.size() - 1; i >= 0; i--) {
+                if (mRowsAdapter.get(i) instanceof ListRow) {
+                    mRowsAdapter.removeItems(i, 1);
+                }
+            }
+            mRowsAdapter.add(row);
+        }
+
+        notifyStripChanged();
+    }
+
+    /** The videos of the row on show (for the grid behind the More tile) */
+    protected VideoGroupObjectAdapter getStripAdapter() {
+        return mStripIndex < mStripRows.size() ? (VideoGroupObjectAdapter) mStripRows.get(mStripIndex).getAdapter() : null;
+    }
+
+    private void addStripRow(ListRow row, int position) {
+        if (position < 0 || position > mStripRows.size()) {
+            mStripRows.add(row);
+        } else {
+            mStripRows.add(position, row);
+        }
+
+        boolean showing = false;
+        for (int i = 0; i < mRowsAdapter.size(); i++) {
+            showing |= mRowsAdapter.get(i) instanceof ListRow;
+        }
+
+        if (!showing) {
+            selectStripRow(Math.min(mStripIndex, mStripRows.size() - 1));
+        } else {
+            notifyStripChanged();
+        }
+    }
+
+    private void notifyStripChanged() {
+        List<String> titles = new ArrayList<>();
+        for (ListRow row : mStripRows) {
+            titles.add(row.getHeaderItem() != null ? row.getHeaderItem().getName() : "");
+        }
+        onStripChanged(titles, mStripIndex);
+    }
 
     private void applyPendingUpdates() {
         // prevent modification within update method
@@ -92,6 +169,7 @@ public abstract class MultipleRowsFragment extends RowsSupportFragment implement
         if (mRowsAdapter == null) {
             mRowPresenter = new CustomListRowPresenter();
             mRowPresenter.enableChildRoundedCorners(getMainUIData().isUiTweakEnabled(MainUIData.UI_TWEAK_ROUNDED_CORNERS));
+            onRowPresenterCreated(mRowPresenter);
 
             ClassPresenterSelector presenterSelector = new ClassPresenterSelector();
             presenterSelector.addClassPresenter(ListRow.class, mRowPresenter);
@@ -122,6 +200,9 @@ public abstract class MultipleRowsFragment extends RowsSupportFragment implement
             mVideoGroupAdapters.clear();
         }
 
+        // The strip keeps its place across refreshes (rows come back in the same order)
+        mStripRows.clear();
+
         // Reset the position (bug appeared after fragment been reused)
         setPosition(mChannelHeaderCallback != null ? 1 : 0);
     }
@@ -147,6 +228,13 @@ public abstract class MultipleRowsFragment extends RowsSupportFragment implement
                         mRowsAdapter.remove(row);
                         mVideoGroupAdapters.remove(id);
                     }
+                }
+            }
+
+            for (int i = mStripRows.size() - 1; i >= 0; i--) {
+                if (mStripRows.get(i).getAdapter() == needed) {
+                    mStripRows.remove(i);
+                    mVideoGroupAdapters.remove(id);
                 }
             }
         }
@@ -200,7 +288,7 @@ public abstract class MultipleRowsFragment extends RowsSupportFragment implement
             return mPendingUpdates.isEmpty();
         }
 
-        return mRowsAdapter.size() == 0;
+        return mRowsAdapter.size() == 0 && mStripRows.isEmpty();
     }
 
     @Override
@@ -259,7 +347,9 @@ public abstract class MultipleRowsFragment extends RowsSupportFragment implement
 
             ListRow row = new ListRow(rowHeader, videoGroupAdapter);
 
-            if (group.getPosition() == -1 || group.getPosition() > mRowsAdapter.size()) {
+            if (isStripMode()) {
+                addStripRow(row, group.getPosition());
+            } else if (group.getPosition() == -1 || group.getPosition() > mRowsAdapter.size()) {
                 mRowsAdapter.add(row);
             } else {
                 mRowsAdapter.add(group.getPosition(), row);
@@ -357,6 +447,8 @@ public abstract class MultipleRowsFragment extends RowsSupportFragment implement
                 mBackgroundManager.setBackgroundFrom((Video) item);
 
                 mMainPresenter.onVideoItemSelected((Video) item);
+
+                onVideoFocused((Video) item);
 
                 checkScrollEnd((Video)item);
             }

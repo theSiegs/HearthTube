@@ -116,15 +116,22 @@ public class SplashPresenter extends BasePresenter<SplashView> {
 
         // HearthTube: no Shorts in kids profiles; an adult's own Shorts settings come back in their profile
         com.liskovsoft.smartyoutubetv2.common.utils.KidsShorts.apply(getContext());
-
+
         // Works with Hearth: its clock format and language may have changed while we were away
         com.liskovsoft.smartyoutubetv2.common.utils.HearthLook.refresh(getContext());
 
         // should be placed after Intent chain
         int follow = ProfilePickerPresenter.instance(getContext()).followGoogleTvProfile(newIntent);
 
+        boolean pickerShown = follow == ProfilePickerPresenter.FOLLOW_PICKER;
+
         if (follow == ProfilePickerPresenter.FOLLOW_NONE) {
             showAccountSelectionIfNeeded(newIntent);
+            pickerShown = ProfilePickerPresenter.shouldShow(getContext(), newIntent);
+        }
+
+        if (!pickerShown) {
+            requireAccountIfNoGuest();
         }
 
         // The Google TV profile already says who's watching
@@ -139,6 +146,26 @@ public class SplashPresenter extends BasePresenter<SplashView> {
         Utils.updateChannels(getContext());
         GDriveBackupWorker.schedule(getContext());
         LocalDriveBackupWorker.schedule(getContext());
+    }
+
+    /**
+     * HearthTube: with the guest off (the default), nobody watches signed out: pick an account, or sign in when
+     * there's none yet.
+     */
+    private void requireAccountIfNoGuest() {
+        if (com.liskovsoft.smartyoutubetv2.common.prefs.ProfileLinkData.instance(getContext()).isGuestEnabled()
+                || com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager.instance().getSelectedAccount() != null) {
+            return;
+        }
+
+        com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager.instance().loadAccounts(accounts -> {
+            if (accounts == null || accounts.isEmpty()) {
+                com.liskovsoft.sharedutils.helpers.MessageHelpers.showLongMessage(getContext(), R.string.sign_in_needed);
+                com.liskovsoft.smartyoutubetv2.common.app.presenters.YTSignInPresenter.instance(getContext()).start();
+            } else {
+                getViewManager().startView(ProfilePickerView.class);
+            }
+        });
     }
 
     private void showAccountSelectionIfNeeded(Intent newIntent) {

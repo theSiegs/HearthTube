@@ -86,4 +86,7 @@
     <string name="edit_tabs_at_top">Tabs at the top</string>
     <string name="edit_shown_sections">Show (the rest go in this menu)</string>
     <string name="notifications_bell">Notifications</string>
+    <string name="enable_guest_account">Enable guest account</string>
+    <string name="enable_guest_account_hint">Lets anyone watch signed out, without an account</string>
+    <string name="sign_in_needed">Sign in to watch. Guest viewing is off (Settings › Accounts).</string>
 </resources>

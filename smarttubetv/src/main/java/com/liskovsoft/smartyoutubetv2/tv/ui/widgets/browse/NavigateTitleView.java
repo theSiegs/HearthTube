@@ -186,7 +186,7 @@ public class NavigateTitleView extends TitleView implements OnDataChange, Accoun
         }
 
         View leftGroup = (View) mAccountView.getParent();
-        View rightGroup = (View) mSettingsView.getParent();
+        View rightGroup = (View) mGlobalClockPill.getParent();
 
         if (leftGroup == null || rightGroup == null || rightGroup.getWidth() == 0) {
             return;

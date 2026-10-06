@@ -62,7 +62,8 @@ public class BrowseSectionFragmentFactory extends BrowseSupportFragment.Fragment
 
         switch (mFragmentType) {
             case BrowseSection.TYPE_ROW:
-                fragment = new VideoRowsFragment();
+                // HearthTube: a strip of choices above one row of big cards
+                fragment = new com.liskovsoft.smartyoutubetv2.tv.ui.browse.video.HearthRowsFragment();
                 break;
             case BrowseSection.TYPE_GRID:
                 fragment = new VideoGridFragment();

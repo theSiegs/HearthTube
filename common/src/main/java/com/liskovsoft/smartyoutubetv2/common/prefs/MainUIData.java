@@ -78,7 +78,8 @@ public class MainUIData extends DataChangeBase implements ProfileChangeListener 
             | MENU_ITEM_RENAME_SECTION | MENU_ITEM_SAVE_REMOVE_PLAYLIST | MENU_ITEM_ADD_TO_PLAYLIST | MENU_ITEM_CREATE_PLAYLIST
             | MENU_ITEM_RENAME_PLAYLIST | MENU_ITEM_ADD_TO_NEW_PLAYLIST | MENU_ITEM_STREAM_REMINDER | MENU_ITEM_PLAYLIST_ORDER
             | MENU_ITEM_OPEN_CHANNEL | MENU_ITEM_REMOVE_FROM_SUBSCRIPTIONS | MENU_ITEM_PLAY_NEXT | MENU_ITEM_OPEN_PLAYLIST
-            | MENU_ITEM_SUBSCRIBE | MENU_ITEM_CLEAR_HISTORY;
+            | MENU_ITEM_SUBSCRIBE | MENU_ITEM_CLEAR_HISTORY
+            | MENU_ITEM_ADD_TO_QUEUE; // HearthTube: the Queued tab is filled from the long-press menu
     private static final Long[] MENU_ITEM_DEFAULT_ORDER = {
             MENU_ITEM_EXIT_FROM_PIP, MENU_ITEM_PLAY_VIDEO, MENU_ITEM_PLAY_VIDEO_INCOGNITO, MENU_ITEM_PLAY_FROM_START, MENU_ITEM_REMOVE_FROM_HISTORY,
             MENU_ITEM_STREAM_REMINDER, MENU_ITEM_RECENT_PLAYLIST, MENU_ITEM_ADD_TO_WATCH_LATER, MENU_ITEM_ADD_TO_PLAYLIST, MENU_ITEM_CREATE_PLAYLIST,
@@ -131,7 +132,7 @@ public class MainUIData extends DataChangeBase implements ProfileChangeListener 
     }
 
     /**
-     * HearthTube: existing installs move to the Hearth scheme once; after that the user's pick sticks.
+     * HearthTube: existing installs move to the Hearth scheme (and get Add to queue) once; after that the user's pick sticks.
      */
     private void applyHearthSchemeOnce() {
         android.content.SharedPreferences prefs = mContext.getSharedPreferences("hearthtube_migrations", Context.MODE_PRIVATE);
@@ -139,6 +140,12 @@ public class MainUIData extends DataChangeBase implements ProfileChangeListener 
         if (!prefs.getBoolean("hearth_color_scheme", false)) {
             prefs.edit().putBoolean("hearth_color_scheme", true).apply();
             setColorScheme(mColorSchemes.get(COLOR_SCHEME_HEARTH));
+        }
+
+        // The Queued tab needs "Add to queue" in the long-press menu
+        if (!prefs.getBoolean("queue_menu_item", false)) {
+            prefs.edit().putBoolean("queue_menu_item", true).apply();
+            setMenuItemEnabled(MENU_ITEM_ADD_TO_QUEUE);
         }
     }
 

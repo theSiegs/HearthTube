@@ -8,21 +8,7 @@
               android:layout_height="wrap_content"
               android:layout_gravity="center_vertical|end"
               android:orientation="horizontal">
-    <!-- Settings gear next to the clock, like the Google TV home screen -->
-    <androidx.leanback.widget.SearchOrbView
-        android:id="@+id/settings_orb"
-        android:nextFocusLeft="@id/exit_pip"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_vertical"
-        android:layout_marginEnd="@dimen/search_bar_right_items_margin"
-        app:searchOrbIcon="@drawable/search_bar_settings_orb"
-        app:searchOrbColor="@color/orb_color"
-        app:searchOrbBrightColor="@color/orb_bright_color"
-        app:searchOrbIconColor="@color/orb_icon_color"
-        android:visibility="gone"/>
-
-    <!-- Global clock: date then time in one pill, like the Hearth launcher's status bar.
+    <!-- Global clock: date then time as plain text over the wallpaper (shadowed), like the Hearth launcher's status bar.
          Gone until NavigateTitleView shows the clock: this layout is inflated twice. -->
     <LinearLayout android:id="@+id/global_clock_pill"
                   android:visibility="gone"
@@ -31,11 +17,7 @@
                   android:layout_gravity="center_vertical"
                   android:gravity="center_vertical"
                   android:orientation="horizontal"
-                  android:background="@drawable/hearth_clock_pill"
-                  android:paddingLeft="14dp"
-                  android:paddingRight="14dp"
-                  android:paddingTop="4dp"
-                  android:paddingBottom="4dp">
+                  android:paddingRight="4dp">
         <com.liskovsoft.smartyoutubetv2.tv.ui.widgets.time.DateTimeView
             android:id="@+id/global_date"
             android:layout_width="wrap_content"
@@ -43,10 +25,10 @@
             android:layout_marginEnd="12dp"
             android:textSize="@dimen/browse_clock_date_size"
             android:textColor="@color/white"
-            android:shadowColor="#8A000000"
+            android:shadowColor="#CC000000"
             android:shadowDx="0"
             android:shadowDy="2"
-            android:shadowRadius="4"
+            android:shadowRadius="10"
             style="?attr/browseTitleTextStyle"
             android:visibility="gone" />
         <com.liskovsoft.smartyoutubetv2.tv.ui.widgets.time.DateTimeView
@@ -55,11 +37,11 @@
             android:layout_height="wrap_content"
             android:textSize="@dimen/browse_clock_time_size"
             android:textColor="@color/white"
-            android:shadowColor="#8A000000"
+            android:shadowColor="#CC000000"
             android:shadowDx="0"
             android:shadowDy="2"
-            android:shadowRadius="4"
-            android:textStyle="bold"
+            android:shadowRadius="10"
+            android:fontFamily="sans-serif-medium"
             style="?attr/browseTitleTextStyle"
             android:visibility="gone" />
     </LinearLayout>

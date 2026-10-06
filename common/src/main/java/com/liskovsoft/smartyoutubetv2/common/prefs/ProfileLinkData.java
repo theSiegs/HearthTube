@@ -24,6 +24,7 @@ public class ProfileLinkData {
     private static final String LINK_PREFIX = "link:";
     private static final String FOLLOW_KEY = "follow_google_tv_profile";
     private static final String PARENT_PIN_KEY = "parent_pin";
+    private static final String GUEST_ENABLED_KEY = "guest_enabled";
     private static final String GUEST = "";
     @SuppressLint("StaticFieldLeak")
     private static ProfileLinkData sInstance;
@@ -64,6 +65,18 @@ public class ProfileLinkData {
         mPrefs.edit().putString(PARENT_PIN_KEY, pin).apply();
     }
 
+    /**
+     * Watching signed out (the guest) is allowed. Off by default: everyone watches as themselves, and a
+     * profile linked to the guest asks again.
+     */
+    public boolean isGuestEnabled() {
+        return mPrefs.getBoolean(GUEST_ENABLED_KEY, false);
+    }
+
+    public void setGuestEnabled(boolean enabled) {
+        mPrefs.edit().putBoolean(GUEST_ENABLED_KEY, enabled).apply();
+    }
+
     /** Switch accounts to follow the Google TV profile. On by default; does nothing without Hearth. */
     public boolean isFollowEnabled() {
         return mPrefs.getBoolean(FOLLOW_KEY, true);
@@ -86,7 +99,7 @@ public class ProfileLinkData {
         }
 
         if (GUEST.equals(accountName)) {
-            return new Link(null);
+            return isGuestEnabled() ? new Link(null) : null;
         }
 
         Account account = findByName(accounts, accountName);

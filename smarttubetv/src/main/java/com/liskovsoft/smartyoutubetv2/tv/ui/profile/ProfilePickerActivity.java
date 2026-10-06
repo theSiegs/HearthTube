@@ -84,12 +84,15 @@ public class ProfilePickerActivity extends LeanbackActivity implements ProfilePi
             }
         }
 
-        View guestTile = addTile(new ProfileItem(ProfileItem.TYPE_GUEST, null, null, false));
-        addTile(new ProfileItem(ProfileItem.TYPE_ADD, null, null, false));
+        // HearthTube: the guest only when allowed (Accounts settings), never in a kids profile
+        boolean guest = com.liskovsoft.smartyoutubetv2.common.prefs.ProfileLinkData.instance(this).isGuestEnabled()
+                && !com.liskovsoft.smartyoutubetv2.common.utils.ParentGate.isKidsProfile(this);
+        View guestTile = guest ? addTile(new ProfileItem(ProfileItem.TYPE_GUEST, null, null, false)) : null;
+        View addTile = addTile(new ProfileItem(ProfileItem.TYPE_ADD, null, null, false));
 
         // No account selected means the last one watching was the guest
         if (focusTile == null) {
-            focusTile = guestTile;
+            focusTile = guestTile != null ? guestTile : mRow.getChildCount() > 1 ? mRow.getChildAt(0) : addTile;
         }
 
         if (focusTile != null) {

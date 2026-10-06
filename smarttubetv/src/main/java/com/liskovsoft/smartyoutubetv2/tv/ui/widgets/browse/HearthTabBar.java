@@ -70,7 +70,18 @@ public class HearthTabBar extends LinearLayout {
             context = ((ContextWrapper) context).getBaseContext();
         }
 
-        return context instanceof BrowseActivity;
+        if (!(context instanceof BrowseActivity)) {
+            return false;
+        }
+
+        // Pages inside the browse screen (the sign-in prompt) have title bars of their own
+        for (View v = this; v != null; v = v.getParent() instanceof View ? (View) v.getParent() : null) {
+            if (v.getId() == androidx.leanback.R.id.browse_title_group) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     @Override

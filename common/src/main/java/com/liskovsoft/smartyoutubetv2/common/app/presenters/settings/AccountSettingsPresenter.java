@@ -74,6 +74,7 @@ public class AccountSettingsPresenter extends BasePresenter<Void> {
         appendSignOutSection(accounts, icons, settingsPresenter);
         appendProtectAccountWithPassword(settingsPresenter);
         appendParentPin(settingsPresenter);
+        appendGuestSwitch(settingsPresenter);
         appendSeparateSettings(settingsPresenter);
         appendSelectAccountOnBoot(settingsPresenter);
         appendGoogleTvProfiles(accounts, icons, settingsPresenter);
@@ -92,12 +93,15 @@ public class AccountSettingsPresenter extends BasePresenter<Void> {
 
         List<OptionItem> optionItems = new ArrayList<>();
 
-        optionItems.add(UiOptionItem.from(
-                getContext().getString(R.string.dialog_account_none), optionItem -> {
-                    AccountSelectionPresenter.instance(getContext()).selectAccount(null);
-                    settingsPresenter.closeDialog();
-                }, true
-        ));
+        // HearthTube: signed out only when the guest is allowed
+        if (ProfileLinkData.instance(getContext()).isGuestEnabled()) {
+            optionItems.add(UiOptionItem.from(
+                    getContext().getString(R.string.dialog_account_none), optionItem -> {
+                        AccountSelectionPresenter.instance(getContext()).selectAccount(null);
+                        settingsPresenter.closeDialog();
+                    }, true
+            ));
+        }
 
         CharSequence accountName = " (" + getContext().getString(R.string.dialog_account_none) + ")";
 
@@ -163,6 +167,20 @@ public class AccountSettingsPresenter extends BasePresenter<Void> {
      * The PIN that unlocks account changes in Google TV kids profiles (ParentGate). Only a parent gets here in a
      * kids profile, so setting, changing or removing it needs no extra check.
      */
+    /**
+     * Watching signed out. Off by default; never offered in a kids profile (kids stay on their own account).
+     */
+    private void appendGuestSwitch(AppDialogPresenter settingsPresenter) {
+        if (ParentGate.isKidsProfile(getContext())) {
+            return;
+        }
+
+        ProfileLinkData links = ProfileLinkData.instance(getContext());
+        settingsPresenter.appendSingleSwitch(UiOptionItem.from(getContext().getString(R.string.enable_guest_account),
+                getContext().getString(R.string.enable_guest_account_hint),
+                option -> links.setGuestEnabled(option.isSelected()), links.isGuestEnabled()));
+    }
+
     private void appendParentPin(AppDialogPresenter settingsPresenter) {
         ProfileLinkData links = ProfileLinkData.instance(getContext());
 
@@ -246,8 +264,10 @@ public class AccountSettingsPresenter extends BasePresenter<Void> {
 
             optionItems.add(UiOptionItem.from(getContext().getString(R.string.google_tv_profile_ask),
                     option -> links.removeLink(profile), link == null));
-            optionItems.add(UiOptionItem.from(getContext().getString(R.string.profile_guest),
-                    option -> links.setLink(profile, null), link != null && link.account == null));
+            if (links.isGuestEnabled()) {
+                optionItems.add(UiOptionItem.from(getContext().getString(R.string.profile_guest),
+                        option -> links.setLink(profile, null), link != null && link.account == null));
+            }
 
             int index = -1;
 

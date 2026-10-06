@@ -57,22 +57,35 @@
             android:shadowRadius="4"
             android:visibility="gone" />
 
-        <!-- HearthTube: the tabs, then search, like the Google TV home screen -->
-        <com.liskovsoft.smartyoutubetv2.tv.ui.widgets.browse.HearthTabBar
-            android:id="@+id/hearth_tabs"
+        <!-- The bell (notifications), like the Hearth launcher's -->
+        <androidx.leanback.widget.SearchOrbView
+            android:id="@+id/settings_orb"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center_vertical"
-            android:layout_marginStart="14dp" />
+            android:layout_marginStart="16dp"
+            app:searchOrbIcon="@drawable/ic_orb_bell"
+            app:searchOrbColor="@color/orb_color"
+            app:searchOrbBrightColor="@color/orb_bright_color"
+            app:searchOrbIconColor="@color/orb_icon_color"
+            android:visibility="gone"/>
 
+        <!-- HearthTube: search, then the tabs -->
         <androidx.leanback.widget.SearchOrbView
             android:id="@+id/title_orb"
             android:layout_height="wrap_content"
             android:layout_width="wrap_content"
             android:transitionGroup="true"
             android:layout_gravity="center_vertical"
-            android:layout_marginStart="@dimen/search_bar_right_items_margin"
+            android:layout_marginStart="12dp"
             android:visibility="invisible" />
+
+        <com.liskovsoft.smartyoutubetv2.tv.ui.widgets.browse.HearthTabBar
+            android:id="@+id/hearth_tabs"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:layout_marginStart="20dp" />
 
         <androidx.leanback.widget.SearchOrbView
             android:id="@+id/language_orb"
