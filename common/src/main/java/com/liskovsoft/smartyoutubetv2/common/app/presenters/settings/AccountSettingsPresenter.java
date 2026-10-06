@@ -28,6 +28,7 @@ import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 
 import java.util.ArrayList;
 import java.util.List;
+import com.liskovsoft.smartyoutubetv2.common.utils.ParentGate;
 
 public class AccountSettingsPresenter extends BasePresenter<Void> {
     private static final String TAG = AccountSettingsPresenter.class.getSimpleName();
@@ -55,7 +56,8 @@ public class AccountSettingsPresenter extends BasePresenter<Void> {
     }
 
     public void show() {
-        mMediaServiceManager.loadAccounts(this::fetchImagesAndShowDialog);
+        // HearthTube: kids profiles can't change accounts, PINs or pairings
+        ParentGate.run(getContext(), () -> mMediaServiceManager.loadAccounts(this::fetchImagesAndShowDialog));
     }
 
     private void fetchImagesAndShowDialog(List<Account> accounts) {

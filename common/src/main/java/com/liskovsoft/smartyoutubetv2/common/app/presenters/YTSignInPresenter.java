@@ -10,6 +10,7 @@ import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.AccountSelec
 import com.liskovsoft.youtubeapi.service.YouTubeServiceManager;
 
 import io.reactivex.disposables.Disposable;
+import com.liskovsoft.smartyoutubetv2.common.utils.ParentGate;
 
 public class YTSignInPresenter extends SignInPresenter {
     private static final String TAG = YTSignInPresenter.class.getSimpleName();
@@ -85,6 +86,11 @@ public class YTSignInPresenter extends SignInPresenter {
     }
 
     public void start() {
+        // HearthTube: a new account in a kids profile would become theirs
+        ParentGate.run(getContext(), this::startUnlocked);
+    }
+
+    private void startUnlocked() {
         super.start();
         RxHelper.disposeActions(mSignInAction);
     }

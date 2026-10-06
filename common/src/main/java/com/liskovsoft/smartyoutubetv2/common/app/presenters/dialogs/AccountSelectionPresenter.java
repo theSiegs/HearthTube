@@ -24,6 +24,7 @@ import com.liskovsoft.youtubeapi.service.YouTubeServiceManager;
 
 import java.util.ArrayList;
 import java.util.List;
+import com.liskovsoft.smartyoutubetv2.common.utils.ParentGate;
 
 public class AccountSelectionPresenter extends BasePresenter<Void> {
     private static final String TAG = AccountSelectionPresenter.class.getSimpleName();
@@ -57,13 +58,26 @@ public class AccountSelectionPresenter extends BasePresenter<Void> {
             return;
         }
 
+        // HearthTube: kids stay on their account. The boot dialog just doesn't show; asked for, it needs a parent.
+        if (ParentGate.isLocked(getContext())) {
+            if (force) {
+                ParentGate.run(getContext(), () -> showUnlocked(true));
+            }
+            return;
+        }
+
+        showUnlocked(force);
+    }
+
+    private void showUnlocked(boolean force) {
+
         GlideIconFetcher.fetchDrawables(getContext(),
                 Helpers.map(mSignInService.getAccounts(), Account::getAvatarImageUrl),
                 icons -> createAndShowDialog(mSignInService.getAccounts(), icons, force));
     }
 
     public void nextAccountOrDialog() {
-        MediaServiceManager.instance().loadAccounts(this::nextAccountOrDialog);
+        ParentGate.run(getContext(), () -> MediaServiceManager.instance().loadAccounts(this::nextAccountOrDialog));
     }
 
     public void unhold() {

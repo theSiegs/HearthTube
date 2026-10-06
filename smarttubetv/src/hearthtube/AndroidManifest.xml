@@ -5,6 +5,10 @@
     <!-- The Hearth launcher's active Google TV profile (HearthProfile); invisible to us on Android 11+ without this -->
     <queries>
         <provider android:authorities="com.leanbitlab.ltvL.profile"/>
+        <!-- Kids profile check (ParentGate): Google TV suspends the launcher apps a parent hasn't approved -->
+        <intent>
+            <action android:name="android.intent.action.MAIN"/>
+        </intent>
     </queries>
 
     <application

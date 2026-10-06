@@ -25,6 +25,7 @@ import com.liskovsoft.youtubeapi.service.YouTubeServiceManager;
 
 import java.util.ArrayList;
 import java.util.List;
+import com.liskovsoft.smartyoutubetv2.common.utils.ParentGate;
 
 public class ProfilePickerPresenter extends BasePresenter<ProfilePickerView> {
     /** {@link #followGoogleTvProfile}: not following (no Hearth, no accounts...), the usual picker logic applies. */
@@ -181,8 +182,11 @@ public class ProfilePickerPresenter extends BasePresenter<ProfilePickerView> {
             return;
         }
 
-        mLinkingProfile = null; // a switch for now; the Google TV profile's link stays
-        getViewManager().startView(ProfilePickerView.class);
+        // HearthTube: kids stay on their account
+        ParentGate.run(getContext(), () -> {
+            mLinkingProfile = null; // a switch for now; the Google TV profile's link stays
+            getViewManager().startView(ProfilePickerView.class);
+        });
     }
 
     public void show() {
@@ -207,6 +211,12 @@ public class ProfilePickerPresenter extends BasePresenter<ProfilePickerView> {
     }
 
     public void onAccountPicked(Account account) {
+        // Pairing a kids profile with an account is a parent's call
+        if (mLinkingProfile != null && ParentGate.isLocked(getContext())) {
+            ParentGate.run(getContext(), () -> switchTo(account, true));
+            return;
+        }
+
         String pin = account != null ? AccountsData.instance(getContext()).getAccountPassword(account.getName()) : null;
 
         if (pin == null) {
