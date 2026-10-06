@@ -14,6 +14,7 @@ import androidx.tvprovider.media.tv.WatchNextProgram;
 
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
+import com.liskovsoft.smartyoutubetv2.common.prefs.HearthLinkData;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -41,6 +42,10 @@ public class WatchNextPublisher {
     public static void publish(Context context, Video video, long positionMs, long durationMs) {
         if (context == null || VERSION.SDK_INT < 26 || video == null || video.videoId == null
                 || video.isLive || video.isUpcoming || video.isShorts || durationMs <= 0) {
+            return;
+        }
+
+        if (!HearthLinkData.instance(context).isContinueWatchingEnabled()) {
             return;
         }
 
@@ -95,6 +100,25 @@ public class WatchNextPublisher {
             // No TV provider (non-TV device) or it refused the row
             Log.e(TAG, "Watch Next update failed: %s", e.getMessage());
         }
+    }
+
+    /**
+     * Takes every HearthTube video off Continue Watching (the setting was switched off).
+     */
+    public static void clearAll(Context context) {
+        if (context == null || VERSION.SDK_INT < 26) {
+            return;
+        }
+
+        Context appContext = context.getApplicationContext();
+        sExecutor.execute(() -> {
+            try {
+                // Only this app's rows are visible to it
+                appContext.getContentResolver().delete(WatchNextPrograms.CONTENT_URI, null, null);
+            } catch (Exception e) {
+                Log.e(TAG, "Watch Next clearing failed: %s", e.getMessage());
+            }
+        });
     }
 
     private static void remove(Context context, String videoId) {

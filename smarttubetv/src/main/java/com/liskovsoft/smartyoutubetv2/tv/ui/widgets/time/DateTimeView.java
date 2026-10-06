@@ -9,6 +9,9 @@ import android.widget.TextView;
 import com.liskovsoft.sharedutils.helpers.DateHelper;
 import com.liskovsoft.smartyoutubetv2.common.misc.TickleManager;
 import com.liskovsoft.smartyoutubetv2.common.misc.TickleManager.TickleListener;
+import com.liskovsoft.smartyoutubetv2.common.utils.HearthLook;
+
+import java.util.Date;
 
 /**
  * Note, same view is used inside player and in as global time view
@@ -62,7 +65,9 @@ public class DateTimeView extends TextView implements TickleListener {
             if (mIsDateEnabled && !mIsTimeEnabled) {
                 time = DateHelper.getCurrentDateShort();
             } else if (!mIsDateEnabled && mIsTimeEnabled) {
-                time = DateHelper.getCurrentTimeShort();
+                // Works with Hearth: the same 12/24 hour clock as the launcher
+                String hearthTime = HearthLook.formatTime(new Date());
+                time = hearthTime != null ? hearthTime : DateHelper.getCurrentTimeShort();
             } else {
                 time = DateHelper.getCurrentDateTimeShort();
             }

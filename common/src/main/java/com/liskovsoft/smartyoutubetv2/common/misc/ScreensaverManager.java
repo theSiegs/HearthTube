@@ -15,6 +15,8 @@ import com.liskovsoft.smartyoutubetv2.common.app.presenters.SignInPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.views.PlaybackView;
 import com.liskovsoft.smartyoutubetv2.common.app.views.ViewManager;
 import com.liskovsoft.smartyoutubetv2.common.prefs.GeneralData;
+import com.liskovsoft.smartyoutubetv2.common.prefs.HearthLinkData;
+import com.liskovsoft.smartyoutubetv2.common.utils.HearthProfile;
 import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerTweaksData;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 import com.liskovsoft.sharedutils.misc.WeakHashSet;
@@ -121,7 +123,8 @@ public class ScreensaverManager {
         Log.d(TAG, "Enable screensaver");
 
         disable();
-        int delayMs = getGeneralData().getScreensaverTimeoutMs() == GeneralData.SCREENSAVER_TIMEOUT_NEVER ?
+        int delayMs = isHearthScreensaver() ? 1_000 : // the TV's own screensaver timeout takes it from here
+                getGeneralData().getScreensaverTimeoutMs() == GeneralData.SCREENSAVER_TIMEOUT_NEVER ?
                 10_000 :
                 getGeneralData().getScreensaverTimeoutMs();
         Utils.postDelayed(mDimScreen, delayMs);
@@ -245,7 +248,8 @@ public class ScreensaverManager {
         if (show && mMode == MODE_SCREENSAVER &&
                 (       isPlaying() ||
                         isSigning() ||
-                        getGeneralData().getScreensaverTimeoutMs() == GeneralData.SCREENSAVER_TIMEOUT_NEVER
+                        getGeneralData().getScreensaverTimeoutMs() == GeneralData.SCREENSAVER_TIMEOUT_NEVER ||
+                        isHearthScreensaver() // no dimming of our own: the TV's screensaver (Hearth's clock) comes on
                 )
         ) {
             return;
@@ -293,6 +297,17 @@ public class ScreensaverManager {
         } else {
             Helpers.disableScreensaver(activity);
         }
+    }
+
+    /**
+     * Works with Hearth: a paused video just lets the screen go, so the TV's screensaver (Hearth's clock) starts
+     * after the TV's usual wait, instead of HearthTube dimming the picture itself.
+     */
+    private boolean isHearthScreensaver() {
+        Activity activity = mActivity.get();
+
+        return activity != null && HearthLinkData.instance(activity).isScreensaverWhenPausedEnabled()
+                && HearthProfile.isInstalled(activity);
     }
 
     private boolean isPlaying() {

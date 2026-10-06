@@ -10,6 +10,7 @@ import android.os.Build.VERSION;
 import com.liskovsoft.sharedutils.helpers.MessageHelpers;
 import com.liskovsoft.smartyoutubetv2.common.R;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.AppDialogPresenter;
+import com.liskovsoft.smartyoutubetv2.common.prefs.HearthLinkData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.ProfileLinkData;
 
 import java.util.List;
@@ -17,8 +18,8 @@ import java.util.List;
 /**
  * Keeps kids on their own YouTube account. In a Google TV kids profile, anything that changes the
  * account (picker, Accounts settings, sign in, pairing a profile) needs the parent PIN, set in Accounts
- * settings. Account PINs don't count: a kid knows their own. Without a parent PIN it's simply locked; a parent
- * changes accounts from their own Google TV profile.
+ * settings, or Hearth's parent PIN (Works with Hearth) so one PIN covers both apps. Account PINs don't count: a kid
+ * knows their own. Without a parent PIN it's simply locked; a parent changes accounts from their own Google TV profile.
  */
 public final class ParentGate {
     /** One PIN covers a few steps in a row (e.g. Accounts settings, then Sign in) */
@@ -38,9 +39,9 @@ public final class ParentGate {
             return;
         }
 
-        String parentPin = ProfileLinkData.instance(context).getParentPin();
+        PinChecker checker = pinChecker(context);
 
-        if (parentPin == null) {
+        if (checker == null) {
             MessageHelpers.showLongMessage(context, R.string.kids_profile_accounts_locked);
             return;
         }
@@ -49,19 +50,43 @@ public final class ParentGate {
         AppDialogPresenter dialog = AppDialogPresenter.instance(context);
         if (dialog.isDialogShown()) {
             dialog.closeDialog();
-            Utils.postDelayed(() -> askPin(context, parentPin, action), PANEL_CLOSE_MS);
+            Utils.postDelayed(() -> askPin(context, checker, action), PANEL_CLOSE_MS);
         } else {
-            askPin(context, parentPin, action);
+            askPin(context, checker, action);
         }
     }
 
-    private static void askPin(Context context, String parentPin, Runnable action) {
+    private interface PinChecker {
+        boolean check(String pin);
+    }
+
+    /** Hearth's parent PIN when it has one (and that's switched on), else HearthTube's own. Null: no PIN set anywhere. */
+    private static PinChecker pinChecker(Context context) {
+        if (HearthLinkData.instance(context).isHearthParentPinEnabled()) {
+            HearthProfile hearth = HearthProfile.queryHearth(context);
+
+            if (hearth != null && hearth.hasParentPin) {
+                return pin -> {
+                    int result = HearthProfile.verifyParentPin(context, pin);
+                    if (result > 0) {
+                        MessageHelpers.showMessage(context, R.string.parent_pin_wait, result);
+                    }
+                    return result == HearthProfile.PIN_OK;
+                };
+            }
+        }
+
+        String parentPin = ProfileLinkData.instance(context).getParentPin();
+        return parentPin != null ? parentPin::equals : null;
+    }
+
+    private static void askPin(Context context, PinChecker checker, Runnable action) {
         PinDialog.show(
                 context,
                 context.getString(R.string.parent_pin_title),
                 context.getString(R.string.parent_pin_message),
                 pin -> {
-                    if (parentPin.equals(pin)) {
+                    if (checker.check(pin)) {
                         sUnlockedUntilMs = System.currentTimeMillis() + UNLOCK_MS;
                         Utils.post(action); // after the PIN screen closes
                         return true;

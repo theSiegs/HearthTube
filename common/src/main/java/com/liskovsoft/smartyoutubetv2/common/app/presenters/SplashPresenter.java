@@ -116,6 +116,9 @@ public class SplashPresenter extends BasePresenter<SplashView> {
 
         // HearthTube: no Shorts in kids profiles; an adult's own Shorts settings come back in their profile
         com.liskovsoft.smartyoutubetv2.common.utils.KidsShorts.apply(getContext());
+
+        // Works with Hearth: its clock format and language may have changed while we were away
+        com.liskovsoft.smartyoutubetv2.common.utils.HearthLook.refresh(getContext());
 
         // should be placed after Intent chain
         int follow = ProfilePickerPresenter.instance(getContext()).followGoogleTvProfile(newIntent);

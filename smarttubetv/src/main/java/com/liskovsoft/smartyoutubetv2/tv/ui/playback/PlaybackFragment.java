@@ -62,6 +62,7 @@ import com.liskovsoft.smartyoutubetv2.common.exoplayer.other.SubtitleManager;
 import com.liskovsoft.smartyoutubetv2.common.exoplayer.selector.FormatItem;
 import com.liskovsoft.smartyoutubetv2.common.exoplayer.versions.renderer.CustomOverridesRenderersFactory;
 import com.liskovsoft.smartyoutubetv2.common.exoplayer.versions.selector.RestoreTrackSelector;
+import com.liskovsoft.smartyoutubetv2.common.prefs.HearthLinkData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.MainUIData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerTweaksData;
@@ -633,6 +634,14 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
             }
 
             MediaMetadataCompat.Builder metadataBuilder = new MediaMetadataCompat.Builder();
+
+            // Works with Hearth: Hearth reports every app's now playing to Home Assistant. Switched off, only
+            // "HearthTube" is shared (this also shows in Google TV's own now-playing panel).
+            if (!HearthLinkData.instance(getContext()).isHomeAssistantEnabled()) {
+                metadataBuilder.putString(MediaMetadataCompat.METADATA_KEY_TITLE, getString(R.string.app_name));
+                metadataBuilder.putLong(MediaMetadataCompat.METADATA_KEY_DURATION, getDurationMs());
+                return metadataBuilder.build();
+            }
 
             metadataBuilder.putString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID, getVideo().videoId);
             metadataBuilder.putString(MediaMetadataCompat.METADATA_KEY_TITLE, getVideo().getTitleFull());

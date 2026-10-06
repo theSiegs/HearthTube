@@ -11,6 +11,8 @@ import com.liskovsoft.smartyoutubetv2.common.misc.GlobalKeyTranslator;
 import com.liskovsoft.smartyoutubetv2.common.misc.MotherActivity;
 import com.liskovsoft.smartyoutubetv2.common.misc.PlayerKeyTranslator;
 import com.liskovsoft.smartyoutubetv2.common.prefs.GeneralData;
+import com.liskovsoft.smartyoutubetv2.common.prefs.HearthLinkData;
+import com.liskovsoft.smartyoutubetv2.common.utils.HearthProfile;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 import com.liskovsoft.smartyoutubetv2.tv.ui.common.keyhandler.DoubleBackManager2;
 import com.liskovsoft.smartyoutubetv2.tv.ui.playback.PlaybackActivity;
@@ -94,6 +96,11 @@ public abstract class LeanbackActivity extends MotherActivity {
     public void finish() {
         // user pressed back key
         if (!getViewManager().hasParentView(this)) {
+            // Works with Hearth: Back on Home goes to Hearth, like the Home button (the app stays ready to come back to)
+            if (HearthLinkData.instance(this).isBackToHearthEnabled() && HearthProfile.goHome(this)) {
+                return;
+            }
+
             switch (getGeneralData().getAppExitShortcut()) {
                 case GeneralData.EXIT_DOUBLE_BACK:
                     mDoubleBackManager.enableDoubleBackExit(this::finishTheApp);

@@ -12,6 +12,10 @@ import com.liskovsoft.smartyoutubetv2.common.app.presenters.base.BasePresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.ATVBridgePresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.AmazonBridgePresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.AppUpdatePresenter;
+import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class AboutSimpleSettingsPresenter extends BasePresenter<Void> {
     private final AppUpdateChecker mUpdateChecker;
@@ -28,7 +32,7 @@ public class AboutSimpleSettingsPresenter extends BasePresenter<Void> {
 
     public void show() {
         String mainTitle = String.format("%s %s",
-                getContext().getString(R.string.app_name) + " MOD",
+                getContext().getString(R.string.app_name),
                 AppInfoHelpers.getAppVersionName(getContext()));
 
         AppDialogPresenter settingsPresenter = AppDialogPresenter.instance(getContext());
@@ -40,6 +44,8 @@ public class AboutSimpleSettingsPresenter extends BasePresenter<Void> {
         appendInstallBridge(settingsPresenter);
 
         AboutSettingsPresenter.appendBackgroundCredit(getContext(), settingsPresenter);
+
+        appendCredits(settingsPresenter);
 
         settingsPresenter.showDialog(mainTitle);
     }
@@ -76,5 +82,31 @@ public class AboutSimpleSettingsPresenter extends BasePresenter<Void> {
         AmazonBridgePresenter amazonPresenter = AmazonBridgePresenter.instance(getContext());
         amazonPresenter.runBridgeInstaller(true);
         amazonPresenter.unhold();
+    }
+
+    /**
+     * Where HearthTube's code comes from. Each opens its project page (as a QR code on TVs without a browser).
+     */
+    private void appendCredits(AppDialogPresenter settingsPresenter) {
+        String[][] credits = {
+                {getContext().getString(R.string.credit_hearthtube), "https://github.com/theSiegs/HearthTube"},
+                {getContext().getString(R.string.credit_smarttube), "https://github.com/yuliskov/SmartTube"},
+                {getContext().getString(R.string.credit_mediaservicecore), "https://github.com/yuliskov/MediaServiceCore"},
+                {getContext().getString(R.string.credit_exoplayer), "https://github.com/google/ExoPlayer"},
+                {getContext().getString(R.string.credit_sponsorblock), "https://github.com/ajayyy/SponsorBlock"},
+                {getContext().getString(R.string.credit_newpipe), "https://github.com/TeamNewPipe/NewPipe"},
+                {getContext().getString(R.string.credit_libraries), "https://github.com/yuliskov/SmartTube/blob/master/smarttubetv/build.gradle"},
+                {getContext().getString(R.string.credit_icons), "https://github.com/google/material-design-icons"},
+                {getContext().getString(R.string.credit_hearth), "https://github.com/theSiegs/Hearth"},
+        };
+
+        List<OptionItem> items = new ArrayList<>();
+
+        for (String[] credit : credits) {
+            items.add(UiOptionItem.from(credit[0], credit[1].replace("https://", ""),
+                    option -> Utils.openLink(getContext(), Utils.toQrCodeLink(credit[1])), false));
+        }
+
+        settingsPresenter.appendStringsCategory(getContext().getString(R.string.credits), items);
     }
 }
