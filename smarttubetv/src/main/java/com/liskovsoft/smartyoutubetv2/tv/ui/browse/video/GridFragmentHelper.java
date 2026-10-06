@@ -112,6 +112,11 @@ public class GridFragmentHelper {
         float cardWidthPx = res.getDimensionPixelSize(cardWidthResId) * cardScale;
         float cardHeightPx = res.getDimensionPixelSize(cardHeightResId) * cardScale;
 
+        // HearthTube: video cards keep the Hearth launcher's card size instead of stretching to fill the row
+        if (cardWidthResId == R.dimen.card_width && !isSingleColumn) {
+            return new Pair<>((int) cardWidthPx, (int) cardHeightPx);
+        }
+
         // Get into consideration the space from the grid sides
         float colsNum = getMaxColsNumFloat(context, cardWidthResId, cardScale);
         int colsNumRounded = (int) colsNum;

@@ -28,6 +28,7 @@ import com.liskovsoft.smartyoutubetv2.common.app.presenters.PlaybackPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.ProfilePickerPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.settings.AccountSettingsPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.settings.LanguageSettingsPresenter;
+import com.liskovsoft.smartyoutubetv2.common.app.presenters.settings.SettingsMenuPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.views.PlaybackView;
 import com.liskovsoft.smartyoutubetv2.common.app.views.ViewManager;
 import com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager;
@@ -56,6 +57,7 @@ import static androidx.leanback.widget.TitleViewAdapter.SEARCH_VIEW_VISIBLE;
  */
 public class NavigateTitleView extends TitleView implements OnDataChange, AccountChangeListener {
     private LongClickSearchOrbView mAccountView;
+    private TextView mAccountName;
     private SearchOrbView mLanguageView;
     private SearchOrbView mSettingsView;
     private final Runnable mOnSectionChange = this::updateSettingsButton;
@@ -64,6 +66,7 @@ public class NavigateTitleView extends TitleView implements OnDataChange, Accoun
     private int mSearchVisibility = View.INVISIBLE;
     private int mBrandingVisibility = View.INVISIBLE;
     private DateTimeView mGlobalClock;
+    private View mGlobalClockPill;
     private DateTimeView mGlobalDate;
     private SearchOrbView mSearchOrbView;
     private boolean mInitDone;
@@ -193,6 +196,7 @@ public class NavigateTitleView extends TitleView implements OnDataChange, Accoun
 
         if (mIsAccountViewEnabled) {
             mAccountView.setVisibility(mSearchVisibility);
+            mAccountName.setVisibility(mSearchVisibility);
         }
 
         if (mIsLanguageViewEnabled) {
@@ -210,6 +214,7 @@ public class NavigateTitleView extends TitleView implements OnDataChange, Accoun
 
         if (mIsGlobalClockEnabled) {
             mGlobalDate.setVisibility(mBrandingVisibility);
+            mGlobalClockPill.setVisibility(mBrandingVisibility);
         }
     }
 
@@ -234,6 +239,7 @@ public class NavigateTitleView extends TitleView implements OnDataChange, Accoun
         mSearchOrbView = findViewById(R.id.title_orb);
 
         mAccountView = findViewById(R.id.account_orb);
+        mAccountName = findViewById(R.id.account_name);
         mAccountView.setOnOrbClickedListener(v -> ProfilePickerPresenter.instance(getContext()).start());
         mAccountView.setOnOrbLongClickedListener(v -> {
             AccountSettingsPresenter.instance(getContext()).show();
@@ -245,7 +251,13 @@ public class NavigateTitleView extends TitleView implements OnDataChange, Accoun
         mSettingsView.setVisibility(View.VISIBLE); // hidden in the layout: plain leanback title bars (error pages) reuse it
         mSettingsView.setOnOrbClickedListener(v -> {
             BrowsePresenter presenter = BrowsePresenter.instance(getContext());
-            presenter.selectSection(presenter.isSettingsSection() ? MediaGroup.TYPE_HOME : MediaGroup.TYPE_SETTINGS);
+
+            if (presenter.isSettingsSection()) {
+                presenter.selectSection(MediaGroup.TYPE_HOME);
+            } else {
+                // The Hearth launcher's way: a side panel menu over whatever is on screen
+                SettingsMenuPresenter.show(getContext());
+            }
         });
         updateSettingsButton();
 
@@ -264,6 +276,7 @@ public class NavigateTitleView extends TitleView implements OnDataChange, Accoun
         mGlobalClock.showDate(false);
 
         mGlobalDate = findViewById(R.id.global_date);
+        mGlobalClockPill = findViewById(R.id.global_clock_pill);
         mGlobalDate.showTime(false);
         mGlobalDate.showDate(true);
 
@@ -280,9 +293,11 @@ public class NavigateTitleView extends TitleView implements OnDataChange, Accoun
 
         mSearchOrbView.setVisibility(mIsSearchOrbEnabled ? View.VISIBLE : View.GONE);
         mAccountView.setVisibility(mIsAccountViewEnabled ? View.VISIBLE : View.GONE);
+        mAccountName.setVisibility(mIsAccountViewEnabled ? View.VISIBLE : View.GONE);
         mLanguageView.setVisibility(mIsLanguageViewEnabled ? View.VISIBLE : View.GONE);
         mGlobalClock.setVisibility(mIsGlobalClockEnabled ? View.VISIBLE : View.GONE);
         mGlobalDate.setVisibility(mIsGlobalClockEnabled ? View.VISIBLE : View.GONE);
+        mGlobalClockPill.setVisibility(mIsGlobalClockEnabled ? View.VISIBLE : View.GONE);
 
         Utils.postDelayed(this::updateAccountIcon, 1_000); // give a time to engine to fetch an updated icon url
         //updateAccountIcon();
@@ -331,6 +346,7 @@ public class NavigateTitleView extends TitleView implements OnDataChange, Accoun
         }
 
         Account current = MediaServiceManager.instance().getSelectedAccount();
+        mAccountName.setText(getFirstName(current));
 
         if (current != null && current.getAvatarImageUrl() != null) {
             loadIcon(mAccountView, current.getAvatarImageUrl(), false);
@@ -343,6 +359,18 @@ public class NavigateTitleView extends TitleView implements OnDataChange, Accoun
             mAccountView.setOrbIcon(ContextCompat.getDrawable(getContext(), R.drawable.browse_title_account));
             TooltipCompatHandler.setTooltipText(mAccountView, getContext().getString(R.string.dialog_account_none));
         }
+    }
+
+    /** "Alex Rivera" -> "Alex", like Google TV names profiles. The guest when nobody's signed in. */
+    private String getFirstName(Account account) {
+        String name = account != null ? (account.getName() != null ? account.getName() : account.getEmail()) : null;
+
+        if (name == null || name.trim().isEmpty()) {
+            return getContext().getString(R.string.profile_guest);
+        }
+
+        String[] words = name.trim().split("\\s+");
+        return words[0];
     }
 
     private void updateLanguageIcon() {
