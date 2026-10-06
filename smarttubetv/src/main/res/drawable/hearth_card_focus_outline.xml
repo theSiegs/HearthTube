@@ -2,6 +2,6 @@
 <!-- Hearth's focused app card (app_card.dart): accent border following the card's rounded corners -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
     <solid android:color="@android:color/transparent"/>
-    <stroke android:width="3dp" android:color="@color/hearth_accent"/>
+    <stroke android:width="3dp" android:color="?attr/hearthAccent"/>
     <corners android:radius="@dimen/lb_rounded_rect_corner_radius"/>
 </shape>

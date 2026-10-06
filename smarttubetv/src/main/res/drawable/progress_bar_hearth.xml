@@ -8,7 +8,7 @@
     <item android:id="@android:id/progress">
         <clip>
             <shape>
-                <solid android:color="@color/hearth_accent"/>
+                <solid android:color="?attr/hearthAccent"/>
             </shape>
         </clip>
     </item>

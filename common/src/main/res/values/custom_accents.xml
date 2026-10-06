@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Accent colors, the Hearth launcher's 15 (settings_service.dart). Applied over every screen's theme by
+     HearthAccent (Look and layout > Accent color, or Match Hearth). Hearth-style drawables use ?attr/hearthAccent. -->
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <attr name="hearthAccent" format="color"/>
+
+    <style name="HearthAccent.Purple" parent="">
+        <item name="hearthAccent">#FF7C4DFF</item>
+        <item name="android:colorAccent" tools:targetApi="21">#FF7C4DFF</item>
+    </style>
+    <style name="HearthAccent.Teal" parent="">
+        <item name="hearthAccent">#FF00BFA5</item>
+        <item name="android:colorAccent" tools:targetApi="21">#FF00BFA5</item>
+    </style>
+    <style name="HearthAccent.Blue" parent="">
+        <item name="hearthAccent">#FF2979FF</item>
+        <item name="android:colorAccent" tools:targetApi="21">#FF2979FF</item>
+    </style>
+    <style name="HearthAccent.Orange" parent="">
+        <item name="hearthAccent">#FFFF6D00</item>
+        <item name="android:colorAccent" tools:targetApi="21">#FFFF6D00</item>
+    </style>
+    <style name="HearthAccent.Pink" parent="">
+        <item name="hearthAccent">#FFF50057</item>
+        <item name="android:colorAccent" tools:targetApi="21">#FFF50057</item>
+    </style>
+    <style name="HearthAccent.Green" parent="">
+        <item name="hearthAccent">#FF00C853</item>
+        <item name="android:colorAccent" tools:targetApi="21">#FF00C853</item>
+    </style>
+    <style name="HearthAccent.White" parent="">
+        <item name="hearthAccent">#FFFFFFFF</item>
+        <item name="android:colorAccent" tools:targetApi="21">#FFFFFFFF</item>
+    </style>
+    <style name="HearthAccent.Yellow" parent="">
+        <item name="hearthAccent">#FFFFD600</item>
+        <item name="android:colorAccent" tools:targetApi="21">#FFFFD600</item>
+    </style>
+    <style name="HearthAccent.Red" parent="">
+        <item name="hearthAccent">#FFD50000</item>
+        <item name="android:colorAccent" tools:targetApi="21">#FFD50000</item>
+    </style>
+    <style name="HearthAccent.Cyan" parent="">
+        <item name="hearthAccent">#FF00E5FF</item>
+        <item name="android:colorAccent" tools:targetApi="21">#FF00E5FF</item>
+    </style>
+    <style name="HearthAccent.Indigo" parent="">
+        <item name="hearthAccent">#FF536DFE</item>
+        <item name="android:colorAccent" tools:targetApi="21">#FF536DFE</item>
+    </style>
+    <style name="HearthAccent.Lime" parent="">
+        <item name="hearthAccent">#FFAEEA00</item>
+        <item name="android:colorAccent" tools:targetApi="21">#FFAEEA00</item>
+    </style>
+    <style name="HearthAccent.Amber" parent="">
+        <item name="hearthAccent">#FFFFAB00</item>
+        <item name="android:colorAccent" tools:targetApi="21">#FFFFAB00</item>
+    </style>
+    <style name="HearthAccent.Rose" parent="">
+        <item name="hearthAccent">#FFFF4081</item>
+        <item name="android:colorAccent" tools:targetApi="21">#FFFF4081</item>
+    </style>
+    <style name="HearthAccent.IceBlue" parent="">
+        <item name="hearthAccent">#FF80D8FF</item>
+        <item name="android:colorAccent" tools:targetApi="21">#FF80D8FF</item>
+    </style>
+</resources>

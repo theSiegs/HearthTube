@@ -78,6 +78,8 @@ public class MotherActivity extends FragmentActivity {
 
         initDpi();
         initTheme();
+        // HearthTube: Hearth's accent (or the one picked in Look and layout) over every screen's theme
+        com.liskovsoft.smartyoutubetv2.common.utils.HearthAccent.applyTo(this);
 
         // Search Fullscreen routine inside onPause() method
         if (!mIsFullscreenModeEnabled) {

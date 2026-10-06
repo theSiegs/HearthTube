@@ -16,6 +16,7 @@ public class HearthLinkData {
     private static final String SCREENSAVER_WHEN_PAUSED = "screensaver_when_paused";
     private static final String BACK_TO_HEARTH = "back_to_hearth";
     private static final String HOME_ASSISTANT = "home_assistant";
+    private static final String ACCENT = "accent_color";
     @SuppressLint("StaticFieldLeak")
     private static HearthLinkData sInstance;
     private final SharedPreferences mPrefs;
@@ -84,6 +85,20 @@ public class HearthLinkData {
 
     public void setHomeAssistantEnabled(boolean enabled) {
         put(HOME_ASSISTANT, enabled);
+    }
+
+    /** Look and layout > Accent color: a color, or null to match Hearth (the default) */
+    @androidx.annotation.Nullable
+    public Integer getAccentColor() {
+        return mPrefs.contains(ACCENT) ? mPrefs.getInt(ACCENT, 0) : null;
+    }
+
+    public void setAccentColor(@androidx.annotation.Nullable Integer color) {
+        if (color == null) {
+            mPrefs.edit().remove(ACCENT).apply();
+        } else {
+            mPrefs.edit().putInt(ACCENT, color).apply();
+        }
     }
 
     private void put(String key, boolean value) {

@@ -16,7 +16,7 @@
         <item name="cardProgressStyle">@style/ProgressBarHorizontal.Hearth</item>
         <item name="shelfBackground">@color/hearth_background</item>
         <item name="cardDefaultBackground">@color/hearth_surface</item>
-        <item name="android:colorAccent" tools:targetApi="21">@color/hearth_accent</item>
+        <item name="android:colorAccent" tools:targetApi="21">?attr/hearthAccent</item>
         <item name="cardFocusOutline">@drawable/hearth_card_focus_outline</item>
     </style>
     <style name="App.Theme.Hearth.Browse" parent="App.Theme.Leanback.Browse">
@@ -26,13 +26,13 @@
         <item name="cardProgressStyle">@style/ProgressBarHorizontal.Hearth</item>
         <item name="shelfBackground">@color/hearth_background</item>
         <item name="cardDefaultBackground">@color/hearth_surface</item>
-        <item name="android:colorAccent" tools:targetApi="21">@color/hearth_accent</item>
+        <item name="android:colorAccent" tools:targetApi="21">?attr/hearthAccent</item>
         <item name="appLogo">@null</item>
         <item name="cardFocusOutline">@drawable/hearth_card_focus_outline</item>
     </style>
     <style name="App.Theme.Hearth.Preferences" parent="App.Theme.Leanback.Preferences">
         <item name="android:colorPrimary" tools:targetApi="21">@color/hearth_surface</item>
-        <item name="android:colorAccent" tools:targetApi="21">@color/hearth_accent</item>
+        <item name="android:colorAccent" tools:targetApi="21">?attr/hearthAccent</item>
         <item name="preferencePanelBackground">@drawable/hearth_panel_background</item>
         <item name="preferencePanelOnLeft">true</item>
         <!-- The title sits on the panel itself, no colored header bar -->

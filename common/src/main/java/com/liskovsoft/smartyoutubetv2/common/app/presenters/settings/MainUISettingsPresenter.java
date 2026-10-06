@@ -48,6 +48,7 @@ public class MainUISettingsPresenter extends BasePresenter<Void> {
     public void show() {
         AppDialogPresenter settingsPresenter = AppDialogPresenter.instance(getContext());
 
+        appendAccentColor(settingsPresenter);
         appendTopButtonsCategory(settingsPresenter);
         appendColorScheme(settingsPresenter);
         if (Build.VERSION.SDK_INT > 19) {
@@ -67,6 +68,31 @@ public class MainUISettingsPresenter extends BasePresenter<Void> {
         appendMiscCategory(settingsPresenter);
 
         settingsPresenter.showDialog(getContext().getString(R.string.dialog_main_ui), mOnFinish);
+    }
+
+    /**
+     * HearthTube: Hearth's accent (Match Hearth) or one of its 15. Shows after a restart (themes are set as screens open).
+     */
+    private void appendAccentColor(AppDialogPresenter settingsPresenter) {
+        com.liskovsoft.smartyoutubetv2.common.prefs.HearthLinkData data =
+                com.liskovsoft.smartyoutubetv2.common.prefs.HearthLinkData.instance(getContext());
+        Integer chosen = data.getAccentColor();
+        List<OptionItem> options = new ArrayList<>();
+
+        options.add(UiOptionItem.from(getContext().getString(R.string.match_hearth), option -> {
+            data.setAccentColor(null);
+            mRestartApp = true;
+        }, chosen == null));
+
+        for (int[] accent : com.liskovsoft.smartyoutubetv2.common.utils.HearthAccent.ACCENTS) {
+            int color = accent[1];
+            options.add(UiOptionItem.from(getContext().getString(accent[0]), option -> {
+                data.setAccentColor(color);
+                mRestartApp = true;
+            }, chosen != null && chosen == color));
+        }
+
+        settingsPresenter.appendRadioCategory(getContext().getString(R.string.accent_color), options);
     }
 
     private void appendTopButtonsCategory(AppDialogPresenter settingsPresenter) {
