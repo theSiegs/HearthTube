@@ -49,6 +49,7 @@ public class MainUISettingsPresenter extends BasePresenter<Void> {
         AppDialogPresenter settingsPresenter = AppDialogPresenter.instance(getContext());
 
         appendAccentColor(settingsPresenter);
+        appendWallpaper(settingsPresenter);
         appendTopButtonsCategory(settingsPresenter);
         appendColorScheme(settingsPresenter);
         if (Build.VERSION.SDK_INT > 19) {
@@ -93,6 +94,39 @@ public class MainUISettingsPresenter extends BasePresenter<Void> {
         }
 
         settingsPresenter.appendRadioCategory(getContext().getString(R.string.accent_color), options);
+    }
+
+    /**
+     * HearthTube: Hearth's wallpaper (Match Hearth), Bing's picture of the day, plain dark, or one of Hearth's gradients.
+     */
+    private void appendWallpaper(AppDialogPresenter settingsPresenter) {
+        com.liskovsoft.smartyoutubetv2.common.prefs.HearthLinkData data =
+                com.liskovsoft.smartyoutubetv2.common.prefs.HearthLinkData.instance(getContext());
+        String chosen = data.getWallpaper();
+        List<OptionItem> options = new ArrayList<>();
+
+        String[][] basics = {
+                {getContext().getString(R.string.match_hearth), com.liskovsoft.smartyoutubetv2.common.utils.HearthWallpaper.MATCH_HEARTH},
+                {getContext().getString(R.string.wallpaper_bing), com.liskovsoft.smartyoutubetv2.common.utils.HearthWallpaper.BING},
+                {getContext().getString(R.string.wallpaper_dark), com.liskovsoft.smartyoutubetv2.common.utils.HearthWallpaper.DARK},
+        };
+
+        for (String[] basic : basics) {
+            options.add(UiOptionItem.from(basic[0], option -> {
+                data.setWallpaper(basic[1]);
+                mRestartApp = true;
+            }, basic[1].equals(chosen)));
+        }
+
+        for (Object[] gradient : com.liskovsoft.smartyoutubetv2.common.utils.HearthWallpaper.GRADIENTS) {
+            String value = com.liskovsoft.smartyoutubetv2.common.utils.HearthWallpaper.GRADIENT_PREFIX + gradient[0];
+            options.add(UiOptionItem.from(getContext().getString((int) gradient[1]), option -> {
+                data.setWallpaper(value);
+                mRestartApp = true;
+            }, value.equals(chosen)));
+        }
+
+        settingsPresenter.appendRadioCategory(getContext().getString(R.string.wallpaper), options);
     }
 
     private void appendTopButtonsCategory(AppDialogPresenter settingsPresenter) {

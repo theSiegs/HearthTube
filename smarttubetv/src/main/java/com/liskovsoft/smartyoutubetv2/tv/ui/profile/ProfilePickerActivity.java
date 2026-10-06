@@ -47,6 +47,10 @@ public class ProfilePickerActivity extends LeanbackActivity implements ProfilePi
 
     private void loadBackground() {
         mBackgroundAction = DailyBackground.load(this, result -> {
+            if (result.image == null) {
+                return; // plain dark
+            }
+
             ImageView image = findViewById(R.id.profile_background_image);
             image.setImageBitmap(result.image);
             image.animate().alpha(1f).setDuration(BACKGROUND_FADE_MS).start();

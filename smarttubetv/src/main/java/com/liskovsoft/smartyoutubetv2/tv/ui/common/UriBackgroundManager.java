@@ -102,7 +102,8 @@ public class UriBackgroundManager {
     private void showDailyBackground() {
         RxHelper.disposeActions(mDailyBackgroundAction);
         mDailyBackgroundAction = DailyBackground.load(mActivity, result -> {
-            if (mBackgroundManager == null || mBackgroundURI != null || mBackgroundColor != -1) {
+            // No image: plain dark (the theme's color)
+            if (mBackgroundManager == null || mBackgroundURI != null || mBackgroundColor != -1 || result.image == null) {
                 return;
             }
 

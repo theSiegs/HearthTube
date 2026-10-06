@@ -60,7 +60,9 @@ public class DailyBackground {
      */
     public static Disposable load(Context context, Callback callback) {
         Context appContext = context.getApplicationContext();
-        String key = getToday();
+        // HearthTube: Look and layout > Wallpaper picks the source; Bing (a new picture each day) is one of them
+        String wallpaper = HearthWallpaper.getKey(appContext);
+        String key = wallpaper != null ? wallpaper : getToday();
 
         if (sResult != null && key.equals(sResultKey)) {
             callback.onReady(sResult);
@@ -68,7 +70,8 @@ public class DailyBackground {
         }
 
         return RxHelper.execute(
-                RxHelper.fromCallable(() -> loadInt(appContext)),
+                RxHelper.fromCallable(() -> wallpaper != null ?
+                        new Result(HearthWallpaper.load(appContext, wallpaper), null) : loadInt(appContext)),
                 result -> {
                     sResult = result;
                     sResultKey = key;
@@ -81,6 +84,10 @@ public class DailyBackground {
      * Caption and photographer of today's image, for the About screen. Null until the image has been fetched.
      */
     public static String getCredit(Context context) {
+        if (!HearthWallpaper.BING.equals(HearthWallpaper.getChoice(context)) && HearthWallpaper.getKey(context) != null) {
+            return null; // not Bing's picture
+        }
+
         SharedPreferences prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
         return getToday().equals(prefs.getString(KEY_DAY, null)) ? prefs.getString(KEY_CREDIT, null) : null;
     }

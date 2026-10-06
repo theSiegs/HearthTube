@@ -108,4 +108,17 @@
     <string name="accent_rose">Rose</string>
     <string name="accent_ice_blue">Ice Blue</string>
     <string name="accent_restart">The new color shows as HearthTube restarts</string>
+    <string name="wallpaper">Wallpaper</string>
+    <string name="wallpaper_bing">Bing picture of the day</string>
+    <string name="wallpaper_dark">Plain dark</string>
+    <string name="gradient_great_whale">Great Whale (gradient)</string>
+    <string name="gradient_vicious_stance">Vicious Stance (gradient)</string>
+    <string name="gradient_teen_notebook">Teen Notebook (gradient)</string>
+    <string name="gradient_old_hat">Old Hat (gradient)</string>
+    <string name="gradient_burning_spring">Burning Spring (gradient)</string>
+    <string name="gradient_desert_hump">Desert Hump (gradient)</string>
+    <string name="gradient_faraway_river">Faraway River (gradient)</string>
+    <string name="gradient_saint_petersburg">Saint Petersburg (gradient)</string>
+    <string name="gradient_african_field">African Field (gradient)</string>
+    <string name="gradient_grass_shampoo">Grass Shampoo (gradient)</string>
 </resources>

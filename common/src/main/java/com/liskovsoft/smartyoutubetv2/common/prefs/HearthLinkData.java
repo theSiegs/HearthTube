@@ -17,6 +17,7 @@ public class HearthLinkData {
     private static final String BACK_TO_HEARTH = "back_to_hearth";
     private static final String HOME_ASSISTANT = "home_assistant";
     private static final String ACCENT = "accent_color";
+    private static final String WALLPAPER = "wallpaper";
     @SuppressLint("StaticFieldLeak")
     private static HearthLinkData sInstance;
     private final SharedPreferences mPrefs;
@@ -99,6 +100,15 @@ public class HearthLinkData {
         } else {
             mPrefs.edit().putInt(ACCENT, color).apply();
         }
+    }
+
+    /** Look and layout > Wallpaper: one of HearthWallpaper's choices; Match Hearth by default */
+    public String getWallpaper() {
+        return mPrefs.getString(WALLPAPER, com.liskovsoft.smartyoutubetv2.common.utils.HearthWallpaper.MATCH_HEARTH);
+    }
+
+    public void setWallpaper(String wallpaper) {
+        mPrefs.edit().putString(WALLPAPER, wallpaper).apply();
     }
 
     private void put(String key, boolean value) {
