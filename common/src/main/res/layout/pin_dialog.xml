@@ -1,47 +1,68 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Full-screen PIN entry in Google TV's style, laid out like the Hearth launcher's parent PIN:
+     title on the left, slots and keypad on the right. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:minWidth="420dp"
-    android:gravity="center_horizontal"
-    android:orientation="vertical"
-    android:paddingLeft="48dp"
-    android:paddingRight="48dp"
-    android:paddingTop="36dp"
-    android:paddingBottom="32dp"
-    android:background="@drawable/pin_card_background">
-
-    <TextView
-        android:id="@+id/pin_title"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:fontFamily="sans-serif"
-        android:textSize="26sp"
-        android:textColor="@color/pin_text"/>
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal"
+    android:background="@color/pin_background"
+    android:paddingLeft="64dp"
+    android:paddingRight="64dp"
+    android:paddingTop="40dp"
+    android:paddingBottom="40dp">
 
     <LinearLayout
-        android:id="@+id/pin_digits"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
-        android:orientation="horizontal"/>
+        android:layout_weight="1"
+        android:orientation="vertical">
 
-    <TextView
-        android:id="@+id/pin_error"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:fontFamily="sans-serif-medium"
-        android:textColor="@color/pin_error"
-        android:textSize="16sp"
-        android:visibility="invisible"/>
+        <TextView
+            android:id="@+id/pin_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="sans-serif"
+            android:textSize="32sp"
+            android:textColor="@color/pin_text"/>
 
-    <TextView
+        <TextView
+            android:id="@+id/pin_message"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:fontFamily="sans-serif"
+            android:textSize="15sp"
+            android:textColor="@color/pin_text_dim"
+            android:visibility="gone"/>
+    </LinearLayout>
+
+    <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:text="@string/pin_hint"
-        android:fontFamily="sans-serif"
-        android:textColor="@color/pin_text_dim"
-        android:textSize="14sp"/>
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/pin_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="sans-serif"
+            android:letterSpacing="0.17"
+            android:textAllCaps="true"
+            android:textSize="12sp"
+            android:textColor="@color/pin_text_dim"/>
+
+        <LinearLayout
+            android:id="@+id/pin_slots"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:orientation="horizontal"/>
+
+        <LinearLayout
+            android:id="@+id/pin_keypad"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:orientation="vertical"/>
+    </LinearLayout>
 </LinearLayout>

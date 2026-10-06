@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- PIN dialog, matches the profile picker -->
-    <color name="pin_card">#1F2023</color>
-    <color name="pin_slot">#303236</color>
-    <color name="pin_slot_current">#3C3F43</color>
-    <color name="pin_text">#E3E3E3</color>
-    <color name="pin_text_dim">#8E9196</color>
+    <!-- PIN entry: Google TV's dark keypad, same as the Hearth launcher's parent PIN -->
+    <color name="pin_background">#111111</color>
+    <color name="pin_key">#2D2E31</color>
+    <color name="pin_key_focused">#E8EAED</color>
+    <color name="pin_key_text_focused">#DE000000</color>
+    <color name="pin_slot">#3C4043</color>
+    <color name="pin_text">#FFFFFF</color>
+    <color name="pin_text_dim">#9AA0A6</color>
     <color name="pin_error">#F2B8B5</color>
 </resources>
