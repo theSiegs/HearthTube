@@ -63,11 +63,10 @@ public class DateTimeView extends TextView implements TickleListener {
             String time;
 
             if (mIsDateEnabled && !mIsTimeEnabled) {
-                time = DateHelper.getCurrentDateShort();
+                // HearthTube: Hearth's date and time formats ("Tue, Oct 6", "2:20 PM")
+                time = HearthLook.formatDate(new Date());
             } else if (!mIsDateEnabled && mIsTimeEnabled) {
-                // Works with Hearth: the same 12/24 hour clock as the launcher
-                String hearthTime = HearthLook.formatTime(new Date());
-                time = hearthTime != null ? hearthTime : DateHelper.getCurrentTimeShort();
+                time = HearthLook.formatTime(new Date());
             } else {
                 time = DateHelper.getCurrentDateTimeShort();
             }

@@ -29,9 +29,12 @@ public class HearthProfile {
     /** Hearth's accent color, or null when it's the default or unknown. */
     @Nullable
     public final Integer accentColor;
-    /** Hearth's clock format ("HH:mm", "h:mm a"...), or null for the default. */
+    /** Hearth's clock format ("h:mm a" by default; ICU pattern), or null when Hearth is too old to tell. */
     @Nullable
     public final String timeFormat;
+    /** Hearth's date format ("EEE, MMM d" by default; ICU pattern), or null when Hearth is too old to tell. */
+    @Nullable
+    public final String dateFormat;
     /** Hearth's language ("de"...), or "" for the system's. Null when Hearth is too old to tell. */
     @Nullable
     public final String appLanguage;
@@ -47,6 +50,7 @@ public class HearthProfile {
         this.name = name != null && !name.trim().isEmpty() ? name.trim() : null;
         this.accentColor = parseColor(getString(cursor, "accent_color"));
         this.timeFormat = getString(cursor, "time_format");
+        this.dateFormat = getString(cursor, "date_format");
         this.appLanguage = getString(cursor, "app_language");
         this.hasParentPin = getLong(cursor, "has_parent_pin") == 1;
         this.gradientUuid = getString(cursor, "gradient_uuid");

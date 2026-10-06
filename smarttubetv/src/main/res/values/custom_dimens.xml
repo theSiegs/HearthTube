@@ -10,4 +10,9 @@
     <!-- Top right clock on browse screens: Hearth's status bar size -->
     <dimen name="browse_clock_time_size">18sp</dimen>
     <dimen name="browse_clock_date_size">18sp</dimen>
+    <!-- Hearth's text shadow: offset (0, 2), blur 4 (Flutter logical pixels). shadowDy/shadowRadius take pixels, so dp here -->
+    <dimen name="hearth_text_shadow_dy">2dp</dimen>
+    <dimen name="hearth_text_shadow_radius">4dp</dimen>
+    <!-- Hearth's clock pill sits this far from the screen's right edge -->
+    <dimen name="hearth_clock_margin_end">32dp</dimen>
 </resources>

@@ -188,6 +188,16 @@ public class NavigateTitleView extends TitleView implements OnDataChange, Accoun
         View leftGroup = (View) mAccountView.getParent();
         View rightGroup = (View) mGlobalClockPill.getParent();
 
+        // The clock pill sits 32dp from the screen's right edge, like Hearth's (the title bar's own padding is wider)
+        int[] onScreen = new int[2];
+        getLocationOnScreen(onScreen);
+        int screenWidth = getResources().getDisplayMetrics().widthPixels;
+        int pillRight = onScreen[0] + rightGroup.getLeft() + mGlobalClockPill.getRight();
+        float shift = screenWidth - getResources().getDimensionPixelSize(R.dimen.hearth_clock_margin_end) - pillRight;
+        if (rightGroup.getTranslationX() != shift) {
+            rightGroup.setTranslationX(shift);
+        }
+
         if (leftGroup == null || rightGroup == null || rightGroup.getWidth() == 0) {
             return;
         }
@@ -349,6 +359,11 @@ public class NavigateTitleView extends TitleView implements OnDataChange, Accoun
         mGlobalClockPill = findViewById(R.id.global_clock_pill);
         mGlobalDate.showTime(false);
         mGlobalDate.showDate(true);
+
+        // Hearth's text shadow: black 54%, offset (0, 2), blur 4
+        float density = getResources().getDisplayMetrics().density;
+        mGlobalDate.setShadowLayer(4 * density, 0, 2 * density, 0x8A000000);
+        mGlobalClock.setShadowLayer(4 * density, 0, 2 * density, 0x8A000000);
 
         updateButtonsVisibility();
     }

@@ -8,7 +8,9 @@
               android:layout_height="wrap_content"
               android:layout_gravity="center_vertical|end"
               android:orientation="horizontal">
-    <!-- Global clock: date then time as plain text over the wallpaper (shadowed), like the Hearth launcher's status bar.
+    <!-- Global clock: date then time in Hearth's pill (focus_aware_app_bar.dart): black 30%, 14dp corners, 1dp white 12%
+         outline, 14/4dp padding; date regular, time bold, both 18sp with Hearth's shadow. NavigateTitleView puts it
+         32dp from the screen's right edge, like Hearth's.
          Gone until NavigateTitleView shows the clock: this layout is inflated twice. -->
     <LinearLayout android:id="@+id/global_clock_pill"
                   android:visibility="gone"
@@ -17,7 +19,11 @@
                   android:layout_gravity="center_vertical"
                   android:gravity="center_vertical"
                   android:orientation="horizontal"
-                  android:paddingRight="4dp">
+                  android:background="@drawable/hearth_clock_pill"
+                  android:paddingLeft="14dp"
+                  android:paddingRight="14dp"
+                  android:paddingTop="4dp"
+                  android:paddingBottom="4dp">
         <com.liskovsoft.smartyoutubetv2.tv.ui.widgets.time.DateTimeView
             android:id="@+id/global_date"
             android:layout_width="wrap_content"
@@ -25,10 +31,10 @@
             android:layout_marginEnd="12dp"
             android:textSize="@dimen/browse_clock_date_size"
             android:textColor="@color/white"
-            android:shadowColor="#CC000000"
+            android:shadowColor="#8A000000"
             android:shadowDx="0"
-            android:shadowDy="2"
-            android:shadowRadius="10"
+            android:shadowDy="4"
+            android:shadowRadius="8"
             style="?attr/browseTitleTextStyle"
             android:visibility="gone" />
         <com.liskovsoft.smartyoutubetv2.tv.ui.widgets.time.DateTimeView
@@ -37,11 +43,11 @@
             android:layout_height="wrap_content"
             android:textSize="@dimen/browse_clock_time_size"
             android:textColor="@color/white"
-            android:shadowColor="#CC000000"
+            android:shadowColor="#8A000000"
             android:shadowDx="0"
-            android:shadowDy="2"
-            android:shadowRadius="10"
-            android:fontFamily="sans-serif-medium"
+            android:shadowDy="4"
+            android:shadowRadius="8"
+            android:textStyle="bold"
             style="?attr/browseTitleTextStyle"
             android:visibility="gone" />
     </LinearLayout>
