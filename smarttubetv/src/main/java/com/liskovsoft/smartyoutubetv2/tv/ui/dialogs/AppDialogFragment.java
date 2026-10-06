@@ -20,6 +20,7 @@ import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.OptionCategory;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.AppDialogPresenter;
+import com.liskovsoft.smartyoutubetv2.common.app.presenters.settings.SettingsMenuPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.views.AppDialogView;
 import com.liskovsoft.smartyoutubetv2.common.misc.MotherActivity;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
@@ -118,6 +119,7 @@ public class AppDialogFragment extends LeanbackSettingsFragment implements AppDi
         AppPreferenceFragment fragment = new AppPreferenceFragment();
         fragment.setCategories(categories);
         fragment.setTitle(title);
+        fragment.enableLogoHeader(mId == SettingsMenuPresenter.DIALOG_ID);
         fragment.enableTransparent(mIsTransparent);
         return fragment;
     }
@@ -313,6 +315,7 @@ public class AppDialogFragment extends LeanbackSettingsFragment implements AppDi
         private AppPreferenceManager mManager;
         private CharSequence mTitle;
         private boolean mIsTransparent;
+        private boolean mIsLogoHeader;
 
         @Override
         public void onCreatePreferences(Bundle bundle, String s) {
@@ -329,6 +332,10 @@ public class AppDialogFragment extends LeanbackSettingsFragment implements AppDi
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
             View view = super.onCreateView(inflater, container, savedInstanceState);
+
+            if (mIsLogoHeader && !mIsTransparent && view != null) {
+                ViewUtil.addLogoHeader(view, R.drawable.hearthtube_logo);
+            }
 
             if (mIsTransparent && view != null) {
                 // Enable transparent shadow outline on parent (R.id.settings_preference_fragment_container)
@@ -381,6 +388,11 @@ public class AppDialogFragment extends LeanbackSettingsFragment implements AppDi
 
         public void enableTransparent(boolean enable) {
             mIsTransparent = enable;
+        }
+
+        /** HearthTube: the logo, a centered title and a divider on top, like the Hearth launcher's Settings */
+        public void enableLogoHeader(boolean enable) {
+            mIsLogoHeader = enable;
         }
     }
 }

@@ -131,6 +131,24 @@ def banner(w, h):
     return img.convert("RGB")
 
 
+def wordmark(h):
+    """Settings menu header: the emblem with the name beside it, transparent, `h` px tall (Hearth's wordmark())."""
+    mark = emblem(h * 2)
+    mark = mark.crop(mark.getchannel("A").point(lambda a: 255 if a > 40 else 0).getbbox())
+    mark = mark.resize((round(mark.width * h / mark.height), h), Image.LANCZOS)
+
+    font = ImageFont.truetype("C:/Windows/Fonts/georgiab.ttf", round(h * 0.62))
+    text = "HearthTube"
+    probe = ImageDraw.Draw(Image.new("RGBA", (1, 1)))
+    l, t, r, b = probe.textbbox((0, 0), text, font=font)
+    gap = round(h * 0.18)
+    img = Image.new("RGBA", (mark.width + gap + (r - l), h), (0, 0, 0, 0))
+    img.alpha_composite(mark, (0, 0))
+    # Text baseline sits level with the bottom of the stone.
+    ImageDraw.Draw(img).text((mark.width + gap - l, h - b - round(h * 0.06)), text, font=font, fill=TEXT)
+    return img
+
+
 def main():
     densities = {"mdpi": 1, "hdpi": 1.5, "xhdpi": 2, "xxhdpi": 3, "xxxhdpi": 4}
     for name, scale in densities.items():
@@ -138,6 +156,10 @@ def main():
         out.mkdir(exist_ok=True)
         icon(round(96 * scale)).save(out / "hearthtube_icon.png")
     banner(640, 360).save(RES / "drawable-xhdpi" / "hearthtube_banner.png")  # xhdpi, the density Android TV uses
+    # Shown 56 dp tall at the top of the Settings menu; main res, the layout that shows it is shared by all flavors
+    logo_dir = ROOT / "smarttubetv" / "src" / "main" / "res" / "drawable-xxhdpi"
+    logo_dir.mkdir(exist_ok=True)
+    wordmark(168).save(logo_dir / "hearthtube_logo.png")
     print("icons written")
 
 

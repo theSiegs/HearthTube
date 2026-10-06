@@ -19,6 +19,8 @@ import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
  * Each entry has a line icon like Hearth's rows and opens that category's panel on top; Back comes back to this menu.
  */
 public class SettingsMenuPresenter {
+    /** Dialog id of this menu: the panel shows the HearthTube logo on top (AppDialogFragment) */
+    public static final int DIALOG_ID = 0x48545553;
     private static final int ICON_SIZE_DP = 24;
     /** Tile artwork (settings grid) to the menu's line icon */
     private static final SparseIntArray ICONS = new SparseIntArray();
@@ -49,6 +51,7 @@ public class SettingsMenuPresenter {
             dialog.appendSingleButton(UiOptionItem.from(withIcon(context, item), option -> item.onClick.run()));
         }
 
+        dialog.setId(DIALOG_ID);
         dialog.showDialog(context.getString(R.string.header_settings));
     }
 

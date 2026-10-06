@@ -212,6 +212,44 @@ public class ViewUtil {
         }
     }
 
+    /**
+     * HearthTube: the app's logo above a centered title, then a divider, like the Hearth launcher's Settings panel.
+     */
+    public static void addLogoHeader(View rootView, int logoResId) {
+        View mainFrame = rootView.findViewById(R.id.main_frame);
+        View titleContainer = rootView.findViewById(R.id.decor_title_container);
+
+        if (!(mainFrame instanceof LinearLayout) || titleContainer == null) {
+            return;
+        }
+
+        LinearLayout frame = (LinearLayout) mainFrame;
+        Context context = rootView.getContext();
+        float density = context.getResources().getDisplayMetrics().density;
+
+        ImageView logo = new ImageView(context);
+        logo.setImageResource(logoResId);
+        logo.setAdjustViewBounds(true);
+        logo.setContentDescription(context.getString(R.string.app_name));
+        LinearLayout.LayoutParams logoParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, Math.round(56 * density));
+        logoParams.gravity = Gravity.CENTER_HORIZONTAL;
+        logoParams.topMargin = Math.round(20 * density);
+        frame.addView(logo, 0, logoParams);
+
+        TextView title = rootView.findViewById(R.id.decor_title);
+        if (title != null) {
+            title.setGravity(Gravity.CENTER);
+        }
+
+        View divider = new View(context);
+        divider.setBackgroundColor(0x1FFFFFFF);
+        LinearLayout.LayoutParams dividerParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Math.max(1, Math.round(density)));
+        dividerParams.leftMargin = Math.round(16 * density);
+        dividerParams.rightMargin = Math.round(16 * density);
+        dividerParams.bottomMargin = Math.round(8 * density);
+        frame.addView(divider, frame.indexOfChild(titleContainer) + 1, dividerParams);
+    }
+
     public static void enableLeftDialog(Context context, View rootView) {
         if (context == null || rootView == null || VERSION.SDK_INT <= 19) {
             return;
