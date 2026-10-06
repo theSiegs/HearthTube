@@ -19,8 +19,10 @@ import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.AccountSelec
 import com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager;
 import com.liskovsoft.smartyoutubetv2.common.prefs.AccountsData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.AppPrefs;
+import com.liskovsoft.smartyoutubetv2.common.prefs.ProfileLinkData;
 import com.liskovsoft.smartyoutubetv2.common.utils.AppDialogUtil;
 import com.liskovsoft.smartyoutubetv2.common.utils.GlideIconFetcher;
+import com.liskovsoft.smartyoutubetv2.common.utils.HearthProfile;
 import com.liskovsoft.smartyoutubetv2.common.utils.PinDialog;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 
@@ -71,6 +73,7 @@ public class AccountSettingsPresenter extends BasePresenter<Void> {
         appendProtectAccountWithPassword(settingsPresenter);
         appendSeparateSettings(settingsPresenter);
         appendSelectAccountOnBoot(settingsPresenter);
+        appendGoogleTvProfiles(accounts, icons, settingsPresenter);
 
         Account account = getSignInService().getSelectedAccount();
         int accountIndex = accounts != null ? accounts.indexOf(account) : -1;
@@ -170,6 +173,77 @@ public class AccountSettingsPresenter extends BasePresenter<Void> {
                     BrowsePresenter.instance(getContext()).updateSections();
                 },
                 AppPrefs.instance(getContext()).isMultiProfilesEnabled()));
+    }
+
+    /**
+     * Which YouTube account each Google TV profile watches with. Only with Hearth around (or links made before).
+     */
+    private void appendGoogleTvProfiles(List<Account> accounts, List<Drawable> icons, AppDialogPresenter settingsPresenter) {
+        if (accounts == null || accounts.isEmpty()) {
+            return;
+        }
+
+        ProfileLinkData links = ProfileLinkData.instance(getContext());
+        List<String> profiles = links.getProfileNames();
+        HearthProfile active = HearthProfile.query(getContext());
+
+        if (active != null && !profiles.contains(active.name)) {
+            profiles.add(0, active.name);
+        }
+
+        if (profiles.isEmpty()) {
+            return;
+        }
+
+        settingsPresenter.appendSingleSwitch(UiOptionItem.from(getContext().getString(R.string.follow_google_tv_profile),
+                option -> links.setFollowEnabled(option.isSelected()), links.isFollowEnabled()));
+
+        for (String profile : profiles) {
+            ProfileLinkData.Link link = links.getLink(profile, accounts);
+            List<OptionItem> optionItems = new ArrayList<>();
+
+            optionItems.add(UiOptionItem.from(getContext().getString(R.string.google_tv_profile_ask),
+                    option -> links.removeLink(profile), link == null));
+            optionItems.add(UiOptionItem.from(getContext().getString(R.string.profile_guest),
+                    option -> links.setLink(profile, null), link != null && link.account == null));
+
+            int index = -1;
+
+            for (Account account : accounts) {
+                index++;
+                CharSequence icon = Utils.icon(icons.get(index));
+                boolean isLinked = link != null && link.account != null && Helpers.equals(link.account.getName(), account.getName());
+                optionItems.add(UiOptionItem.from(TextUtils.concat(icon, " ", getSimpleName(account)),
+                        option -> linkWithPin(profile, account, settingsPresenter), isLinked));
+            }
+
+            String title = getContext().getString(R.string.google_tv_profiles) + ": " + profile;
+            settingsPresenter.appendRadioCategory(title, optionItems);
+        }
+    }
+
+    /**
+     * Linking a profile to a locked account would hand that profile the account without its PIN, so ask for it.
+     */
+    private void linkWithPin(String profile, Account account, AppDialogPresenter settingsPresenter) {
+        String pin = AccountsData.instance(getContext()).getAccountPassword(account.getName());
+
+        if (pin == null) {
+            ProfileLinkData.instance(getContext()).setLink(profile, account);
+            return;
+        }
+
+        settingsPresenter.closeDialog();
+        PinDialog.show(
+                getContext(),
+                getContext().getString(R.string.enter_profile_pin),
+                newValue -> {
+                    if (Utils.passwordMatch(pin, newValue)) {
+                        ProfileLinkData.instance(getContext()).setLink(profile, account);
+                        return true;
+                    }
+                    return false;
+                });
     }
 
     private String getFullName(Account account) {

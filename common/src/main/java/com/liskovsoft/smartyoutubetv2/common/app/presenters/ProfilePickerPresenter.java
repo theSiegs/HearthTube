@@ -15,7 +15,9 @@ import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.AccountSelec
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.settings.AccountSettingsPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.views.ProfilePickerView;
 import com.liskovsoft.smartyoutubetv2.common.prefs.AccountsData;
+import com.liskovsoft.smartyoutubetv2.common.prefs.ProfileLinkData;
 import com.liskovsoft.smartyoutubetv2.common.utils.GlideIconFetcher;
+import com.liskovsoft.smartyoutubetv2.common.utils.HearthProfile;
 import com.liskovsoft.smartyoutubetv2.common.utils.IntentExtractor;
 import com.liskovsoft.smartyoutubetv2.common.utils.PinDialog;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
@@ -25,9 +27,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ProfilePickerPresenter extends BasePresenter<ProfilePickerView> {
+    /** {@link #followGoogleTvProfile}: not following (no Hearth, no accounts...), the usual picker logic applies. */
+    public static final int FOLLOW_NONE = 0;
+    /** Switched to the profile's account. The Google TV profile says who's watching, so no picker and no PIN. */
+    public static final int FOLLOW_SWITCHED = 1;
+    /** First time for this profile: the picker is open and remembers the pick for it. */
+    public static final int FOLLOW_PICKER = 2;
     @SuppressLint("StaticFieldLeak")
     private static ProfilePickerPresenter sInstance;
     private final SignInService mSignInService;
+    // Google TV profile the open picker links its pick to; null when picking just for now
+    private String mLinkingProfile;
 
     private ProfilePickerPresenter(Context context) {
         super(context);
@@ -83,6 +93,84 @@ public class ProfilePickerPresenter extends BasePresenter<ProfilePickerView> {
     }
 
     /**
+     * Use the YouTube account linked to the active Google TV profile (as tracked by the Hearth launcher).
+     * A profile without a link is linked to the account named after it, or else to whatever is picked
+     * in the picker, which opens for it. Deep links never open the picker.
+     *
+     * @return {@link #FOLLOW_NONE}, {@link #FOLLOW_SWITCHED} or {@link #FOLLOW_PICKER}
+     */
+    public int followGoogleTvProfile(Intent intent) {
+        mLinkingProfile = null;
+        ProfileLinkData links = ProfileLinkData.instance(getContext());
+
+        if (!links.isFollowEnabled()) {
+            return FOLLOW_NONE;
+        }
+
+        List<Account> accounts = mSignInService.getAccounts();
+
+        // Nothing to choose between: everyone watches as the guest
+        if (accounts == null || accounts.isEmpty()) {
+            return FOLLOW_NONE;
+        }
+
+        HearthProfile profile = HearthProfile.query(getContext());
+
+        if (profile == null) {
+            return FOLLOW_NONE;
+        }
+
+        ProfileLinkData.Link link = links.getLink(profile.name, accounts);
+
+        if (link == null) {
+            Account guess = ProfileLinkData.guessAccount(profile.name, accounts);
+
+            if (guess != null) {
+                links.setLink(profile.name, guess);
+                link = links.getLink(profile.name, accounts);
+            }
+        }
+
+        if (link == null) {
+            if (isDeepLink(intent)) {
+                return FOLLOW_NONE;
+            }
+
+            mLinkingProfile = profile.name;
+            getViewManager().startView(ProfilePickerView.class);
+            return FOLLOW_PICKER;
+        }
+
+        if (!isSameAccount(mSignInService.getSelectedAccount(), link.account)) {
+            AccountSelectionPresenter.instance(getContext()).selectAccount(link.account);
+        }
+
+        // Must come after selectAccount(), the unlock is per account
+        AccountsData accountsData = AccountsData.instance(getContext());
+        if (!accountsData.isPasswordAccepted()) {
+            accountsData.setPasswordAccepted(true);
+            BrowsePresenter.instance(getContext()).updateSections();
+        }
+
+        return FOLLOW_SWITCHED;
+    }
+
+    private static boolean isSameAccount(Account current, Account target) {
+        if (current == null || target == null) {
+            return current == target;
+        }
+
+        return Helpers.equals(current.getName(), target.getName());
+    }
+
+    /**
+     * Google TV profile the open picker is choosing an account for, or null.
+     */
+    public String getLinkingProfile() {
+        return mLinkingProfile;
+    }
+
+    /**
      * Open the picker mid-session (account button). Without any account there's nothing to pick, go to sign in instead.
      */
     public void start() {
@@ -93,6 +181,7 @@ public class ProfilePickerPresenter extends BasePresenter<ProfilePickerView> {
             return;
         }
 
+        mLinkingProfile = null; // a switch for now; the Google TV profile's link stays
         getViewManager().startView(ProfilePickerView.class);
     }
 
@@ -139,6 +228,11 @@ public class ProfilePickerPresenter extends BasePresenter<ProfilePickerView> {
     }
 
     private void switchTo(Account account, boolean hasPin) {
+        if (mLinkingProfile != null) {
+            ProfileLinkData.instance(getContext()).setLink(mLinkingProfile, account);
+            mLinkingProfile = null;
+        }
+
         AccountSelectionPresenter.instance(getContext()).selectAccount(account);
 
         if (getView() != null) {

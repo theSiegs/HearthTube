@@ -31,6 +31,19 @@
             android:textSize="36sp"
             android:textColor="@color/profile_text"/>
 
+        <!-- Shown when picking the account a Google TV profile watches with -->
+        <TextView
+            android:id="@+id/profile_picker_hint"
+            style="@style/TextOnImage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="-28dp"
+            android:layout_marginBottom="28dp"
+            android:visibility="gone"
+            android:fontFamily="sans-serif"
+            android:textSize="18sp"
+            android:textColor="@color/profile_text"/>
+
         <!-- A plain row rather than a grid: it centers itself and there are only a handful of tiles.
              Scrolling only kicks in when there are more accounts than fit on screen. -->
         <HorizontalScrollView

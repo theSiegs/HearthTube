@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.TextView;
 
 
 import androidx.leanback.widget.Presenter;
@@ -61,6 +62,13 @@ public class ProfilePickerActivity extends LeanbackActivity implements ProfilePi
     @Override
     public void show(List<Account> accounts, List<Drawable> icons, List<Boolean> locked) {
         mRow.removeAllViews();
+
+        String linkingProfile = ProfilePickerPresenter.instance(this).getLinkingProfile();
+        TextView hint = findViewById(R.id.profile_picker_hint);
+        hint.setVisibility(linkingProfile != null ? View.VISIBLE : View.GONE);
+        if (linkingProfile != null) {
+            hint.setText(getString(R.string.profile_picker_link_hint, linkingProfile));
+        }
 
         View focusTile = null;
 

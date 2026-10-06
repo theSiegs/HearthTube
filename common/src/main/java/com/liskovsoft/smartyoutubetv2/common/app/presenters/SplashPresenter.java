@@ -114,8 +114,17 @@ public class SplashPresenter extends BasePresenter<SplashView> {
 
         checkMasterPassword(() -> applyNewIntent(getView().getNewIntent()));
 
-        showAccountSelectionIfNeeded(newIntent); // should be placed after Intent chain
-        checkAccountPassword();
+        // should be placed after Intent chain
+        int follow = ProfilePickerPresenter.instance(getContext()).followGoogleTvProfile(newIntent);
+
+        if (follow == ProfilePickerPresenter.FOLLOW_NONE) {
+            showAccountSelectionIfNeeded(newIntent);
+        }
+
+        // The Google TV profile already says who's watching
+        if (follow != ProfilePickerPresenter.FOLLOW_SWITCHED) {
+            checkAccountPassword();
+        }
     }
 
     private void runBackgroundTasks() {

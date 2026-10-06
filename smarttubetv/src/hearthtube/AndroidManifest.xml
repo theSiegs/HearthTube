@@ -2,6 +2,11 @@
 <!-- HearthTube variant: own launcher name, icon and banner (shown by TV launchers like Projectivy) -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           xmlns:tools="http://schemas.android.com/tools">
+    <!-- The Hearth launcher's active Google TV profile (HearthProfile); invisible to us on Android 11+ without this -->
+    <queries>
+        <provider android:authorities="com.leanbitlab.ltvL.profile"/>
+    </queries>
+
     <application
         android:icon="@drawable/hearthtube_icon"
         android:banner="@drawable/hearthtube_banner"
