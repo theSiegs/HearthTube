@@ -6,7 +6,6 @@ import android.util.AttributeSet;
 import android.view.View;
 import android.widget.TextView;
 
-import com.liskovsoft.sharedutils.helpers.DateHelper;
 import com.liskovsoft.smartyoutubetv2.common.misc.TickleManager;
 import com.liskovsoft.smartyoutubetv2.common.misc.TickleManager.TickleListener;
 import com.liskovsoft.smartyoutubetv2.common.utils.HearthLook;
@@ -68,7 +67,9 @@ public class DateTimeView extends TextView implements TickleListener {
             } else if (!mIsDateEnabled && mIsTimeEnabled) {
                 time = HearthLook.formatTime(new Date());
             } else {
-                time = DateHelper.getCurrentDateTimeShort();
+                // The player's clock: Hearth's formats too
+                Date now = new Date();
+                time = HearthLook.formatDate(now) + "   " + HearthLook.formatTime(now);
             }
 
             // https://stackoverflow.com/questions/5437674/what-unicode-characters-represent-time/9454080

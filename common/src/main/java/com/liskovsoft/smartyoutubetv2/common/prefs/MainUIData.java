@@ -142,6 +142,12 @@ public class MainUIData extends DataChangeBase implements ProfileChangeListener 
             setColorScheme(mColorSchemes.get(COLOR_SCHEME_HEARTH));
         }
 
+        // No debug info button in the player (a developer tool)
+        if (!prefs.getBoolean("no_debug_button", false)) {
+            prefs.edit().putBoolean("no_debug_button", true).apply();
+            PlayerTweaksData.instance(mContext).setPlayerButtonDisabled(PlayerTweaksData.PLAYER_BUTTON_VIDEO_STATS);
+        }
+
         // The Queued tab needs "Add to queue" in the long-press menu
         if (!prefs.getBoolean("queue_menu_item", false)) {
             prefs.edit().putBoolean("queue_menu_item", true).apply();
