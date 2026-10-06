@@ -16,6 +16,8 @@
     <string name="google_tv_profiles">Google TV profiles</string>
     <string name="google_tv_profile_ask">Ask next time</string>
     <string name="color_scheme_hearth">Hearth</string>
+    <string name="remote_control_notification">Ready for casting from your phone</string>
+    <string name="remote_control_notification_channel">Phone casting</string>
     <string name="parent_pin_title">Parent PIN</string>
     <string name="parent_pin_message">Kids profile: enter the parent PIN to change accounts</string>
     <string name="parent_pin_setting">Parent PIN for kids profiles</string>

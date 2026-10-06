@@ -1,11 +1,16 @@
 package com.liskovsoft.smartyoutubetv2.common.misc;
 
 import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
+import android.os.Build;
 import android.os.IBinder;
 
 import androidx.annotation.Nullable;
+import androidx.core.app.NotificationCompat;
 
 import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.sharedutils.mylogger.Log;
@@ -52,14 +57,35 @@ public class RemoteControlService extends Service {
         return START_STICKY;
     }
 
+    /**
+     * HearthTube: Android insists on a notification while this service runs (phone casting turned on).
+     * Keep it out of the way: its own channel at minimum importance (no sound, no pop-up, collapsed at the
+     * bottom of notification lists) instead of the app's shared high-importance channel.
+     */
     private Notification createNotification() {
-        String remoteControl = getString(R.string.settings_remote_control);
-        String serviceStarted = getString(R.string.background_service_started);
+        String channelId = getPackageName() + ".remote_control";
 
-        return Utils.createNotification(
-                getApplicationContext(),
-                getApplicationInfo().icon,
-                String.format("%s: %s", remoteControl, serviceStarted),
-                ViewManager.instance(getApplicationContext()).getRootActivity());
+        if (Build.VERSION.SDK_INT >= 26) {
+            NotificationManager manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+            NotificationChannel channel = new NotificationChannel(
+                    channelId, getString(R.string.remote_control_notification_channel), NotificationManager.IMPORTANCE_MIN);
+            channel.setShowBadge(false);
+            manager.createNotificationChannel(channel);
+        }
+
+        int flags = PendingIntent.FLAG_UPDATE_CURRENT | (Build.VERSION.SDK_INT >= 23 ? PendingIntent.FLAG_IMMUTABLE : 0);
+        PendingIntent contentIntent = PendingIntent.getActivity(getApplicationContext(), 0,
+                new Intent(getApplicationContext(), ViewManager.instance(getApplicationContext()).getRootActivity()), flags);
+
+        return new NotificationCompat.Builder(getApplicationContext(), channelId)
+                .setSmallIcon(getApplicationInfo().icon)
+                .setContentTitle(getString(R.string.remote_control_notification))
+                .setContentIntent(contentIntent)
+                .setPriority(NotificationCompat.PRIORITY_MIN)
+                .setCategory(NotificationCompat.CATEGORY_SERVICE)
+                .setOngoing(true)
+                .setSilent(true)
+                .setShowWhen(false)
+                .build();
     }
 }
