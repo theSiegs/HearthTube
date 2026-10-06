@@ -9,6 +9,7 @@ import androidx.leanback.widget.ClassPresenterSelector;
 import androidx.leanback.widget.HeaderItem;
 import androidx.leanback.widget.ListRow;
 import androidx.leanback.widget.ListRowPresenter;
+import androidx.leanback.widget.ObjectAdapter;
 import androidx.leanback.widget.OnItemViewSelectedListener;
 import androidx.leanback.widget.Presenter;
 import androidx.leanback.widget.Row;
@@ -131,6 +132,11 @@ public abstract class MultipleRowsFragment extends RowsSupportFragment implement
         if (mRowsAdapter != null) {
             mRowsAdapter.addAll(mRowsAdapter.size(), rows);
         }
+    }
+
+    /** The row's own adapter behind one shown in its place (HearthTube's preview of a strip row) */
+    protected ObjectAdapter sourceOf(ObjectAdapter shown) {
+        return shown;
     }
 
     /** The row as shown in the strip (HearthTube: the first videos and a More tile). Same row in, same row out. */
@@ -257,7 +263,7 @@ public abstract class MultipleRowsFragment extends RowsSupportFragment implement
         if (mRowsAdapter != null && mRowsAdapter.size() > idx) {
             ListRow row = (ListRow) mRowsAdapter.get(idx);
             mRowsAdapter.remove(row);
-            VideoGroupObjectAdapter group = (VideoGroupObjectAdapter) row.getAdapter();
+            ObjectAdapter group = sourceOf(row.getAdapter());
             mVideoGroupAdapters.values().remove(group);
         }
     }
@@ -269,7 +275,7 @@ public abstract class MultipleRowsFragment extends RowsSupportFragment implement
                 Object row = mRowsAdapter.get(i);
 
                 if (row instanceof ListRow) {
-                    VideoGroupObjectAdapter adapter = (VideoGroupObjectAdapter) ((ListRow) row).getAdapter();
+                    ObjectAdapter adapter = sourceOf(((ListRow) row).getAdapter());
                     if (adapter == needed) {
                         mRowsAdapter.remove(row);
                         mVideoGroupAdapters.remove(id);
@@ -293,7 +299,7 @@ public abstract class MultipleRowsFragment extends RowsSupportFragment implement
                 Object row = mRowsAdapter.get(i);
 
                 if (row instanceof ListRow) {
-                    VideoGroupObjectAdapter adapter = (VideoGroupObjectAdapter) ((ListRow) row).getAdapter();
+                    ObjectAdapter adapter = sourceOf(((ListRow) row).getAdapter());
                     if (adapter == needed) {
                         return i;
                     }

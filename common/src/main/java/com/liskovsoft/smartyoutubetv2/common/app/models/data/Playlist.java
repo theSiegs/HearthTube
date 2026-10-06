@@ -72,6 +72,14 @@ public class Playlist {
             return;
         }
 
+        // HearthTube: a video opened while queued ones still wait goes ahead of them, not after them. Otherwise
+        // the queue would end up behind the current video: never played next, and gone from the Queued tab.
+        if (!HearthQueue.isWaiting(video) && insertBeforeQueued(video)) {
+            trimPlaylist();
+            stripPrevItem();
+            return;
+        }
+
         boolean isLastElement = !mPlaylist.isEmpty() && video.equals(mPlaylist.get(mPlaylist.size() - 1));
 
         remove(video);
@@ -87,6 +95,36 @@ public class Playlist {
         // In this case remove all next items.
         trimPlaylist();
         stripPrevItem();
+    }
+
+    /**
+     * Puts the video right before the first queued video that hasn't played yet. False when nothing is waiting.
+     */
+    private boolean insertBeforeQueued(Video video) {
+        int slot = -1;
+
+        for (int i = mCurrentIndex + 1; i < mPlaylist.size(); i++) {
+            Video item = mPlaylist.get(i);
+
+            if (HearthQueue.isWaiting(item) && !item.equals(video)) {
+                slot = i;
+                break;
+            }
+        }
+
+        if (slot == -1) {
+            return false;
+        }
+
+        int existing = mPlaylist.indexOf(video);
+        remove(video); // shifts the current index if needed
+
+        if (existing != -1 && existing < slot) {
+            slot--;
+        }
+
+        mPlaylist.add(slot, video);
+        return true;
     }
 
     public void next(Video video) {

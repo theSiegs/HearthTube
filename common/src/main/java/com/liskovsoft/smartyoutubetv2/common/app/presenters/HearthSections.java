@@ -89,14 +89,13 @@ public final class HearthSections {
      * Videos added with "Add to queue" that haven't played yet, next one first.
      */
     public static List<Video> getQueued() {
-        List<Video> afterCurrent = Playlist.instance().getAllAfterCurrent();
+        Video current = Playlist.instance().getCurrent();
         List<Video> queued = new ArrayList<>();
 
-        if (afterCurrent != null) {
-            for (Video video : afterCurrent) {
-                if (video != null && video.fromQueue) {
-                    queued.add(video);
-                }
+        // Wherever they sit in the playlist: only starting to play (or Remove from queue) takes them off
+        for (Video video : Playlist.instance().getAll()) {
+            if (com.liskovsoft.smartyoutubetv2.common.app.models.data.HearthQueue.isWaiting(video) && !video.equals(current)) {
+                queued.add(video);
             }
         }
 

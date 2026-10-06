@@ -166,8 +166,8 @@ public class ViewUtil {
     public static boolean isListRowEmpty(Object obj) {
         if (obj instanceof ListRow) {
             ListRow row = (ListRow) obj;
-            VideoGroupObjectAdapter adapter = (VideoGroupObjectAdapter) row.getAdapter();
-            return adapter == null || adapter.isEmpty();
+            // Any adapter: HearthTube's rows show other kinds too
+            return row.getAdapter() == null || row.getAdapter().size() == 0;
         }
 
         return true;

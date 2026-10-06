@@ -41,6 +41,8 @@ public class HearthTabBar extends LinearLayout {
     };
     private final List<Integer> mTabIds = new ArrayList<>();
     private TextView mQueued;
+    /** Last count shown; -1 before the first */
+    private int mLastCount = -1;
 
     public HearthTabBar(Context context) {
         super(context);
@@ -194,7 +196,18 @@ public class HearthTabBar extends LinearLayout {
         }
 
         int count = HearthSections.getQueued().size();
-        boolean show = count > 0 || mQueued.isSelected();
+        boolean show = count > 0;
+
+        if (count != mLastCount && mLastCount != -1 && mQueued.isSelected()) {
+            if (count == 0) {
+                // Nothing left to play: the tab goes, and with it the empty list
+                BrowsePresenter.instance(getContext()).selectSection(MediaGroup.TYPE_HOME);
+            } else {
+                // The list on screen follows the count (a queued video played, or one was added)
+                BrowsePresenter.instance(getContext()).refresh(false);
+            }
+        }
+        mLastCount = count;
 
         if (show) {
             mQueued.setText(getContext().getString(R.string.header_queued, count));

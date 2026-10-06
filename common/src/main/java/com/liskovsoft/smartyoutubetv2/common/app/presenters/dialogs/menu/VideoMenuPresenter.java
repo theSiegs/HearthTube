@@ -764,6 +764,8 @@ public class VideoMenuPresenter extends BaseMenuPresenter {
                         getContext().getString(R.string.add_to_playback_queue),
                         optionItem -> {
                             mVideo.fromQueue = true;
+                            // HearthTube: queued first, so the playlist puts it at the end of the queue
+                            com.liskovsoft.smartyoutubetv2.common.app.models.data.HearthQueue.add(mVideo);
                             playlist.add(mVideo);
                             if (mCallback != null) {
                                 mCallback.onItemAction(mVideo, VideoMenuCallback.ACTION_ADD_TO_QUEUE);
@@ -798,6 +800,7 @@ public class VideoMenuPresenter extends BaseMenuPresenter {
                         optionItem -> {
                             mVideo.fromQueue = false;
                             playlist.remove(mVideo);
+                            com.liskovsoft.smartyoutubetv2.common.app.models.data.HearthQueue.remove(mVideo);
                             if (mCallback != null) {
                                 mCallback.onItemAction(mVideo, VideoMenuCallback.ACTION_REMOVE_FROM_QUEUE);
                             }

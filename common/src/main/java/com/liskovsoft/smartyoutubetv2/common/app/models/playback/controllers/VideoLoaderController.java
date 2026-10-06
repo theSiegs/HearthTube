@@ -203,6 +203,8 @@ public class VideoLoaderController extends BasePlayerController {
      */
     private void loadVideo(Video item) {
         if (getPlayer() != null && item != null) {
+            // HearthTube: the Queued tab counts only queued videos that haven't started
+            com.liskovsoft.smartyoutubetv2.common.app.models.data.HearthQueue.remove(item);
             mPlaylist.setCurrent(item);
             getPlayer().setVideo(item);
             getPlayer().resetPlayerState();

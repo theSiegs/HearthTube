@@ -98,6 +98,11 @@ public class HearthRowsFragment extends VideoRowsFragment {
     }
 
     @Override
+    protected ObjectAdapter sourceOf(ObjectAdapter shown) {
+        return shown instanceof PreviewAdapter ? ((PreviewAdapter) shown).mSource : shown;
+    }
+
+    @Override
     protected boolean onOtherItemClicked(Object item) {
         if (item instanceof MoreTilePresenter.More) {
             showGrid();
