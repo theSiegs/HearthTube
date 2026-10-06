@@ -91,8 +91,8 @@ public abstract class MultipleRowsFragment extends RowsSupportFragment implement
     protected void onRowPresenterCreated(ListRowPresenter presenter) {
     }
 
-    /** The rows (titles) or the shown one changed */
-    protected void onStripChanged(List<String> titles, int selected) {
+    /** The rows (titles, and pictures for circles: null for a plain chip) or the shown one changed */
+    protected void onStripChanged(List<String> titles, List<String> icons, int selected) {
     }
 
     protected void onVideoFocused(Video video) {
@@ -196,10 +196,27 @@ public abstract class MultipleRowsFragment extends RowsSupportFragment implement
 
     private void notifyStripChanged() {
         List<String> titles = new ArrayList<>();
+        List<String> icons = new ArrayList<>();
+
         for (ListRow row : mStripRows) {
             titles.add(row.getHeaderItem() != null ? row.getHeaderItem().getName() : "");
+            icons.add(getIconUrl(row));
         }
-        onStripChanged(titles, mStripIndex);
+
+        onStripChanged(titles, icons, mStripIndex);
+    }
+
+    /** A channel's picture (HearthTube's Subscriptions rows) */
+    private static String getIconUrl(ListRow row) {
+        if (row.getAdapter() instanceof VideoGroupObjectAdapter) {
+            List<VideoGroup> groups = ((VideoGroupObjectAdapter) row.getAdapter()).getAllGroups();
+            if (groups != null && !groups.isEmpty()
+                    && groups.get(0).getMediaGroup() instanceof com.liskovsoft.smartyoutubetv2.common.app.presenters.HearthSections.TitledGroup) {
+                return ((com.liskovsoft.smartyoutubetv2.common.app.presenters.HearthSections.TitledGroup) groups.get(0).getMediaGroup()).getIconUrl();
+            }
+        }
+
+        return null;
     }
 
     private void applyPendingUpdates() {

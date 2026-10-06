@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ring around a channel circle in Subscriptions (HearthRowsFragment): accent when focused, white for the channel on show -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_focused="true">
+        <shape android:shape="oval">
+            <stroke android:width="3dp" android:color="?attr/hearthAccent"/>
+        </shape>
+    </item>
+    <item android:state_selected="true">
+        <shape android:shape="oval">
+            <stroke android:width="2dp" android:color="#FFFFFFFF"/>
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="oval">
+            <solid android:color="#00000000"/>
+        </shape>
+    </item>
+</selector>

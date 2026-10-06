@@ -42,6 +42,8 @@ import java.util.Map;
  */
 public class HearthRowsFragment extends VideoRowsFragment {
     private static final int ROW_PADDING_DP = 22;
+    /** Channel circles in Subscriptions */
+    private static final int CIRCLE_DP = 60;
     /** Videos in the big row before the More tile */
     private static final int PREVIEW_COUNT = 10;
     /** The classic grid behind More */
@@ -53,6 +55,8 @@ public class HearthRowsFragment extends VideoRowsFragment {
     private TextView mMeta;
     private TextView mDescription;
     private List<String> mTitles = new ArrayList<>();
+    /** Channel pictures (Subscriptions): circles instead of chips */
+    private List<String> mIcons = new ArrayList<>();
     private int mSelected;
     private VideoCardPresenter mLargePresenter;
     private VideoCardPresenter mGridPresenter;
@@ -291,9 +295,10 @@ public class HearthRowsFragment extends VideoRowsFragment {
     }
 
     @Override
-    protected void onStripChanged(List<String> titles, int selected) {
-        boolean rebuild = !titles.equals(mTitles);
+    protected void onStripChanged(List<String> titles, List<String> icons, int selected) {
+        boolean rebuild = !titles.equals(mTitles) || !icons.equals(mIcons);
         mTitles = new ArrayList<>(titles);
+        mIcons = new ArrayList<>(icons);
         mSelected = selected;
 
         if (mChips == null) {
@@ -331,15 +336,11 @@ public class HearthRowsFragment extends VideoRowsFragment {
         View focused = mChips.findFocus();
         mChips.removeAllViews();
 
+        boolean circles = hasIcons();
+
         for (int i = 0; i < mTitles.size(); i++) {
             int index = i;
-            TextView chip = new TextView(context);
-            chip.setText(mTitles.get(i));
-            chip.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
-            chip.setTextColor(ContextCompat.getColorStateList(context, R.color.hearth_tab_text));
-            chip.setBackgroundResource(R.drawable.hearth_chip_background);
-            chip.setSingleLine(true);
-            chip.setPadding(dp(context, 16), dp(context, 7), dp(context, 16), dp(context, 7));
+            View chip = circles ? createCircle(context, mTitles.get(i), mIcons.get(i)) : createChip(context, mTitles.get(i));
             chip.setFocusable(true);
             chip.setClickable(true);
             // Moving along the strip switches the row; OK goes down to it
@@ -352,7 +353,7 @@ public class HearthRowsFragment extends VideoRowsFragment {
 
             LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
                     ViewGroup.LayoutParams.WRAP_CONTENT);
-            params.rightMargin = dp(context, 10);
+            params.rightMargin = dp(context, circles ? 20 : 10);
             mChips.addView(chip, params);
         }
 
@@ -363,6 +364,73 @@ public class HearthRowsFragment extends VideoRowsFragment {
         if (focused != null && mSelected < mChips.getChildCount()) {
             mChips.getChildAt(mSelected).requestFocus();
         }
+    }
+
+    private boolean hasIcons() {
+        for (String icon : mIcons) {
+            if (icon != null) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private TextView createChip(Context context, String title) {
+        TextView chip = new TextView(context);
+        chip.setText(title);
+        chip.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
+        chip.setTextColor(ContextCompat.getColorStateList(context, R.color.hearth_tab_text));
+        chip.setBackgroundResource(R.drawable.hearth_chip_background);
+        chip.setSingleLine(true);
+        chip.setPadding(dp(context, 16), dp(context, 7), dp(context, 16), dp(context, 7));
+        return chip;
+    }
+
+    /**
+     * A channel in Subscriptions: its picture in a circle, the name underneath (the concept's channel circles).
+     * The ring shows focus (accent) and the channel on show (white). No picture: All.
+     */
+    private View createCircle(Context context, String title, String iconUrl) {
+        LinearLayout circle = new LinearLayout(context);
+        circle.setOrientation(LinearLayout.VERTICAL);
+        circle.setGravity(android.view.Gravity.CENTER_HORIZONTAL);
+        // Children follow the focused/selected state, so the ring lights up
+        circle.setAddStatesFromChildren(false);
+
+        FrameLayout ring = new FrameLayout(context);
+        ring.setBackgroundResource(R.drawable.hearth_circle_ring);
+        ring.setDuplicateParentStateEnabled(true);
+        int pad = dp(context, 4);
+        ring.setPadding(pad, pad, pad, pad);
+
+        android.widget.ImageView image = new android.widget.ImageView(context);
+        int size = dp(context, CIRCLE_DP);
+        if (iconUrl != null) {
+            com.bumptech.glide.Glide.with(context)
+                    .load(iconUrl)
+                    .apply(com.bumptech.glide.request.RequestOptions.circleCropTransform())
+                    .into(image);
+        } else {
+            image.setBackgroundResource(R.drawable.hearth_circle_all);
+            image.setImageResource(R.drawable.ic_hearth_more_grid);
+            image.setScaleType(android.widget.ImageView.ScaleType.CENTER);
+        }
+        ring.addView(image, new FrameLayout.LayoutParams(size, size));
+        circle.addView(ring);
+
+        TextView name = new TextView(context);
+        name.setText(title);
+        name.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+        name.setTextColor(0xFFFFFFFF);
+        name.setSingleLine(true);
+        name.setEllipsize(TextUtils.TruncateAt.END);
+        name.setMaxWidth(size + 2 * pad + dp(context, 16));
+        name.setShadowLayer(dp(context, 4), 0, dp(context, 2), 0x8A000000);
+        name.setPadding(0, dp(context, 4), 0, 0);
+        circle.addView(name);
+
+        return circle;
     }
 
     private void updateSelection() {

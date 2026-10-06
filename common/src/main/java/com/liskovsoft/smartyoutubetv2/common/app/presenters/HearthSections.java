@@ -48,6 +48,9 @@ public final class HearthSections {
             {R.string.podcasts_sports_query, R.string.podcasts_sports},
     };
 
+    /** Channels with a circle of their own in Subscriptions (the most recent posters); all of them are under All */
+    private static final int SUBSCRIPTION_CHANNELS = 15;
+
     private HearthSections() {
     }
 
@@ -55,6 +58,9 @@ public final class HearthSections {
      * Called from BrowsePresenter.initSectionMapping
      */
     static void addSections(Context context, Map<Integer, BrowseSection> sections) {
+        // Subscriptions: channel circles above one big row (All, then a row per channel)
+        sections.put(MediaGroup.TYPE_SUBSCRIPTIONS, new BrowseSection(MediaGroup.TYPE_SUBSCRIPTIONS,
+                context.getString(R.string.header_subscriptions), BrowseSection.TYPE_ROW, R.drawable.icon_subscriptions, true));
         // SmartTube names Live with its all-caps video badge
         sections.put(MediaGroup.TYPE_LIVE, new BrowseSection(MediaGroup.TYPE_LIVE, context.getString(R.string.header_live),
                 BrowseSection.TYPE_ROW, R.drawable.icon_live));
@@ -73,6 +79,7 @@ public final class HearthSections {
      */
     static void addMappings(Context context, ContentService content, Map<Integer, Observable<List<MediaGroup>>> rows,
                             Map<Integer, Observable<MediaGroup>> grids) {
+        rows.put(MediaGroup.TYPE_SUBSCRIPTIONS, subscriptionRows(context, content));
         rows.put(TYPE_AMBIANCE, searchRows(context, content, AMBIANCE));
         rows.put(TYPE_PODCASTS, searchRows(context, content, PODCASTS));
         rows.put(TYPE_LIBRARY, Observable.concat(
@@ -103,6 +110,90 @@ public final class HearthSections {
     }
 
     /**
+     * All (the subscriptions feed), then the uploads of the channels with the newest videos, one row each, carrying
+     * the channel's picture for its circle.
+     */
+    private static Observable<List<MediaGroup>> subscriptionRows(Context context, ContentService content) {
+        String all = context.getString(R.string.subscriptions_all);
+
+        return content.getSubscriptionsObserve().flatMap(feed -> {
+            Observable<MediaGroup> allRow = Observable.just(new TitledGroup(feed, all, null));
+
+            Observable<MediaGroup> channels = content.getSubscribedChannelsByNewContentObserve()
+                    .flatMap(group -> {
+                        List<Observable<MediaGroup>> uploads = new ArrayList<>();
+
+                        for (MediaItem channel : newestFirst(group.getMediaItems(), feed.getMediaItems())) {
+                            uploads.add(content.getGroupObserve(channel)
+                                    .map(uploaded -> (MediaGroup) new TitledGroup(uploaded, channel.getTitle(), channel.getCardImageUrl()))
+                                    .onErrorResumeNext(Observable.empty()));
+                        }
+
+                        // In order, each row as soon as it's in
+                        return Observable.concatEager(uploads);
+                    })
+                    .onErrorResumeNext(Observable.empty());
+
+            return Observable.concat(allRow, channels);
+        }).map(Collections::singletonList);
+    }
+
+    /**
+     * The channels in the order of their newest video in the feed (matched by channel id, else by name), then the
+     * rest in YouTube's order, up to {@link #SUBSCRIPTION_CHANNELS}.
+     */
+    private static List<MediaItem> newestFirst(@Nullable List<MediaItem> channels, @Nullable List<MediaItem> feed) {
+        List<MediaItem> result = new ArrayList<>();
+
+        if (channels == null) {
+            return result;
+        }
+
+        if (feed != null) {
+            for (MediaItem video : feed) {
+                if (result.size() >= SUBSCRIPTION_CHANNELS || video == null) {
+                    break;
+                }
+
+                for (MediaItem channel : channels) {
+                    if (channel != null && !result.contains(channel) && isSameChannel(channel, video)) {
+                        result.add(channel);
+                        break;
+                    }
+                }
+            }
+        }
+
+
+        for (MediaItem channel : channels) {
+            if (result.size() >= SUBSCRIPTION_CHANNELS) {
+                break;
+            }
+
+            if (channel != null && !result.contains(channel)) {
+                result.add(channel);
+            }
+        }
+
+        return result;
+    }
+
+    private static boolean isSameChannel(MediaItem channel, MediaItem video) {
+        if (channel.getChannelId() != null && video.getChannelId() != null) {
+            return channel.getChannelId().equals(video.getChannelId());
+        }
+
+        // The channel list has no ids; the feed's author reads "Jam In The Van • @JamintheVan"
+        String author = video.getAuthor();
+        if (channel.getTitle() == null || author == null) {
+            return false;
+        }
+
+        int dot = author.indexOf(" • ");
+        return channel.getTitle().trim().equalsIgnoreCase((dot != -1 ? author.substring(0, dot) : author).trim());
+    }
+
+    /**
      * One row per search: the first shelf of results, under our own title.
      */
     private static Observable<List<MediaGroup>> searchRows(Context context, ContentService content, int[][] searches) {
@@ -112,7 +203,7 @@ public final class HearthSections {
             String title = context.getString(search[1]);
             rows.add(content.getSearchObserve(context.getString(search[0]))
                     .map(groups -> firstNonEmpty(groups))
-                    .map(group -> (MediaGroup) new TitledGroup(group, title))
+                    .map(group -> (MediaGroup) new TitledGroup(group, title, null))
                     .onErrorResumeNext(Observable.empty()));
         }
 
@@ -136,13 +227,22 @@ public final class HearthSections {
      * A search shelf under our title. No continuation: the first page (about 20 videos) is plenty for a row,
      * and continuing needs YouTube's own group class.
      */
-    private static class TitledGroup implements MediaGroup {
+    public static class TitledGroup implements MediaGroup {
         private final MediaGroup mGroup;
         private final String mTitle;
+        @Nullable
+        private final String mIconUrl;
 
-        TitledGroup(MediaGroup group, String title) {
+        TitledGroup(MediaGroup group, String title, @Nullable String iconUrl) {
             mGroup = group;
             mTitle = title;
+            mIconUrl = iconUrl;
+        }
+
+        /** A channel's picture, for its circle in the strip; null for a plain chip */
+        @Nullable
+        public String getIconUrl() {
+            return mIconUrl;
         }
 
         @Override
