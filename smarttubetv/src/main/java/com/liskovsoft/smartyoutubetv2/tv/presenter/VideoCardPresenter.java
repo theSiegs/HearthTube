@@ -27,6 +27,7 @@ import com.liskovsoft.smartyoutubetv2.tv.R;
 import com.liskovsoft.smartyoutubetv2.tv.presenter.base.LongClickPresenter;
 import com.liskovsoft.smartyoutubetv2.tv.ui.browse.video.GridFragmentHelper;
 import com.liskovsoft.smartyoutubetv2.tv.ui.widgets.complexcardview.ComplexImageCardView;
+import com.liskovsoft.smartyoutubetv2.tv.util.CardFocusOutline;
 import com.liskovsoft.smartyoutubetv2.tv.util.ViewUtil;
 
 /*
@@ -39,6 +40,7 @@ public class VideoCardPresenter extends LongClickPresenter {
     private int mDefaultTextColor = -1;
     private int mSelectedBackgroundColor = -1;
     private int mSelectedTextColor = -1;
+    private int mFocusOutline;
     private int mCardPreviewType;
     private int mThumbQuality;
     private int mWidth;
@@ -56,6 +58,11 @@ public class VideoCardPresenter extends LongClickPresenter {
                 ContextCompat.getColor(context, Helpers.getThemeAttr(context, R.attr.cardSelectedBackground));
         mSelectedTextColor =
                 ContextCompat.getColor(context, R.color.card_selected_text_grey);
+        mFocusOutline = CardFocusOutline.get(context);
+        if (mFocusOutline != 0) { // Hearth scheme: an accent outline instead of the white info area
+            mSelectedBackgroundColor = mDefaultBackgroundColor;
+            mSelectedTextColor = mDefaultTextColor;
+        }
 
         mCardPreviewType = getCardPreviewType(context);
         mThumbQuality = getThumbQuality(context);
@@ -95,6 +102,7 @@ public class VideoCardPresenter extends LongClickPresenter {
     private void updateCardBackgroundColor(ComplexImageCardView view, boolean selected) {
         int backgroundColor = selected ? mSelectedBackgroundColor : mDefaultBackgroundColor;
         int textColor = selected ? mSelectedTextColor : mDefaultTextColor;
+        CardFocusOutline.apply(view, mFocusOutline, selected);
 
         // Both background colors should be set because the view's
         // background is temporarily visible during animations.

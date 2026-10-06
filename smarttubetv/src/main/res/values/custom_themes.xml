@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Color scheme: Hearth. The Hearth launcher's near-black surfaces and purple accent, so moving
+     between the launcher and HearthTube feels like one app. Registered in MainUIData. -->
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Settings panel background (leanback_preference_fragment.xml) -->
+    <attr name="preferencePanelBackground" format="reference|color"/>
+    <!-- Focused card outline (CardFocusOutline); unset keeps leanback's white info area -->
+    <attr name="cardFocusOutline" format="reference"/>
+
+    <style name="App.Theme.Hearth.Player" parent="App.Theme.Leanback.Player">
+        <item name="playbackProgressPrimaryColor">@color/hearth_accent</item>
+        <item name="playbackProgressSecondaryColor">@color/hearth_accent_light</item>
+        <item name="playbackControlsIconHighlightColor">@color/hearth_accent</item>
+        <item name="cardProgressStyle">@style/ProgressBarHorizontal.Hearth</item>
+        <item name="shelfBackground">@color/hearth_background</item>
+        <item name="cardDefaultBackground">@color/hearth_surface</item>
+        <item name="android:colorAccent" tools:targetApi="21">@color/hearth_accent</item>
+        <item name="cardFocusOutline">@drawable/hearth_card_focus_outline</item>
+    </style>
+    <style name="App.Theme.Hearth.Browse" parent="App.Theme.Leanback.Browse">
+        <item name="android:windowBackground">@color/hearth_background</item>
+        <item name="brandColor">@color/hearth_surface</item>
+        <item name="brandAccentColor">@color/hearth_accent</item>
+        <item name="cardProgressStyle">@style/ProgressBarHorizontal.Hearth</item>
+        <item name="shelfBackground">@color/hearth_background</item>
+        <item name="cardDefaultBackground">@color/hearth_surface</item>
+        <item name="android:colorAccent" tools:targetApi="21">@color/hearth_accent</item>
+        <item name="appLogo">@null</item>
+        <item name="cardFocusOutline">@drawable/hearth_card_focus_outline</item>
+    </style>
+    <style name="App.Theme.Hearth.Preferences" parent="App.Theme.Leanback.Preferences">
+        <item name="android:colorPrimary" tools:targetApi="21">@color/hearth_surface</item>
+        <item name="android:colorAccent" tools:targetApi="21">@color/hearth_accent</item>
+        <item name="preferencePanelBackground">@drawable/hearth_panel_background</item>
+        <!-- The title sits on the panel itself, no colored header bar -->
+        <item name="defaultBrandColor">@android:color/transparent</item>
+        <item name="android:selectableItemBackground">@drawable/hearth_list_item_background</item>
+    </style>
+    <style name="ProgressBarHorizontal.Hearth" parent="@android:style/Widget.ProgressBar.Horizontal">
+        <item name="android:progressDrawable">@drawable/progress_bar_hearth</item>
+    </style>
+</resources>

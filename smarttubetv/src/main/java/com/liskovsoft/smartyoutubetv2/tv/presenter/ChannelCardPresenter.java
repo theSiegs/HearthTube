@@ -24,6 +24,7 @@ import com.liskovsoft.smartyoutubetv2.common.prefs.MainUIData;
 import com.liskovsoft.smartyoutubetv2.tv.R;
 import com.liskovsoft.smartyoutubetv2.tv.presenter.base.LongClickPresenter;
 import com.liskovsoft.smartyoutubetv2.tv.ui.browse.video.GridFragmentHelper;
+import com.liskovsoft.smartyoutubetv2.tv.util.CardFocusOutline;
 import com.liskovsoft.smartyoutubetv2.tv.util.ViewUtil;
 
 public class ChannelCardPresenter extends LongClickPresenter {
@@ -33,6 +34,7 @@ public class ChannelCardPresenter extends LongClickPresenter {
     private int mSelectedBackgroundColor;
     private int mNewContentBackgroundColor;
     private int mSelectedTextColor;
+    private int mFocusOutline;
     private int mWidth;
     private int mHeight;
 
@@ -50,6 +52,7 @@ public class ChannelCardPresenter extends LongClickPresenter {
                 ContextCompat.getColor(context, Helpers.getThemeAttr(context, R.attr.cardSelectedBackground));
         mSelectedTextColor =
                 ContextCompat.getColor(context, R.color.card_selected_text_grey);
+        mFocusOutline = CardFocusOutline.get(context);
 
         updateDimensions(context);
 
@@ -70,9 +73,12 @@ public class ChannelCardPresenter extends LongClickPresenter {
         }
 
         container.setOnFocusChangeListener((v, hasFocus) -> {
-            int backgroundColor = hasFocus ? mSelectedBackgroundColor :
+            // Hearth scheme: the card keeps its colors and gets an accent outline
+            boolean whiteCard = hasFocus && mFocusOutline == 0;
+            int backgroundColor = whiteCard ? mSelectedBackgroundColor :
                     textView.getTag(R.id.channel_new_content) != null ? mNewContentBackgroundColor : mDefaultBackgroundColor;
-            int textColor = hasFocus ? mSelectedTextColor : mDefaultTextColor;
+            int textColor = whiteCard ? mSelectedTextColor : mDefaultTextColor;
+            CardFocusOutline.apply(v, mFocusOutline, hasFocus);
             
             textView.setBackgroundColor(backgroundColor);
             textView.setTextColor(textColor);

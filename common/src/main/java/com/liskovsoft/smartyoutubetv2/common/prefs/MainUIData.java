@@ -119,12 +119,27 @@ public class MainUIData extends DataChangeBase implements ProfileChangeListener 
     private boolean mIsUnlocalizedTitlesEnabled;
     private long mUiTweaks;
 
+    private static final int COLOR_SCHEME_HEARTH = 8;
+
     private MainUIData(Context context) {
         mContext = context;
         mPrefs = AppPrefs.instance(context);
         mPrefs.addListener(this);
         initColorSchemes();
         restoreState();
+        applyHearthSchemeOnce();
+    }
+
+    /**
+     * HearthTube: existing installs move to the Hearth scheme once; after that the user's pick sticks.
+     */
+    private void applyHearthSchemeOnce() {
+        android.content.SharedPreferences prefs = mContext.getSharedPreferences("hearthtube_migrations", Context.MODE_PRIVATE);
+
+        if (!prefs.getBoolean("hearth_color_scheme", false)) {
+            prefs.edit().putBoolean("hearth_color_scheme", true).apply();
+            setColorScheme(mColorSchemes.get(COLOR_SCHEME_HEARTH));
+        }
     }
 
     public static MainUIData instance(Context context) {
@@ -421,6 +436,13 @@ public class MainUIData extends DataChangeBase implements ProfileChangeListener 
                 "App.Theme.Leanback.Blue.OLED.Browse",
                 "App.Theme.Leanback.Blue.Preferences",
                 mContext));
+        // HearthTube: index COLOR_SCHEME_HEARTH. Append only, the index is what gets saved.
+        mColorSchemes.add(new ColorScheme(
+                R.string.color_scheme_hearth,
+                "App.Theme.Hearth.Player",
+                "App.Theme.Hearth.Browse",
+                "App.Theme.Hearth.Preferences",
+                mContext));
     }
 
     private void restoreState() {
@@ -431,7 +453,7 @@ public class MainUIData extends DataChangeBase implements ProfileChangeListener 
         //mIsCardAnimatedPreviewsEnabled = Helpers.parseBoolean(split, 0, true);
         mVideoGridScale = Helpers.parseFloat(split, 1, 1.0f); // 4 cards in a row
         mUIScale = Helpers.parseFloat(split, 2, 1.0f);
-        mColorSchemeIndex = Helpers.parseInt(split, 3, 1);
+        mColorSchemeIndex = Helpers.parseInt(split, 3, COLOR_SCHEME_HEARTH);
         mIsCardMultilineTitleEnabled = Helpers.parseBoolean(split, 4, true);
         mChannelCategorySorting = Helpers.parseInt(split, 5, CHANNEL_SORTING_LAST_VIEWED);
         mPlaylistsStyle = Helpers.parseInt(split, 6, PLAYLISTS_STYLE_GRID);

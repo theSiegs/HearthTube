@@ -1,5 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- The Hearth launcher's palette (flauncher_app.dart, side_panel_dialog.dart) -->
+    <color name="hearth_accent">#7C4DFF</color>
+    <color name="hearth_accent_light">#B39DFF</color>
+    <color name="hearth_background">#0A0A0A</color>
+    <color name="hearth_surface">#0F0F0F</color>
+    <color name="hearth_outline">#14FFFFFF</color>
+    <color name="hearth_focus_fill">#0DFFFFFF</color>
+
     <!-- PIN entry: Google TV's dark keypad, same as the Hearth launcher's parent PIN -->
     <color name="pin_background">#111111</color>
     <color name="pin_key">#2D2E31</color>

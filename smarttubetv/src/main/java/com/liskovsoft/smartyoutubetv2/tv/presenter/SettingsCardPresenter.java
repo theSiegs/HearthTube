@@ -14,6 +14,7 @@ import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.SettingsItem;
 import com.liskovsoft.smartyoutubetv2.common.prefs.MainUIData;
 import com.liskovsoft.smartyoutubetv2.tv.R;
+import com.liskovsoft.smartyoutubetv2.tv.util.CardFocusOutline;
 import com.liskovsoft.smartyoutubetv2.tv.util.ViewUtil;
 
 public class SettingsCardPresenter extends Presenter {
@@ -21,6 +22,7 @@ public class SettingsCardPresenter extends Presenter {
     private int mDefaultTextColor;
     private int mSelectedBackgroundColor;
     private int mSelectedTextColor;
+    private int mFocusOutline;
 
     @Override
     public ViewHolder onCreateViewHolder(ViewGroup parent) {
@@ -34,6 +36,11 @@ public class SettingsCardPresenter extends Presenter {
                 ContextCompat.getColor(context, R.color.card_selected_background_white);
         mSelectedTextColor =
                 ContextCompat.getColor(context, R.color.card_selected_text_grey);
+        mFocusOutline = CardFocusOutline.get(context);
+        if (mFocusOutline != 0) { // Hearth scheme: an accent outline instead of the white info area
+            mSelectedBackgroundColor = mDefaultBackgroundColor;
+            mSelectedTextColor = mDefaultTextColor;
+        }
 
         @SuppressLint("InflateParams")
         View container = LayoutInflater.from(context).inflate(R.layout.settings_card, null);
@@ -51,6 +58,7 @@ public class SettingsCardPresenter extends Presenter {
         container.setOnFocusChangeListener((v, hasFocus) -> {
             int backgroundColor = hasFocus ? mSelectedBackgroundColor : mDefaultBackgroundColor;
             int textColor = hasFocus ? mSelectedTextColor : mDefaultTextColor;
+            CardFocusOutline.apply(v, mFocusOutline, hasFocus);
             
             textView.setBackgroundColor(backgroundColor);
             textView.setTextColor(textColor);
