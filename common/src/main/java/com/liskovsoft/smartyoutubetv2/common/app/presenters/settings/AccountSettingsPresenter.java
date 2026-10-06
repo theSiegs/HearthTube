@@ -73,6 +73,7 @@ public class AccountSettingsPresenter extends BasePresenter<Void> {
         appendSignInButton(settingsPresenter);
         appendSignOutSection(accounts, icons, settingsPresenter);
         appendProtectAccountWithPassword(settingsPresenter);
+        appendParentPin(settingsPresenter);
         appendSeparateSettings(settingsPresenter);
         appendSelectAccountOnBoot(settingsPresenter);
         appendGoogleTvProfiles(accounts, icons, settingsPresenter);
@@ -156,6 +157,45 @@ public class AccountSettingsPresenter extends BasePresenter<Void> {
         settingsPresenter.appendSingleSwitch(UiOptionItem.from(getContext().getString(R.string.select_account_on_boot), optionItem -> {
             AccountsData.instance(getContext()).selectAccountOnBoot(optionItem.isSelected());
         }, AccountsData.instance(getContext()).isSelectAccountOnBootEnabled()));
+    }
+
+    /**
+     * The PIN that unlocks account changes in Google TV kids profiles (ParentGate). Only a parent gets here in a
+     * kids profile, so setting, changing or removing it needs no extra check.
+     */
+    private void appendParentPin(AppDialogPresenter settingsPresenter) {
+        ProfileLinkData links = ProfileLinkData.instance(getContext());
+
+        settingsPresenter.appendSingleSwitch(UiOptionItem.from(getContext().getString(R.string.parent_pin_setting), optionItem -> {
+            settingsPresenter.closeDialog();
+
+            if (optionItem.isSelected()) {
+                showSetParentPinDialog(null);
+            } else {
+                links.setParentPin(null);
+            }
+        }, links.getParentPin() != null));
+    }
+
+    private void showSetParentPinDialog(String message) {
+        PinDialog.show(
+                getContext(),
+                getContext().getString(R.string.set_parent_pin),
+                message != null ? message : getContext().getString(R.string.parent_pin_setting_hint),
+                newPin -> {
+                    Utils.post(() -> PinDialog.show(
+                            getContext(),
+                            getContext().getString(R.string.confirm_profile_pin),
+                            confirmed -> {
+                                if (newPin.equals(confirmed)) {
+                                    ProfileLinkData.instance(getContext()).setParentPin(newPin);
+                                } else {
+                                    Utils.post(() -> showSetParentPinDialog(getContext().getString(R.string.pin_mismatch)));
+                                }
+                                return true;
+                            }));
+                    return true;
+                });
     }
 
     private void appendProtectAccountWithPassword(AppDialogPresenter settingsPresenter) {

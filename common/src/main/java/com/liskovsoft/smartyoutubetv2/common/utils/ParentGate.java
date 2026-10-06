@@ -10,15 +10,15 @@ import android.os.Build.VERSION;
 import com.liskovsoft.sharedutils.helpers.MessageHelpers;
 import com.liskovsoft.smartyoutubetv2.common.R;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.AppDialogPresenter;
-import com.liskovsoft.smartyoutubetv2.common.prefs.AccountsData;
+import com.liskovsoft.smartyoutubetv2.common.prefs.ProfileLinkData;
 
 import java.util.List;
 
 /**
  * Keeps kids on their own YouTube account. In a Google TV kids profile, anything that changes the
- * account (picker, Accounts settings, sign in, pairing a profile) needs a parent's PIN: the PIN of any
- * locked HearthTube account. With no PIN set anywhere it's simply locked; a parent changes accounts from
- * their own Google TV profile.
+ * account (picker, Accounts settings, sign in, pairing a profile) needs the parent PIN, set in Accounts
+ * settings. Account PINs don't count: a kid knows their own. Without a parent PIN it's simply locked; a parent
+ * changes accounts from their own Google TV profile.
  */
 public final class ParentGate {
     /** One PIN covers a few steps in a row (e.g. Accounts settings, then Sign in) */
@@ -38,9 +38,9 @@ public final class ParentGate {
             return;
         }
 
-        AccountsData accountsData = AccountsData.instance(context);
+        String parentPin = ProfileLinkData.instance(context).getParentPin();
 
-        if (!accountsData.hasAnyPassword()) {
+        if (parentPin == null) {
             MessageHelpers.showLongMessage(context, R.string.kids_profile_accounts_locked);
             return;
         }
@@ -49,19 +49,19 @@ public final class ParentGate {
         AppDialogPresenter dialog = AppDialogPresenter.instance(context);
         if (dialog.isDialogShown()) {
             dialog.closeDialog();
-            Utils.postDelayed(() -> askPin(context, accountsData, action), PANEL_CLOSE_MS);
+            Utils.postDelayed(() -> askPin(context, parentPin, action), PANEL_CLOSE_MS);
         } else {
-            askPin(context, accountsData, action);
+            askPin(context, parentPin, action);
         }
     }
 
-    private static void askPin(Context context, AccountsData accountsData, Runnable action) {
+    private static void askPin(Context context, String parentPin, Runnable action) {
         PinDialog.show(
                 context,
                 context.getString(R.string.parent_pin_title),
                 context.getString(R.string.parent_pin_message),
                 pin -> {
-                    if (accountsData.isAnyPassword(pin)) {
+                    if (parentPin.equals(pin)) {
                         sUnlockedUntilMs = System.currentTimeMillis() + UNLOCK_MS;
                         Utils.post(action); // after the PIN screen closes
                         return true;

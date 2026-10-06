@@ -94,28 +94,6 @@ public class AccountsData implements AccountChangeListener {
         return passwordItem != null ? passwordItem.password : null;
     }
 
-    /** Any account locked with a PIN: a parent's, for the kids profile lock (ParentGate) */
-    public boolean hasAnyPassword() {
-        for (PasswordItem item : mPasswords.values()) {
-            if (item.password != null) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /** The PIN of any locked account */
-    public boolean isAnyPassword(String pin) {
-        for (PasswordItem item : mPasswords.values()) {
-            if (item.password != null && item.password.equals(pin)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
     public boolean isPasswordAccepted() {
         return getAccountPassword() == null || Helpers.equals(mPasswordAcceptedFor, getAccountName());
     }

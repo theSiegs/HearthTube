@@ -17,7 +17,10 @@
     <string name="google_tv_profile_ask">Ask next time</string>
     <string name="color_scheme_hearth">Hearth</string>
     <string name="parent_pin_title">Parent PIN</string>
-    <string name="parent_pin_message">Kids profile: enter a parent\'s HearthTube PIN to change accounts</string>
+    <string name="parent_pin_message">Kids profile: enter the parent PIN to change accounts</string>
+    <string name="parent_pin_setting">Parent PIN for kids profiles</string>
+    <string name="set_parent_pin">Choose a parent PIN</string>
+    <string name="parent_pin_setting_hint">Needed to change accounts in Google TV kids profiles. Don\'t reuse a kid\'s PIN.</string>
     <string name="kids_profile_accounts_locked">Accounts can\'t be changed in a kids profile. A parent can change them from their own Google TV profile.</string>
     <string name="background_image">Background image</string>
     <string name="background_image_source">Bing image of the day</string>

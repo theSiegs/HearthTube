@@ -23,6 +23,7 @@ public class ProfileLinkData {
     private static final String PREFS_NAME = "hearth_profile_links";
     private static final String LINK_PREFIX = "link:";
     private static final String FOLLOW_KEY = "follow_google_tv_profile";
+    private static final String PARENT_PIN_KEY = "parent_pin";
     private static final String GUEST = "";
     @SuppressLint("StaticFieldLeak")
     private static ProfileLinkData sInstance;
@@ -48,6 +49,19 @@ public class ProfileLinkData {
         }
 
         return sInstance;
+    }
+
+    /**
+     * Unlocks account changes in kids profiles (ParentGate). Separate from account PINs, which a kid may know
+     * (their own). Null when not set.
+     */
+    @Nullable
+    public String getParentPin() {
+        return mPrefs.getString(PARENT_PIN_KEY, null);
+    }
+
+    public void setParentPin(@Nullable String pin) {
+        mPrefs.edit().putString(PARENT_PIN_KEY, pin).apply();
     }
 
     /** Switch accounts to follow the Google TV profile. On by default; does nothing without Hearth. */
