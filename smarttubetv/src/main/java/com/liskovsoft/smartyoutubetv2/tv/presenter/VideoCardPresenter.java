@@ -28,6 +28,7 @@ import com.liskovsoft.smartyoutubetv2.tv.presenter.base.LongClickPresenter;
 import com.liskovsoft.smartyoutubetv2.tv.ui.browse.video.GridFragmentHelper;
 import com.liskovsoft.smartyoutubetv2.tv.ui.widgets.complexcardview.ComplexImageCardView;
 import com.liskovsoft.smartyoutubetv2.tv.util.CardFocusOutline;
+import com.liskovsoft.smartyoutubetv2.tv.util.HearthCardStyle;
 import com.liskovsoft.smartyoutubetv2.tv.util.ViewUtil;
 
 /*
@@ -92,6 +93,9 @@ public class VideoCardPresenter extends LongClickPresenter {
         cardView.enableTitle(isTitleEnabled());
         cardView.enableContent(isContentEnabled());
         cardView.setBackgroundColor(mDefaultBackgroundColor); // background is temporarily visible during animations
+        if (mFocusOutline != 0) { // Hearth scheme: a 16:9 rectangle with the text over the thumbnail
+            HearthCardStyle.apply(cardView);
+        }
         //if (VERSION.SDK_INT >= 23 && MainUIData.instance(context).isUiTweakEnabled(MainUIData.UI_TWEAK_ROUNDED_CORNERS)) {
         //    cardView.setForeground(ContextCompat.getDrawable(context, R.drawable.lb_card_outline));
         //}
@@ -110,7 +114,9 @@ public class VideoCardPresenter extends LongClickPresenter {
         //view.setBackgroundColor(backgroundColor);
 
         View infoField = view.findViewById(R.id.info_field);
-        if (infoField != null) {
+        if (infoField != null && mFocusOutline != 0) {
+            infoField.setBackgroundResource(R.drawable.hearth_card_info_gradient);
+        } else if (infoField != null) {
             infoField.setBackgroundColor(backgroundColor);
         }
 
