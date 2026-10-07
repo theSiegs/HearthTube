@@ -81,15 +81,16 @@ public class HearthProfile {
     /** Goes up by one with every profile switch and every Hearth start (contract 3); 0 when Hearth is too old. */
     public final long switchGeneration;
     /**
-     * Hearth checks for and installs HearthTube updates by itself (updates_hearthtube = 1), so HearthTube's own
-     * updater steps aside. Null when Hearth doesn't say.
+     * Hearth checks for and silently installs HearthTube updates (updates_hearthtube = 1, contract 4: its automatic
+     * companion updates are on and it installed HearthTube), so HearthTube's own updater steps aside. Null before
+     * contract 4.
      */
     @Nullable
     public final Boolean updatesHearthTube;
     /** Hearth's provider contract version (docs/provider-contract.md in Hearth); 1 before it was reported. */
     public final int contractVersion;
     /** The newest contract this code was written against: a newer Hearth may mean columns changed meaning. */
-    private static final int KNOWN_CONTRACT = 3;
+    private static final int KNOWN_CONTRACT = 4;
     private static boolean sWarnedNewerContract;
 
     private HearthProfile(Cursor cursor) {
