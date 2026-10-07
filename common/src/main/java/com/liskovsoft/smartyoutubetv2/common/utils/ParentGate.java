@@ -39,20 +39,40 @@ public final class ParentGate {
         }
 
         PinChecker checker = pinChecker(context);
-
-        if (checker == null) {
-            MessageHelpers.showLongMessage(context, R.string.kids_profile_accounts_locked);
-            return;
-        }
+        // No PIN anywhere yet (a kid's own copy of HearthTube starts empty): the parent setting it up chooses one
+        Runnable ask = checker != null ? () -> askPin(context, checker, action) : () -> createPin(context, action, null);
 
         // The PIN screen belongs to the screen below an open settings panel and would show under it
         AppDialogPresenter dialog = AppDialogPresenter.instance(context);
         if (dialog.isDialogShown()) {
             dialog.closeDialog();
-            Utils.postDelayed(() -> askPin(context, checker, action), PANEL_CLOSE_MS);
+            Utils.postDelayed(ask, PANEL_CLOSE_MS);
         } else {
-            askPin(context, checker, action);
+            ask.run();
         }
+    }
+
+    private static void createPin(Context context, Runnable action, String message) {
+        PinDialog.show(
+                context,
+                context.getString(R.string.set_parent_pin),
+                message != null ? message : context.getString(R.string.first_parent_pin_hint),
+                newPin -> {
+                    Utils.post(() -> PinDialog.show(
+                            context,
+                            context.getString(R.string.confirm_profile_pin),
+                            confirmed -> {
+                                if (newPin.equals(confirmed)) {
+                                    ProfileLinkData.instance(context).setParentPin(newPin);
+                                    sUnlockedUntilMs = System.currentTimeMillis() + UNLOCK_MS;
+                                    Utils.post(action);
+                                } else {
+                                    Utils.post(() -> createPin(context, action, context.getString(R.string.pin_mismatch)));
+                                }
+                                return true;
+                            }));
+                    return true;
+                });
     }
 
     private interface PinChecker {
