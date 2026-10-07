@@ -63,6 +63,7 @@ public class HearthRowsFragment extends VideoRowsFragment {
     private final MoreTilePresenter mMorePresenter = new MoreTilePresenter();
     private final Map<ListRow, ListRow> mPreviews = new IdentityHashMap<>();
     private View mDetails;
+    private View mScrim;
     private int mRowHeight;
     private int mRowBottomMargin;
     /** The full row shown as a grid (More), or null */
@@ -148,6 +149,7 @@ public class HearthRowsFragment extends VideoRowsFragment {
         // The grid takes the screen under the tabs
         mChipScroll.setVisibility(View.GONE);
         mDetails.setVisibility(View.GONE);
+        mScrim.setVisibility(View.GONE);
         FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) mRows.getLayoutParams();
         params.height = ViewGroup.LayoutParams.MATCH_PARENT;
         // First row level with the classic grids (the queue, Watch later)
@@ -168,6 +170,7 @@ public class HearthRowsFragment extends VideoRowsFragment {
         mGridRows.clear();
         mChipScroll.setVisibility(mTitles.size() > 1 ? View.VISIBLE : View.GONE);
         mDetails.setVisibility(View.VISIBLE);
+        mScrim.setVisibility(View.VISIBLE);
         FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) mRows.getLayoutParams();
         params.height = mRowHeight;
         params.topMargin = 0;
@@ -220,6 +223,13 @@ public class HearthRowsFragment extends VideoRowsFragment {
         Context context = inflater.getContext();
 
         StripLayout root = new StripLayout(context);
+
+        // A shade over the lower part of the wallpaper, under the details and the row
+        View scrim = new View(context);
+        scrim.setBackgroundResource(R.drawable.hearth_details_scrim);
+        root.addView(scrim, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                Math.round(context.getResources().getDisplayMetrics().heightPixels * 0.78f), Gravity.BOTTOM));
+        mScrim = scrim;
 
         // The row of big cards, at the bottom
         int cardHeight = LargeVideoCardPresenter.getLargeCardDimensPx(context).second;
@@ -459,7 +469,8 @@ public class HearthRowsFragment extends VideoRowsFragment {
         view.setTextColor(color);
         view.setMaxLines(maxLines);
         view.setEllipsize(TextUtils.TruncateAt.END);
-        view.setShadowLayer(8, 0, 2, 0xA6000000);
+        float density = context.getResources().getDisplayMetrics().density;
+        view.setShadowLayer(6 * density, 0, 2 * density, 0xCC000000);
         if (bold) {
             view.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         }
