@@ -2,6 +2,7 @@ package com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+
 import com.liskovsoft.appupdatechecker2.AppUpdateChecker;
 import com.liskovsoft.appupdatechecker2.AppUpdateCheckerListener;
 import com.liskovsoft.sharedutils.helpers.MessageHelpers;
@@ -13,6 +14,7 @@ import com.liskovsoft.smartyoutubetv2.common.app.presenters.AppDialogPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.BrowsePresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.base.BasePresenter;
 import com.liskovsoft.smartyoutubetv2.common.prefs.GeneralData;
+import com.liskovsoft.smartyoutubetv2.common.utils.HearthProfile;
 import com.liskovsoft.smartyoutubetv2.common.utils.LoadingManager;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 
@@ -49,6 +51,15 @@ public class AppUpdatePresenter extends BasePresenter<Void> implements AppUpdate
     }
 
     public void start(boolean forceCheck) {
+        int elsewhere = updatedElsewhere();
+
+        if (elsewhere != 0) {
+            if (forceCheck) {
+                MessageHelpers.showLongMessage(getContext(), elsewhere);
+            }
+            return;
+        }
+
         mIsForceCheck = forceCheck;
 
         if (forceCheck) {
@@ -57,6 +68,27 @@ public class AppUpdatePresenter extends BasePresenter<Void> implements AppUpdate
         } else {
             mUpdateChecker.checkForUpdates(mUpdateManifestUrls);
         }
+    }
+
+    /**
+     * HearthTube: one updater per TV. An update installs for every Google TV profile at once, so only the owner's
+     * copy updates (other profiles can't install anyway); and when Hearth keeps HearthTube up to date, it does.
+     *
+     * @return why this copy doesn't check (a message), or 0 when it does
+     */
+    private int updatedElsewhere() {
+        Context context = getContext();
+
+        if (context == null) {
+            return 0;
+        }
+
+        if (!HearthProfile.isOwnerUser(context)) {
+            return R.string.updates_from_owner;
+        }
+
+        HearthProfile hearth = HearthProfile.queryHearth(context);
+        return hearth != null && Boolean.TRUE.equals(hearth.updatesHearthTube) ? R.string.updates_by_hearth : 0;
     }
 
     @Override

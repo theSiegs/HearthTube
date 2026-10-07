@@ -80,6 +80,12 @@ public class HearthProfile {
     public final Boolean profileReady;
     /** Goes up by one with every profile switch and every Hearth start (contract 3); 0 when Hearth is too old. */
     public final long switchGeneration;
+    /**
+     * Hearth checks for and installs HearthTube updates by itself (updates_hearthtube = 1), so HearthTube's own
+     * updater steps aside. Null when Hearth doesn't say.
+     */
+    @Nullable
+    public final Boolean updatesHearthTube;
     /** Hearth's provider contract version (docs/provider-contract.md in Hearth); 1 before it was reported. */
     public final int contractVersion;
     /** The newest contract this code was written against: a newer Hearth may mean columns changed meaning. */
@@ -102,6 +108,7 @@ public class HearthProfile {
         this.profileId = getString(cursor, "profile_id");
         this.profileReady = cursor.getColumnIndex("profile_ready") != -1 ? getLong(cursor, "profile_ready") == 1 : null;
         this.switchGeneration = getLong(cursor, "switch_generation");
+        this.updatesHearthTube = cursor.getColumnIndex("updates_hearthtube") != -1 ? getLong(cursor, "updates_hearthtube") == 1 : null;
         this.contractVersion = cursor.getColumnIndex("contract_version") != -1 ? (int) getLong(cursor, "contract_version") : 1;
 
         if (contractVersion > KNOWN_CONTRACT && !sWarnedNewerContract) {
@@ -183,7 +190,8 @@ public class HearthProfile {
         return Boolean.TRUE.equals(hearth.serviceRunning) ? hearth : null;
     }
 
-    private static boolean isOwnerUser(Context context) {
+    /** The TV's owner (Android user 0), where Hearth itself runs; other Google TV profiles are other users */
+    public static boolean isOwnerUser(Context context) {
         if (android.os.Build.VERSION.SDK_INT < 23) {
             return true;
         }

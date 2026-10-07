@@ -25,6 +25,8 @@
     <string name="first_parent_pin_hint">This is a kids profile. Choose a PIN for grown-ups: it unlocks settings and accounts here. Don\'t reuse a kid\'s PIN.</string>
     <string name="parent_pin_hearth_gone">HearthTube was using Hearth\'s parent PIN, and Hearth no longer has one. Choose a new parent PIN for HearthTube.</string>
     <string name="parent_pin_hearth_silent">Hearth isn\'t answering, so its parent PIN can\'t be checked. Try again in a moment.</string>
+    <string name="updates_from_owner">HearthTube updates from the TV\'s main profile, for every profile at once.</string>
+    <string name="updates_by_hearth">Hearth keeps HearthTube up to date (Hearth Settings, Companion apps).</string>
     <string name="parent_pin_setting_hint">Needed to change accounts in Google TV kids profiles. Don\'t reuse a kid\'s PIN.</string>
     <string name="kids_no_shorts">Shorts aren\'t available in kids profiles</string>
     <string name="kids_profile_accounts_locked">Accounts can\'t be changed in a kids profile. A parent can change them from their own Google TV profile.</string>
