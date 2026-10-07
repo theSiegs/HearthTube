@@ -54,7 +54,8 @@ public class WatchNextPublisher {
 
         if (finished) {
             sExecutor.execute(() -> remove(appContext, video.videoId));
-        } else if (positionMs >= MIN_POSITION_MS) {
+        } else if (positionMs >= MIN_POSITION_MS && video.getTitleFull() != null) {
+            // A video opened from a link (phone, Continue Watching) has no title until its metadata loads
             WatchNextProgram program = createProgram(appContext, video, positionMs, durationMs);
             sExecutor.execute(() -> upsert(appContext, video.videoId, program));
         }
@@ -68,7 +69,7 @@ public class WatchNextPublisher {
         builder.setType(WatchNextPrograms.TYPE_CLIP)
                 .setWatchNextType(WatchNextPrograms.WATCH_NEXT_TYPE_CONTINUE)
                 .setLastEngagementTimeUtcMillis(System.currentTimeMillis())
-                .setTitle(video.title)
+                .setTitle(video.getTitleFull())
                 .setDescription(video.getAuthor())
                 .setIntentUri(Uri.parse(intent.toUri(Intent.URI_INTENT_SCHEME)))
                 .setInternalProviderId(video.videoId)
@@ -77,10 +78,12 @@ public class WatchNextPublisher {
                 .setDurationMillis((int) durationMs);
 
         String poster = video.bgImageUrl != null ? video.bgImageUrl : video.cardImageUrl;
-        if (poster != null) {
-            builder.setPosterArtUri(Uri.parse(poster))
-                    .setPosterArtAspectRatio(WatchNextPrograms.ASPECT_RATIO_16_9);
+        if (poster == null) {
+            // Opened from a link: no card was ever shown for it
+            poster = "https://i.ytimg.com/vi/" + video.videoId + "/hqdefault.jpg";
         }
+        builder.setPosterArtUri(Uri.parse(poster))
+                .setPosterArtAspectRatio(WatchNextPrograms.ASPECT_RATIO_16_9);
 
         return builder.build();
     }
