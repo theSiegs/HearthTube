@@ -19,6 +19,7 @@ import com.liskovsoft.smartyoutubetv2.common.R;
  */
 public final class KidsProfileAdmin {
     private static final String RECEIVER = "com.liskovsoft.smartyoutubetv2.tv.HearthTubeDeviceAdmin";
+    private static final String HEARTH_PACKAGE = "com.leanbitlab.ltvL";
 
     private KidsProfileAdmin() {
     }
@@ -38,8 +39,27 @@ public final class KidsProfileAdmin {
         return dpm != null && dpm.isAdminActive(component(context));
     }
 
-    /** Opens Android's own "Activate device admin" confirmation. */
+    /**
+     * Whether Hearth can stand in for Google TV's screen time: it must be the home app (Google TV can't suspend
+     * that, so it keeps seeing profile switches and time-up screens) and new enough to report kids_profile and
+     * screen_time_up. Without it, nothing would stop HearthTube at bedtime once Google TV can't pause it.
+     */
+    public static boolean canGuardScreenTime(Context context) {
+        Intent home = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME);
+        android.content.pm.ResolveInfo info = context.getPackageManager().resolveActivity(home, PackageManager.MATCH_DEFAULT_ONLY);
+        boolean hearthIsHome = info != null && info.activityInfo != null
+                && HEARTH_PACKAGE.equals(info.activityInfo.packageName);
+        HearthProfile hearth = HearthProfile.queryHearth(context);
+        return hearthIsHome && hearth != null && hearth.kidsProfile != null;
+    }
+
+    /** Opens Android's own "Activate device admin" confirmation, if Hearth can guard screen time. */
     public static void requestActive(Context context) {
+        if (!canGuardScreenTime(context)) {
+            MessageHelpers.showLongMessage(context, R.string.hearth_kids_profiles_needs_hearth);
+            return;
+        }
+
         Intent intent = new Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN)
                 .putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, component(context))
                 .putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, context.getString(R.string.hearth_kids_profiles_explanation));

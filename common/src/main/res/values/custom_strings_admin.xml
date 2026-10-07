@@ -5,4 +5,5 @@
     <string name="hearth_kids_profiles_description">Google TV can\'t approve HearthTube for kids. This lets it open anyway; Hearth\'s bedtime and screen time still apply.</string>
     <string name="hearth_kids_profiles_explanation">Lets HearthTube open in Google TV kids profiles. It asks for no device controls: it can\'t lock, wipe or change anything. Turn it off in HearthTube\'s settings.</string>
     <string name="hearth_kids_profiles_unavailable">This TV can\'t switch this on</string>
+    <string name="hearth_kids_profiles_needs_hearth">Needs the latest Hearth as the TV\'s home screen, so bedtime and screen time still apply</string>
 </resources>
