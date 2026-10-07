@@ -109,8 +109,8 @@ public final class ParentGate {
     }
 
     /**
-     * Google TV has no API for it, but a kids profile suspends every app a parent hasn't approved
-     * (the same check the Hearth launcher uses). Adult profiles suspend none.
+     * Hearth's word, else Family Link's supervision restrictions on our own user, else suspended apps (a kids
+     * profile suspends every app a parent hasn't approved; adult profiles suspend none).
      */
     public static boolean isKidsProfile(Context context) {
         if (context == null || VERSION.SDK_INT < 24) {
@@ -120,6 +120,12 @@ public final class ParentGate {
         // Hearth's word first, when it has one (it can tell even when every app is approved)
         HearthProfile hearth = HearthProfile.isHearthSuspended(context) ? null : HearthProfile.queryHearth(context);
         if (hearth != null && Boolean.TRUE.equals(hearth.kidsProfile)) {
+            return true;
+        }
+
+        // Family Link supervision, read for our own user (Hearth does the same): true even when a kid's apps are all
+        // approved, and in a kid's own profile user, where Google TV runs HearthTube apart from user 0 and Hearth
+        if (isSupervisedUser(context)) {
             return true;
         }
 
@@ -134,6 +140,29 @@ public final class ParentGate {
                     return true;
                 }
             }
+        }
+
+        return false;
+    }
+
+    /** Restrictions Family Link puts on a supervised (kids) profile's user, whatever the parent allows */
+    private static final String[] SUPERVISION_RESTRICTIONS = {
+            "no_config_credentials", "no_grant_admin", "no_add_managed_profile"};
+
+    private static boolean isSupervisedUser(Context context) {
+        try {
+            android.os.UserManager users = (android.os.UserManager) context.getSystemService(Context.USER_SERVICE);
+            android.os.Bundle restrictions = users != null ? users.getUserRestrictions() : null;
+
+            if (restrictions != null) {
+                for (String restriction : SUPERVISION_RESTRICTIONS) {
+                    if (restrictions.getBoolean(restriction, false)) {
+                        return true;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            // Can't tell: the suspended apps check decides
         }
 
         return false;
