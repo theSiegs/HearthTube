@@ -72,10 +72,18 @@ public class HearthProfile {
      */
     @Nullable
     public final String profileId;
+    /**
+     * Hearth has finished settling into the active profile after a switch or start (contract 3); until then its
+     * profile can be a step behind. Null when Hearth is too old to say.
+     */
+    @Nullable
+    public final Boolean profileReady;
+    /** Goes up by one with every profile switch and every Hearth start (contract 3); 0 when Hearth is too old. */
+    public final long switchGeneration;
     /** Hearth's provider contract version (docs/provider-contract.md in Hearth); 1 before it was reported. */
     public final int contractVersion;
     /** The newest contract this code was written against: a newer Hearth may mean columns changed meaning. */
-    private static final int KNOWN_CONTRACT = 2;
+    private static final int KNOWN_CONTRACT = 3;
     private static boolean sWarnedNewerContract;
 
     private HearthProfile(Cursor cursor) {
@@ -92,6 +100,8 @@ public class HearthProfile {
         this.screenTimeUp = getLong(cursor, "screen_time_up") == 1;
         this.serviceRunning = cursor.getColumnIndex("service_running") != -1 ? getLong(cursor, "service_running") == 1 : null;
         this.profileId = getString(cursor, "profile_id");
+        this.profileReady = cursor.getColumnIndex("profile_ready") != -1 ? getLong(cursor, "profile_ready") == 1 : null;
+        this.switchGeneration = getLong(cursor, "switch_generation");
         this.contractVersion = cursor.getColumnIndex("contract_version") != -1 ? (int) getLong(cursor, "contract_version") : 1;
 
         if (contractVersion > KNOWN_CONTRACT && !sWarnedNewerContract) {
@@ -119,7 +129,8 @@ public class HearthProfile {
         }
 
         HearthProfile hearth = queryHearth(context);
-        return hearth != null && hearth.key() != null ? hearth : null;
+        // Mid-switch, the profile may still be the last one: can't tell yet (the next screen asks again)
+        return hearth != null && hearth.key() != null && !Boolean.FALSE.equals(hearth.profileReady) ? hearth : null;
     }
 
     /** Hearth is installed but suspended by Google TV (a kids profile that hasn't approved it) */

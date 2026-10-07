@@ -51,7 +51,6 @@ public final class HearthScreenTime {
 
     /** A HearthTube screen came to the front */
     public static void onResume(Activity activity) {
-        KidsProfileAdmin.dropIfHearthGone(activity);
         sActivity = new WeakReference<>(activity);
         Utils.removeCallbacks(sCheck);
 
@@ -92,8 +91,6 @@ public final class HearthScreenTime {
 
         if (hearth != null && hearth.screenTimeUp) {
             message = R.string.screen_time_up;
-        } else if (isUnwatchedKidsProfile(activity, hearth)) {
-            message = R.string.screen_time_unknown;
         } else {
             return true;
         }
@@ -101,39 +98,6 @@ public final class HearthScreenTime {
         PlaybackPresenter.instance(activity).forceFinish();
         MessageHelpers.showLongMessage(activity, message);
         HearthProfile.goHome(activity);
-        return false;
-    }
-
-    /**
-     * Fail-safe: HearthTube is a device admin (so Google TV can't suspend it in kids profiles) in a kids profile,
-     * but Hearth can't tell screen time (missing, suspended, too old, or its accessibility service isn't running). Then
-     * HearthTube stays shut, as Google TV
-     * would have kept it.
-     */
-    private static boolean isUnwatchedKidsProfile(Activity activity, HearthProfile hearth) {
-        // Hearth's accessibility service sees screen time: without it, screen_time_up stays 0 whatever Google TV says
-        boolean hearthWatches = hearth != null && hearth.kidsProfile != null && !Boolean.FALSE.equals(hearth.serviceRunning);
-
-        return !hearthWatches && isOwnAdminActive(activity) && ParentGate.isKidsProfile(activity);
-    }
-
-    private static boolean isOwnAdminActive(Activity activity) {
-        try {
-            android.app.admin.DevicePolicyManager dpm =
-                    (android.app.admin.DevicePolicyManager) activity.getSystemService(android.content.Context.DEVICE_POLICY_SERVICE);
-            java.util.List<android.content.ComponentName> admins = dpm != null ? dpm.getActiveAdmins() : null;
-
-            if (admins != null) {
-                for (android.content.ComponentName admin : admins) {
-                    if (activity.getPackageName().equals(admin.getPackageName())) {
-                        return true;
-                    }
-                }
-            }
-        } catch (Exception e) {
-            // No device policy service: not an admin
-        }
-
         return false;
     }
 }

@@ -15,37 +15,5 @@
         android:icon="@drawable/hearthtube_icon"
         android:banner="@drawable/hearthtube_banner"
         tools:replace="android:icon,android:banner">
-
-        <!-- Asks Android to activate the admin below; standard launch mode so the confirmation sees its caller -->
-        <activity
-            android:name="com.liskovsoft.smartyoutubetv2.tv.KidsAdminRequestActivity"
-            android:theme="@android:style/Theme.Translucent.NoTitleBar"
-            android:excludeFromRecents="true"
-            android:exported="false" />
-
-        <!-- Keeps Google TV from suspending HearthTube in kids profiles (see HearthTubeDeviceAdmin) -->
-        <receiver
-            android:name="com.liskovsoft.smartyoutubetv2.tv.HearthTubeDeviceAdmin"
-            android:label="@string/app_name"
-            android:description="@string/device_admin_description"
-            android:permission="android.permission.BIND_DEVICE_ADMIN"
-            android:exported="true">
-            <meta-data
-                android:name="android.app.device_admin"
-                android:resource="@xml/hearthtube_device_admin" />
-            <intent-filter>
-                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
-            </intent-filter>
-        </receiver>
-
-        <!-- Hearth uninstalled: give up the admin above even if HearthTube isn't opened again (HearthGoneReceiver) -->
-        <receiver
-            android:name="com.liskovsoft.smartyoutubetv2.tv.HearthGoneReceiver"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.PACKAGE_FULLY_REMOVED" />
-                <data android:scheme="package" />
-            </intent-filter>
-        </receiver>
     </application>
 </manifest>

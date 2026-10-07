@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- No policies: the admin only keeps Google TV from suspending HearthTube in kids profiles (HearthTubeDeviceAdmin) -->
-<device-admin>
-    <uses-policies />
-</device-admin>

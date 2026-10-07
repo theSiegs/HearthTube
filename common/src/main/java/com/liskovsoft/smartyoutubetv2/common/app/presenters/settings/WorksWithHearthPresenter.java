@@ -9,7 +9,6 @@ import com.liskovsoft.smartyoutubetv2.common.prefs.HearthLinkData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.ProfileLinkData;
 import com.liskovsoft.smartyoutubetv2.common.utils.HearthLook;
 import com.liskovsoft.smartyoutubetv2.common.utils.HearthProfile;
-import com.liskovsoft.smartyoutubetv2.common.utils.KidsProfileAdmin;
 import com.liskovsoft.smartyoutubetv2.common.utils.WatchNextPublisher;
 
 /**
@@ -52,20 +51,6 @@ public class WorksWithHearthPresenter {
 
         dialog.appendSingleSwitch(UiOptionItem.from(context.getString(R.string.hearth_home_assistant),
                 option -> data.setHomeAssistantEnabled(option.isSelected()), data.isHomeAssistantEnabled()));
-
-        // Settings are behind ParentGate already, so a kid can't switch this off (or on)
-        if (KidsProfileAdmin.isAvailable(context)) {
-            dialog.appendSingleSwitch(UiOptionItem.from(context.getString(R.string.hearth_kids_profiles),
-                    context.getString(R.string.hearth_kids_profiles_description), option -> {
-                        if (option.isSelected()) {
-                            // Android's confirmation (or a refusal) decides; the switch can't show it, so reopen to see it
-                            dialog.closeDialog();
-                            KidsProfileAdmin.requestActive(context);
-                        } else {
-                            KidsProfileAdmin.removeActive(context);
-                        }
-                    }, KidsProfileAdmin.isActive(context)));
-        }
 
         dialog.showDialog(context.getString(R.string.works_with_hearth));
     }

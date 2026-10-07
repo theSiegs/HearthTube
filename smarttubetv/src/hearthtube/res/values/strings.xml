@@ -7,6 +7,4 @@
     <string name="settings_description">HearthTube Videos</string>
     <string translatable="false" name="search_authority">com.thesiegs.hearthtube</string>
 
-    <!-- Device admin (HearthTubeDeviceAdmin): asks for no device policies -->
-    <string name="device_admin_description">Lets HearthTube open in kids profiles. It can\'t lock, wipe or change anything.</string>
 </resources>
