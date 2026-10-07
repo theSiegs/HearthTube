@@ -38,9 +38,33 @@ public final class ParentGate {
             return;
         }
 
-        PinChecker checker = pinChecker(context);
-        // No PIN anywhere yet (a kid's own copy of HearthTube starts empty): the parent setting it up chooses one
-        Runnable ask = checker != null ? () -> askPin(context, checker, action) : () -> createPin(context, action, null);
+        ProfileLinkData links = ProfileLinkData.instance(context);
+        HearthProfile hearth = HearthProfile.queryHearth(context);
+        Runnable ask;
+
+        if (hearth != null && hearth.hasParentPin) {
+            links.setUsingHearthPin(true);
+            ask = () -> askPin(context, hearthPinChecker(context), action);
+        } else if (links.isUsingHearthPin()) {
+            if (isHearthSilent(context, hearth)) {
+                // Hearth is there but not answering (busy, restarting): its PIN can't be checked, and a new one
+                // can't be chosen either, or a kid could wait for this moment
+                MessageHelpers.showLongMessage(context, R.string.parent_pin_hearth_silent);
+                return;
+            }
+
+            // Hearth's PIN went away for good (removed in Hearth, which takes that PIN, or Hearth uninstalled):
+            // HearthTube's own PIN from before is likely forgotten, so the parent chooses a new one right away
+            links.setUsingHearthPin(false);
+            links.setParentPin(null);
+            ask = () -> createPin(context, action, context.getString(R.string.parent_pin_hearth_gone));
+        } else if (links.getParentPin() == null) {
+            // No PIN yet (a kid's own copy starts empty): the parent setting it up chooses one
+            ask = () -> createPin(context, action, null);
+        } else {
+            String parentPin = links.getParentPin();
+            ask = () -> askPin(context, parentPin::equals, action);
+        }
 
         // The PIN screen belongs to the screen below an open settings panel and would show under it
         AppDialogPresenter dialog = AppDialogPresenter.instance(context);
@@ -79,20 +103,22 @@ public final class ParentGate {
         boolean check(String pin);
     }
 
-    /** Hearth's parent PIN when it has one, else HearthTube's own. Null: no PIN set anywhere. */
-    private static PinChecker pinChecker(Context context) {
-        if (usesHearthPin(context)) {
-            return pin -> {
-                int result = HearthProfile.verifyParentPin(context, pin);
-                if (result > 0) {
-                    MessageHelpers.showMessage(context, R.string.parent_pin_wait, result);
-                }
-                return result == HearthProfile.PIN_OK;
-            };
-        }
+    private static PinChecker hearthPinChecker(Context context) {
+        return pin -> {
+            int result = HearthProfile.verifyParentPin(context, pin);
+            if (result > 0) {
+                MessageHelpers.showMessage(context, R.string.parent_pin_wait, result);
+            }
+            return result == HearthProfile.PIN_OK;
+        };
+    }
 
-        String parentPin = ProfileLinkData.instance(context).getParentPin();
-        return parentPin != null ? parentPin::equals : null;
+    /**
+     * Hearth is installed and genuine but didn't answer. (Not installed, or answering that it has no PIN, are both
+     * for good: the first takes an adult uninstalling it, the second Hearth's own PIN.)
+     */
+    private static boolean isHearthSilent(Context context, HearthProfile hearth) {
+        return hearth == null && HearthProfile.isGenuine(context) == Boolean.TRUE;
     }
 
     private static void askPin(Context context, PinChecker checker, Runnable action) {

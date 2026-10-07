@@ -9,6 +9,7 @@ import android.os.Looper;
 import com.liskovsoft.sharedutils.helpers.MessageHelpers;
 import com.liskovsoft.smartyoutubetv2.common.R;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.PlaybackPresenter;
+import com.liskovsoft.smartyoutubetv2.common.prefs.ProfileLinkData;
 
 import java.lang.ref.WeakReference;
 
@@ -83,6 +84,11 @@ public final class HearthScreenTime {
     private static boolean check(Activity activity) {
         HearthProfile hearth = HearthProfile.isHearthSuspended(activity) ? null : HearthProfile.queryHearth(activity);
         int message;
+
+        if (hearth != null && hearth.hasParentPin) {
+            // Remembered, so if Hearth's PIN goes away later the parent gets to choose a new one (ParentGate)
+            ProfileLinkData.instance(activity).setUsingHearthPin(true);
+        }
 
         if (hearth != null && hearth.screenTimeUp) {
             message = R.string.screen_time_up;

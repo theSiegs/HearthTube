@@ -24,6 +24,7 @@ public class ProfileLinkData {
     private static final String LINK_PREFIX = "link:";
     private static final String FOLLOW_KEY = "follow_google_tv_profile";
     private static final String PARENT_PIN_KEY = "parent_pin";
+    private static final String USING_HEARTH_PIN_KEY = "using_hearth_pin";
     private static final String GUEST_ENABLED_KEY = "guest_enabled";
     /** "kids:<profile>" = true for a Google TV kids profile, false for a grown-up's (as last seen) */
     private static final String KIDS_PREFIX = "kids:";
@@ -67,6 +68,17 @@ public class ProfileLinkData {
 
     public void setParentPin(@Nullable String pin) {
         mPrefs.edit().putString(PARENT_PIN_KEY, pin).apply();
+    }
+
+    /** HearthTube has been using Hearth's parent PIN (so its own one, if any, is likely forgotten) */
+    public boolean isUsingHearthPin() {
+        return mPrefs.getBoolean(USING_HEARTH_PIN_KEY, false);
+    }
+
+    public void setUsingHearthPin(boolean using) {
+        if (using != isUsingHearthPin()) {
+            mPrefs.edit().putBoolean(USING_HEARTH_PIN_KEY, using).apply();
+        }
     }
 
     /**
