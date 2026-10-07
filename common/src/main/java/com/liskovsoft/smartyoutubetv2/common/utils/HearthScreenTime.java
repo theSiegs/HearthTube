@@ -81,7 +81,8 @@ public final class HearthScreenTime {
      * @return false when time was up (and HearthTube stepped aside)
      */
     private static boolean check(Activity activity) {
-        HearthProfile hearth = HearthProfile.isHearthSuspended(activity) ? null : HearthProfile.queryHearth(activity);
+        HearthProfile hearth = HearthProfile.isHearthSuspended(activity) ? null
+                : HearthProfile.live(activity, HearthProfile.queryHearth(activity));
         int message;
 
         if (hearth != null && hearth.hasParentPin) {

@@ -128,7 +128,7 @@ public class HearthProfile {
             return null;
         }
 
-        HearthProfile hearth = queryHearth(context);
+        HearthProfile hearth = live(context, queryHearth(context));
         // Mid-switch, the profile may still be the last one: can't tell yet (the next screen asks again)
         return hearth != null && hearth.key() != null && !Boolean.FALSE.equals(hearth.profileReady) ? hearth : null;
     }
@@ -167,6 +167,29 @@ public class HearthProfile {
             Log.d(TAG, "Hearth unavailable: %s", e.getMessage());
             return null;
         }
+    }
+
+    /**
+     * Hearth's answer, when it can be relied on, else null. In Hearth's own user (the TV's owner) it always can.
+     * In a profile user it comes from Hearth's agent there, which repeats Hearth's live row only while connected
+     * to Hearth (service_running = 1); otherwise it's a stale copy, as good as no answer.
+     */
+    @Nullable
+    public static HearthProfile live(Context context, @Nullable HearthProfile hearth) {
+        if (hearth == null || isOwnerUser(context)) {
+            return hearth;
+        }
+
+        return Boolean.TRUE.equals(hearth.serviceRunning) ? hearth : null;
+    }
+
+    private static boolean isOwnerUser(Context context) {
+        if (android.os.Build.VERSION.SDK_INT < 23) {
+            return true;
+        }
+
+        android.os.UserManager users = (android.os.UserManager) context.getSystemService(Context.USER_SERVICE);
+        return users == null || users.isSystemUser();
     }
 
     /** Result of {@link #verifyParentPin}: {@link #PIN_OK}, {@link #PIN_WRONG}, {@link #PIN_UNAVAILABLE} or seconds to wait. */

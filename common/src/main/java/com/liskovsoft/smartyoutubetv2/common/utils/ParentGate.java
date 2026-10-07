@@ -39,7 +39,7 @@ public final class ParentGate {
         }
 
         ProfileLinkData links = ProfileLinkData.instance(context);
-        HearthProfile hearth = HearthProfile.queryHearth(context);
+        HearthProfile hearth = HearthProfile.live(context, HearthProfile.queryHearth(context));
         Runnable ask;
 
         if (hearth != null && hearth.hasParentPin) {
@@ -108,6 +108,9 @@ public final class ParentGate {
             int result = HearthProfile.verifyParentPin(context, pin);
             if (result > 0) {
                 MessageHelpers.showMessage(context, R.string.parent_pin_wait, result);
+            } else if (result == HearthProfile.PIN_UNAVAILABLE) {
+                // Not a wrong PIN: Hearth (or its agent's link to it) didn't answer in time
+                MessageHelpers.showLongMessage(context, R.string.parent_pin_hearth_silent);
             }
             return result == HearthProfile.PIN_OK;
         };
@@ -138,7 +141,7 @@ public final class ParentGate {
 
     /** Hearth has a parent PIN, which then stands in for HearthTube's own */
     public static boolean usesHearthPin(Context context) {
-        HearthProfile hearth = HearthProfile.queryHearth(context);
+        HearthProfile hearth = HearthProfile.live(context, HearthProfile.queryHearth(context));
         return hearth != null && hearth.hasParentPin;
     }
 
