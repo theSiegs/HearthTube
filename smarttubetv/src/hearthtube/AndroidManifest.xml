@@ -14,5 +14,21 @@
     <application
         android:icon="@drawable/hearthtube_icon"
         android:banner="@drawable/hearthtube_banner"
-        tools:replace="android:icon,android:banner"/>
+        tools:replace="android:icon,android:banner">
+
+        <!-- Keeps Google TV from suspending HearthTube in kids profiles (see HearthTubeDeviceAdmin) -->
+        <receiver
+            android:name="com.liskovsoft.smartyoutubetv2.tv.HearthTubeDeviceAdmin"
+            android:label="@string/app_name"
+            android:description="@string/device_admin_description"
+            android:permission="android.permission.BIND_DEVICE_ADMIN"
+            android:exported="true">
+            <meta-data
+                android:name="android.app.device_admin"
+                android:resource="@xml/hearthtube_device_admin" />
+            <intent-filter>
+                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
+            </intent-filter>
+        </receiver>
+    </application>
 </manifest>
