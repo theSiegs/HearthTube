@@ -128,7 +128,7 @@ public class SideMenuPresenter {
         com.liskovsoft.smartyoutubetv2.common.utils.HearthProfile profile =
                 com.liskovsoft.smartyoutubetv2.common.utils.HearthProfile.query(context);
 
-        if (profile != null) {
+        if (profile != null && profile.name != null) {
             return profile.name;
         }
 

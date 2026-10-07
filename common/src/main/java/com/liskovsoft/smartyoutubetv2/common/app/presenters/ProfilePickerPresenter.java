@@ -185,7 +185,9 @@ public class ProfilePickerPresenter extends BasePresenter<ProfilePickerView> {
      * Name of the Google TV profile the open picker is choosing an account for, or null.
      */
     public String getLinkingProfile() {
-        return mLinkingProfile != null ? ProfileLinkData.instance(getContext()).getDisplayName(mLinkingProfile) : null;
+        String name = mLinkingProfile != null ? ProfileLinkData.instance(getContext()).getDisplayName(mLinkingProfile) : null;
+        // Hearth may not know the name yet: never show the bare key ("user:12")
+        return name != null && !name.equals(mLinkingProfile) ? name : null;
     }
 
     /**

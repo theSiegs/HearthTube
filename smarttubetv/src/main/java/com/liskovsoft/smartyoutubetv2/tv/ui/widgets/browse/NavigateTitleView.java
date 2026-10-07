@@ -458,7 +458,7 @@ public class NavigateTitleView extends TitleView implements OnDataChange, Accoun
         com.liskovsoft.smartyoutubetv2.common.utils.HearthProfile profile =
                 com.liskovsoft.smartyoutubetv2.common.utils.HearthProfile.query(getContext());
 
-        if (profile != null) {
+        if (profile != null && profile.name != null) {
             return profile.name;
         }
 
