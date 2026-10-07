@@ -62,6 +62,8 @@ public class WorksWithHearthPresenter {
             dialog.appendSingleSwitch(UiOptionItem.from(context.getString(R.string.hearth_kids_profiles),
                     context.getString(R.string.hearth_kids_profiles_description), option -> {
                         if (option.isSelected()) {
+                            // Android's confirmation (or a refusal) decides; the switch can't show it, so reopen to see it
+                            dialog.closeDialog();
                             KidsProfileAdmin.requestActive(context);
                         } else {
                             KidsProfileAdmin.removeActive(context);
