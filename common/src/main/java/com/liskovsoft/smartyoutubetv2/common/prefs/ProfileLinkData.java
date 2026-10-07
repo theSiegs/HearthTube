@@ -25,6 +25,8 @@ public class ProfileLinkData {
     private static final String FOLLOW_KEY = "follow_google_tv_profile";
     private static final String PARENT_PIN_KEY = "parent_pin";
     private static final String GUEST_ENABLED_KEY = "guest_enabled";
+    /** "kids:<profile>" = true for a Google TV kids profile, false for a grown-up's (as last seen) */
+    private static final String KIDS_PREFIX = "kids:";
     private static final String GUEST = "";
     @SuppressLint("StaticFieldLeak")
     private static ProfileLinkData sInstance;
@@ -111,6 +113,42 @@ public class ProfileLinkData {
     public void setLink(String profileName, @Nullable Account account) {
         String value = account != null && account.getName() != null ? account.getName() : GUEST;
         mPrefs.edit().putString(LINK_PREFIX + profileName, value).apply();
+    }
+
+    /** Note whether this Google TV profile is a kids profile (it was the active one just now) */
+    public void setKidsProfile(String profileName, boolean kids) {
+        if (profileName != null && mPrefs.getBoolean(KIDS_PREFIX + profileName, !kids) != kids) {
+            mPrefs.edit().putBoolean(KIDS_PREFIX + profileName, kids).apply();
+        }
+    }
+
+    /**
+     * The account is a grown-up's: some profile seen as not a kids profile watches with it. The guest counts too:
+     * signed out, nothing is filtered.
+     */
+    public boolean isGrownUpAccount(@Nullable Account account) {
+        return isGrownUp(mPrefs.getAll(), account != null ? account.getName() : null);
+    }
+
+    /** {@link #isGrownUpAccount} over the saved links ("link:<profile>" = account, "kids:<profile>" = kids flag) */
+    static boolean isGrownUp(java.util.Map<String, ?> saved, @Nullable String accountName) {
+        if (accountName == null) {
+            return true;
+        }
+
+        for (java.util.Map.Entry<String, ?> entry : saved.entrySet()) {
+            String key = entry.getKey();
+
+            if (key.startsWith(LINK_PREFIX) && accountName.equals(entry.getValue())) {
+                Object kids = saved.get(KIDS_PREFIX + key.substring(LINK_PREFIX.length()));
+
+                if (Boolean.FALSE.equals(kids)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     public void removeLink(String profileName) {

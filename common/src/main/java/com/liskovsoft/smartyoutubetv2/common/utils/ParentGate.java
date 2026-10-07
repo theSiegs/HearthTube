@@ -95,6 +95,11 @@ public final class ParentGate {
                 });
     }
 
+    /** A parent entered the PIN in the last few minutes */
+    public static boolean isUnlocked() {
+        return System.currentTimeMillis() <= sUnlockedUntilMs;
+    }
+
     /**
      * A kids profile that hasn't been unlocked by a parent just now.
      */

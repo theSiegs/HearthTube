@@ -116,10 +116,24 @@ public class ProfilePickerPresenter extends BasePresenter<ProfilePickerView> {
         }
 
         HearthProfile profile = HearthProfile.query(getContext());
+        boolean kids = ParentGate.isKidsProfile(getContext());
 
         if (profile == null) {
+            // Can't tell who's watching. In a kids profile, a grown-up's account (or the guest) isn't kept:
+            // the picker asks, and only a kid's account goes through without the parent PIN.
+            if (kids && links.isGrownUpAccount(mSignInService.getSelectedAccount()) && !ParentGate.isUnlocked()) {
+                if (isDeepLink(intent)) {
+                    return FOLLOW_NONE;
+                }
+
+                getViewManager().startView(ProfilePickerView.class);
+                return FOLLOW_PICKER;
+            }
+
             return FOLLOW_NONE;
         }
+
+        links.setKidsProfile(profile.name, kids);
 
         ProfileLinkData.Link link = links.getLink(profile.name, accounts);
 
@@ -211,8 +225,9 @@ public class ProfilePickerPresenter extends BasePresenter<ProfilePickerView> {
     }
 
     public void onAccountPicked(Account account) {
-        // Pairing a kids profile with an account is a parent's call
-        if (mLinkingProfile != null && ParentGate.isLocked(getContext())) {
+        // In a kids profile, a grown-up's account (or the guest) is a parent's call; so is pairing the profile
+        boolean grownUp = ProfileLinkData.instance(getContext()).isGrownUpAccount(account);
+        if ((mLinkingProfile != null || grownUp) && ParentGate.isLocked(getContext())) {
             ParentGate.run(getContext(), () -> switchTo(account, true));
             return;
         }

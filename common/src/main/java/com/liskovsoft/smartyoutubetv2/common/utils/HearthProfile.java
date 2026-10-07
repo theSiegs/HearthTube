@@ -62,8 +62,28 @@ public class HearthProfile {
      */
     @Nullable
     public static HearthProfile query(Context context) {
+        // A Google TV kids profile can suspend Hearth too (when it isn't the home app): it then never sees
+        // profile switches, and its last profile is stale. Never follow it.
+        if (isHearthSuspended(context)) {
+            return null;
+        }
+
         HearthProfile hearth = queryHearth(context);
         return hearth != null && hearth.name != null ? hearth : null;
+    }
+
+    /** Hearth is installed but suspended by Google TV (a kids profile that hasn't approved it) */
+    public static boolean isHearthSuspended(Context context) {
+        if (context == null || android.os.Build.VERSION.SDK_INT < 24) {
+            return false;
+        }
+
+        try {
+            android.content.pm.ApplicationInfo info = context.getPackageManager().getApplicationInfo("com.leanbitlab.ltvL", 0);
+            return (info.flags & android.content.pm.ApplicationInfo.FLAG_SUSPENDED) != 0;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     /**
