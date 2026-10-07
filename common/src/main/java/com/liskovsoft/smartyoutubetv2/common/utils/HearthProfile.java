@@ -49,6 +49,18 @@ public class HearthProfile {
     public final Boolean kidsProfile;
     /** Google TV's time-up or bedtime screen is on (kids screen time) */
     public final boolean screenTimeUp;
+    /**
+     * Hearth's accessibility service is running: without it Hearth sees no profile switches and no screen time, so
+     * {@link #kidsProfile} and {@link #screenTimeUp} can't be trusted. Null when Hearth is too old to say.
+     */
+    @Nullable
+    public final Boolean serviceRunning;
+    /**
+     * The Google TV profile's lasting key ("user:11"): known before its {@link #name} and unchanged when the
+     * profile is renamed. Null when Hearth can't tell or is too old to say.
+     */
+    @Nullable
+    public final String profileId;
 
     private HearthProfile(Cursor cursor) {
         String name = getString(cursor, "name");
@@ -62,10 +74,19 @@ public class HearthProfile {
         this.wallpaperStamp = getLong(cursor, "wallpaper_stamp");
         this.kidsProfile = cursor.getColumnIndex("kids_profile") != -1 ? getLong(cursor, "kids_profile") == 1 : null;
         this.screenTimeUp = getLong(cursor, "screen_time_up") == 1;
+        this.serviceRunning = cursor.getColumnIndex("service_running") != -1 ? getLong(cursor, "service_running") == 1 : null;
+        this.profileId = getString(cursor, "profile_id");
+    }
+
+    /** What to save per-profile things under: the lasting {@link #profileId}, or the name with an older Hearth. */
+    @Nullable
+    public String key() {
+        return profileId != null ? profileId : name;
     }
 
     /**
-     * The active Google TV profile. Null when Hearth is missing or couldn't tell who's watching.
+     * The active Google TV profile. Null when Hearth is missing or couldn't tell who's watching (it may know the
+     * profile's {@link #profileId} before its name).
      */
     @Nullable
     public static HearthProfile query(Context context) {
@@ -76,7 +97,7 @@ public class HearthProfile {
         }
 
         HearthProfile hearth = queryHearth(context);
-        return hearth != null && hearth.name != null ? hearth : null;
+        return hearth != null && hearth.key() != null ? hearth : null;
     }
 
     /** Hearth is installed but suspended by Google TV (a kids profile that hasn't approved it) */

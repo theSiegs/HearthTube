@@ -10,15 +10,14 @@ import android.os.Build.VERSION;
 import com.liskovsoft.sharedutils.helpers.MessageHelpers;
 import com.liskovsoft.smartyoutubetv2.common.R;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.AppDialogPresenter;
-import com.liskovsoft.smartyoutubetv2.common.prefs.HearthLinkData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.ProfileLinkData;
 
 import java.util.List;
 
 /**
  * Keeps kids on their own YouTube account. In a Google TV kids profile, anything that changes the
- * account (picker, Accounts settings, sign in, pairing a profile) needs the parent PIN, set in Accounts
- * settings, or Hearth's parent PIN (Works with Hearth) so one PIN covers both apps. Account PINs don't count: a kid
+ * account (picker, Accounts settings, sign in, pairing a profile) needs the parent PIN: Hearth's whenever Hearth
+ * has one, so one PIN covers both apps, else HearthTube's own (Accounts settings). Account PINs don't count: a kid
  * knows their own. Without a parent PIN it's simply locked; a parent changes accounts from their own Google TV profile.
  */
 public final class ParentGate {
@@ -60,20 +59,16 @@ public final class ParentGate {
         boolean check(String pin);
     }
 
-    /** Hearth's parent PIN when it has one (and that's switched on), else HearthTube's own. Null: no PIN set anywhere. */
+    /** Hearth's parent PIN when it has one, else HearthTube's own. Null: no PIN set anywhere. */
     private static PinChecker pinChecker(Context context) {
-        if (HearthLinkData.instance(context).isHearthParentPinEnabled()) {
-            HearthProfile hearth = HearthProfile.queryHearth(context);
-
-            if (hearth != null && hearth.hasParentPin) {
-                return pin -> {
-                    int result = HearthProfile.verifyParentPin(context, pin);
-                    if (result > 0) {
-                        MessageHelpers.showMessage(context, R.string.parent_pin_wait, result);
-                    }
-                    return result == HearthProfile.PIN_OK;
-                };
-            }
+        if (usesHearthPin(context)) {
+            return pin -> {
+                int result = HearthProfile.verifyParentPin(context, pin);
+                if (result > 0) {
+                    MessageHelpers.showMessage(context, R.string.parent_pin_wait, result);
+                }
+                return result == HearthProfile.PIN_OK;
+            };
         }
 
         String parentPin = ProfileLinkData.instance(context).getParentPin();
@@ -93,6 +88,12 @@ public final class ParentGate {
                     }
                     return false;
                 });
+    }
+
+    /** Hearth has a parent PIN, which then stands in for HearthTube's own */
+    public static boolean usesHearthPin(Context context) {
+        HearthProfile hearth = HearthProfile.queryHearth(context);
+        return hearth != null && hearth.hasParentPin;
     }
 
     /** A parent entered the PIN in the last few minutes */

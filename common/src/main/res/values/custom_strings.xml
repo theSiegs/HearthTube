@@ -31,8 +31,7 @@
     <string name="works_with_hearth">Works with Hearth</string>
     <string name="works_with_hearth_missing">These need the Hearth launcher, installed and up to date. Until then they do nothing.</string>
     <string name="hearth_follow_profile">Follow the Google TV profile</string>
-    <string name="hearth_parent_pin">Use Hearth\'s parent PIN</string>
-    <string name="hearth_parent_pin_none">Hearth has no parent PIN yet; HearthTube\'s own is used</string>
+    <string name="parent_pin_from_hearth">Parent PIN: Hearth\'s (change it in Hearth Settings → Parent PIN)</string>
     <string name="hearth_continue_watching">Show in Hearth\'s Continue Watching</string>
     <string name="hearth_match_clock_language">Match Hearth\'s clock and language</string>
     <string name="hearth_screensaver_paused">Hearth\'s screensaver when paused</string>

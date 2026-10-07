@@ -27,6 +27,8 @@ public class ProfileLinkData {
     private static final String GUEST_ENABLED_KEY = "guest_enabled";
     /** "kids:<profile>" = true for a Google TV kids profile, false for a grown-up's (as last seen) */
     private static final String KIDS_PREFIX = "kids:";
+    /** "name:<key>" = the profile's name when last seen (links are saved under Hearth's lasting profile key) */
+    private static final String NAME_PREFIX = "name:";
     private static final String GUEST = "";
     @SuppressLint("StaticFieldLeak")
     private static ProfileLinkData sInstance;
@@ -155,19 +157,53 @@ public class ProfileLinkData {
         mPrefs.edit().remove(LINK_PREFIX + profileName).apply();
     }
 
-    /** Every Google TV profile seen so far, sorted. */
-    public List<String> getProfileNames() {
-        List<String> names = new ArrayList<>();
+    /**
+     * Links are saved under Hearth's lasting profile key ("user:11", {@link
+     * com.liskovsoft.smartyoutubetv2.common.utils.HearthProfile#key}), so a renamed Google TV profile keeps its
+     * account. Remembers the profile's current name for showing, and moves a link (and kids flag) saved under
+     * that name, from before Hearth had keys, to the key.
+     */
+    public void adoptName(String key, @Nullable String name) {
+        if (key == null || name == null || key.equals(name)) {
+            return;
+        }
+
+        SharedPreferences.Editor editor = mPrefs.edit();
+        if (!name.equals(mPrefs.getString(NAME_PREFIX + key, null))) {
+            editor.putString(NAME_PREFIX + key, name);
+        }
+
+        String oldLink = mPrefs.getString(LINK_PREFIX + name, null);
+        if (oldLink != null) {
+            if (!mPrefs.contains(LINK_PREFIX + key)) {
+                editor.putString(LINK_PREFIX + key, oldLink);
+                if (mPrefs.contains(KIDS_PREFIX + name)) {
+                    editor.putBoolean(KIDS_PREFIX + key, mPrefs.getBoolean(KIDS_PREFIX + name, false));
+                }
+            }
+            editor.remove(LINK_PREFIX + name).remove(KIDS_PREFIX + name);
+        }
+        editor.apply();
+    }
+
+    /** The name to show for a profile key: its name when last seen, or the key itself (a name, with an older Hearth). */
+    public String getDisplayName(String key) {
+        return mPrefs.getString(NAME_PREFIX + key, key);
+    }
+
+    /** Every Google TV profile seen so far (their keys), sorted by name. */
+    public List<String> getProfileKeys() {
+        List<String> keys = new ArrayList<>();
 
         for (String key : mPrefs.getAll().keySet()) {
             if (key.startsWith(LINK_PREFIX)) {
-                names.add(key.substring(LINK_PREFIX.length()));
+                keys.add(key.substring(LINK_PREFIX.length()));
             }
         }
 
-        Collections.sort(names, String.CASE_INSENSITIVE_ORDER);
+        Collections.sort(keys, (a, b) -> getDisplayName(a).compareToIgnoreCase(getDisplayName(b)));
 
-        return names;
+        return keys;
     }
 
     /**

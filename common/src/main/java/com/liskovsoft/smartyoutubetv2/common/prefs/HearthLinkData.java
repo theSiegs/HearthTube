@@ -10,7 +10,6 @@ import android.content.SharedPreferences;
  */
 public class HearthLinkData {
     private static final String PREFS_NAME = "hearth_link";
-    private static final String HEARTH_PARENT_PIN = "use_hearth_parent_pin";
     private static final String CONTINUE_WATCHING = "continue_watching";
     private static final String MATCH_CLOCK_LANGUAGE = "match_clock_language";
     private static final String SCREENSAVER_WHEN_PAUSED = "screensaver_when_paused";
@@ -32,15 +31,6 @@ public class HearthLinkData {
         }
 
         return sInstance;
-    }
-
-    /** Kids lock asks for Hearth's parent PIN instead of HearthTube's own */
-    public boolean isHearthParentPinEnabled() {
-        return mPrefs.getBoolean(HEARTH_PARENT_PIN, true);
-    }
-
-    public void setHearthParentPinEnabled(boolean enabled) {
-        put(HEARTH_PARENT_PIN, enabled);
     }
 
     /** Unfinished videos show in Hearth's Continue Watching row (Watch Next) */

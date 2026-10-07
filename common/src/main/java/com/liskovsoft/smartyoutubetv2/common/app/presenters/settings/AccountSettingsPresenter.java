@@ -182,6 +182,12 @@ public class AccountSettingsPresenter extends BasePresenter<Void> {
     }
 
     private void appendParentPin(AppDialogPresenter settingsPresenter) {
+        // One PIN for both apps: with Hearth's set, HearthTube's own isn't used (or offered)
+        if (ParentGate.usesHearthPin(getContext())) {
+            settingsPresenter.appendSingleButton(UiOptionItem.from(getContext().getString(R.string.parent_pin_from_hearth)));
+            return;
+        }
+
         ProfileLinkData links = ProfileLinkData.instance(getContext());
 
         settingsPresenter.appendSingleSwitch(UiOptionItem.from(getContext().getString(R.string.parent_pin_setting), optionItem -> {
@@ -244,11 +250,14 @@ public class AccountSettingsPresenter extends BasePresenter<Void> {
         }
 
         ProfileLinkData links = ProfileLinkData.instance(getContext());
-        List<String> profiles = links.getProfileNames();
+        List<String> profiles = links.getProfileKeys();
         HearthProfile active = HearthProfile.query(getContext());
 
-        if (active != null && !profiles.contains(active.name)) {
-            profiles.add(0, active.name);
+        if (active != null) {
+            links.adoptName(active.key(), active.name);
+            if (!profiles.contains(active.key())) {
+                profiles.add(0, active.key());
+            }
         }
 
         if (profiles.isEmpty()) {
@@ -279,7 +288,7 @@ public class AccountSettingsPresenter extends BasePresenter<Void> {
                         option -> linkWithPin(profile, account, settingsPresenter), isLinked));
             }
 
-            String title = getContext().getString(R.string.google_tv_profiles) + ": " + profile;
+            String title = getContext().getString(R.string.google_tv_profiles) + ": " + links.getDisplayName(profile);
             settingsPresenter.appendRadioCategory(title, optionItems);
         }
     }

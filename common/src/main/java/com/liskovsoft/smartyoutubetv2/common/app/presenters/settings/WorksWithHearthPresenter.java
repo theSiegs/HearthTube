@@ -32,10 +32,6 @@ public class WorksWithHearthPresenter {
         dialog.appendSingleSwitch(UiOptionItem.from(context.getString(R.string.hearth_follow_profile),
                 option -> links.setFollowEnabled(option.isSelected()), links.isFollowEnabled()));
 
-        dialog.appendSingleSwitch(UiOptionItem.from(context.getString(R.string.hearth_parent_pin),
-                hearth != null && !hearth.hasParentPin ? context.getString(R.string.hearth_parent_pin_none) : null,
-                option -> data.setHearthParentPinEnabled(option.isSelected()), data.isHearthParentPinEnabled()));
-
         dialog.appendSingleSwitch(UiOptionItem.from(context.getString(R.string.hearth_continue_watching), option -> {
             data.setContinueWatchingEnabled(option.isSelected());
             if (!option.isSelected()) {

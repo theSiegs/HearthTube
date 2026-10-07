@@ -133,16 +133,19 @@ public class ProfilePickerPresenter extends BasePresenter<ProfilePickerView> {
             return FOLLOW_NONE;
         }
 
-        links.setKidsProfile(profile.name, kids);
+        // Links are saved under the profile's lasting key; the name is for guessing and showing
+        String key = profile.key();
+        links.adoptName(key, profile.name);
+        links.setKidsProfile(key, kids);
 
-        ProfileLinkData.Link link = links.getLink(profile.name, accounts);
+        ProfileLinkData.Link link = links.getLink(key, accounts);
 
         if (link == null) {
             Account guess = ProfileLinkData.guessAccount(profile.name, accounts);
 
             if (guess != null) {
-                links.setLink(profile.name, guess);
-                link = links.getLink(profile.name, accounts);
+                links.setLink(key, guess);
+                link = links.getLink(key, accounts);
             }
         }
 
@@ -151,7 +154,7 @@ public class ProfilePickerPresenter extends BasePresenter<ProfilePickerView> {
                 return FOLLOW_NONE;
             }
 
-            mLinkingProfile = profile.name;
+            mLinkingProfile = key;
             getViewManager().startView(ProfilePickerView.class);
             return FOLLOW_PICKER;
         }
@@ -179,10 +182,10 @@ public class ProfilePickerPresenter extends BasePresenter<ProfilePickerView> {
     }
 
     /**
-     * Google TV profile the open picker is choosing an account for, or null.
+     * Name of the Google TV profile the open picker is choosing an account for, or null.
      */
     public String getLinkingProfile() {
-        return mLinkingProfile;
+        return mLinkingProfile != null ? ProfileLinkData.instance(getContext()).getDisplayName(mLinkingProfile) : null;
     }
 
     /**

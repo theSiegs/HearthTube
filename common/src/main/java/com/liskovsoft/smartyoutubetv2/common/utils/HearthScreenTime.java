@@ -99,11 +99,13 @@ public final class HearthScreenTime {
 
     /**
      * Fail-safe: HearthTube is a device admin (so Google TV can't suspend it in kids profiles) in a kids profile,
-     * but Hearth can't tell screen time (missing, suspended, or too old). Then HearthTube stays shut, as Google TV
+     * but Hearth can't tell screen time (missing, suspended, too old, or its accessibility service isn't running). Then
+     * HearthTube stays shut, as Google TV
      * would have kept it.
      */
     private static boolean isUnwatchedKidsProfile(Activity activity, HearthProfile hearth) {
-        boolean hearthWatches = hearth != null && hearth.kidsProfile != null;
+        // Hearth's accessibility service sees screen time: without it, screen_time_up stays 0 whatever Google TV says
+        boolean hearthWatches = hearth != null && hearth.kidsProfile != null && !Boolean.FALSE.equals(hearth.serviceRunning);
 
         return !hearthWatches && isOwnAdminActive(activity) && ParentGate.isKidsProfile(activity);
     }
