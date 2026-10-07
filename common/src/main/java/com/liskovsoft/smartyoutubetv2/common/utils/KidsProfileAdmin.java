@@ -1,6 +1,5 @@
 package com.liskovsoft.smartyoutubetv2.common.utils;
 
-import android.app.Activity;
 import android.app.admin.DevicePolicyManager;
 import android.content.ActivityNotFoundException;
 import android.content.ComponentName;
@@ -19,6 +18,7 @@ import com.liskovsoft.smartyoutubetv2.common.R;
  */
 public final class KidsProfileAdmin {
     private static final String RECEIVER = "com.liskovsoft.smartyoutubetv2.tv.HearthTubeDeviceAdmin";
+    private static final String REQUEST_ACTIVITY = "com.liskovsoft.smartyoutubetv2.tv.KidsAdminRequestActivity";
 
     private KidsProfileAdmin() {
     }
@@ -57,12 +57,12 @@ public final class KidsProfileAdmin {
             return;
         }
 
-        Intent intent = new Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN)
-                .putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, component(context))
-                .putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, context.getString(R.string.hearth_kids_profiles_explanation));
-        if (!(context instanceof Activity)) {
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        }
+        // Android's confirmation closes unseen unless started for a result from a standard activity, and ours are
+        // singleInstance: KidsAdminRequestActivity (hearthtube builds) asks on our behalf.
+        Intent intent = new Intent()
+                .setComponent(new ComponentName(context.getPackageName(), REQUEST_ACTIVITY))
+                .putExtra("explanation", context.getString(R.string.hearth_kids_profiles_explanation))
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         try {
             context.startActivity(intent);
         } catch (ActivityNotFoundException | SecurityException e) {

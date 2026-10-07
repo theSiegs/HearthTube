@@ -16,6 +16,13 @@
         android:banner="@drawable/hearthtube_banner"
         tools:replace="android:icon,android:banner">
 
+        <!-- Asks Android to activate the admin below; standard launch mode so the confirmation sees its caller -->
+        <activity
+            android:name="com.liskovsoft.smartyoutubetv2.tv.KidsAdminRequestActivity"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            android:excludeFromRecents="true"
+            android:exported="false" />
+
         <!-- Keeps Google TV from suspending HearthTube in kids profiles (see HearthTubeDeviceAdmin) -->
         <receiver
             android:name="com.liskovsoft.smartyoutubetv2.tv.HearthTubeDeviceAdmin"
