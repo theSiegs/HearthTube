@@ -50,6 +50,7 @@ public final class HearthScreenTime {
 
     /** A HearthTube screen came to the front */
     public static void onResume(Activity activity) {
+        KidsProfileAdmin.dropIfHearthGone(activity);
         sActivity = new WeakReference<>(activity);
         Utils.removeCallbacks(sCheck);
 

@@ -18,7 +18,18 @@ import com.liskovsoft.sharedutils.mylogger.Log;
  */
 public class HearthProfile {
     private static final String TAG = HearthProfile.class.getSimpleName();
-    private static final String AUTHORITY = "content://com.leanbitlab.ltvL.profile";
+    private static final String HEARTH_PACKAGE = "com.leanbitlab.ltvL";
+    private static final String PROVIDER = HEARTH_PACKAGE + ".profile";
+    private static final String AUTHORITY = "content://" + PROVIDER;
+    /**
+     * Hearth's signing certificates (SHA-256): its release key, and the developer key its debug builds share with
+     * HearthTube. Anything else answering as Hearth could otherwise say "not a kids profile" or pass any PIN.
+     */
+    private static final String[] HEARTH_CERTS = {
+            "0438047b1a5eefe8693cad8f2b57189a418337bbcbd3c7dbdb79d20884beaf6e",
+            "6748528ff4d17fd57c30b6c5d522c467920d9951ea5d208597f91b66df9a2bfe"};
+    /** The Hearth install (its last update time) whose certificate checked out, so it's checked once per install */
+    private static long sGenuineInstall = -1;
     private static final Uri ACTIVE_URI = Uri.parse(AUTHORITY + "/active");
     /** Hearth's current wallpaper picture (no picture = a gradient, see {@link #gradientUuid}) */
     public static final Uri WALLPAPER_URI = Uri.parse(AUTHORITY + "/wallpaper");
@@ -119,7 +130,7 @@ public class HearthProfile {
      */
     @Nullable
     public static HearthProfile queryHearth(Context context) {
-        if (context == null) {
+        if (context == null || !isTrusted(context)) {
             return null;
         }
 
@@ -147,6 +158,10 @@ public class HearthProfile {
      * after 5 wrong tries; then this returns the seconds left (a positive number).
      */
     public static int verifyParentPin(Context context, String pin) {
+        if (!isTrusted(context)) {
+            return PIN_UNAVAILABLE;
+        }
+
         try {
             Bundle result = context.getContentResolver().call(ACTIVE_URI, "verify_parent_pin", pin, null);
 
@@ -168,7 +183,82 @@ public class HearthProfile {
 
     /** Hearth is installed (and new enough to talk to HearthTube) */
     public static boolean isInstalled(Context context) {
-        return context != null && context.getPackageManager().resolveContentProvider("com.leanbitlab.ltvL.profile", 0) != null;
+        return isTrusted(context);
+    }
+
+    /** The provider HearthTube talks to belongs to Hearth, signed with Hearth's key */
+    private static boolean isTrusted(Context context) {
+        if (context == null) {
+            return false;
+        }
+
+        try {
+            android.content.pm.ProviderInfo provider = context.getPackageManager().resolveContentProvider(PROVIDER, 0);
+            return provider != null && HEARTH_PACKAGE.equals(provider.packageName) && isGenuine(context) == Boolean.TRUE;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * Whether the installed com.leanbitlab.ltvL is signed with Hearth's key: null when it isn't installed (or can't
+     * be read), false for an app that only took Hearth's name.
+     */
+    @Nullable
+    public static Boolean isGenuine(Context context) {
+        android.content.pm.PackageManager packageManager = context.getPackageManager();
+
+        try {
+            long installed = packageManager.getPackageInfo(HEARTH_PACKAGE, 0).lastUpdateTime;
+
+            if (installed == sGenuineInstall) {
+                return true;
+            }
+
+            android.content.pm.Signature[] signers;
+            if (android.os.Build.VERSION.SDK_INT >= 28) {
+                android.content.pm.SigningInfo signing = packageManager.getPackageInfo(
+                        HEARTH_PACKAGE, android.content.pm.PackageManager.GET_SIGNING_CERTIFICATES).signingInfo;
+                if (signing == null) {
+                    return false;
+                }
+                signers = signing.hasMultipleSigners() ? signing.getApkContentsSigners() : signing.getSigningCertificateHistory();
+                if (!signing.hasMultipleSigners() && signers != null && signers.length > 0) {
+                    signers = new android.content.pm.Signature[] {signers[signers.length - 1]}; // the current key
+                }
+            } else {
+                signers = packageManager.getPackageInfo(HEARTH_PACKAGE, android.content.pm.PackageManager.GET_SIGNATURES).signatures;
+            }
+
+            if (signers == null || signers.length == 0) {
+                return false;
+            }
+
+            java.security.MessageDigest sha256 = java.security.MessageDigest.getInstance("SHA-256");
+            for (android.content.pm.Signature signer : signers) {
+                String digest = toHex(sha256.digest(signer.toByteArray()));
+                if (!java.util.Arrays.asList(HEARTH_CERTS).contains(digest)) {
+                    Log.e(TAG, "Not Hearth's signing key: %s", digest);
+                    return false;
+                }
+            }
+
+            sGenuineInstall = installed;
+            return true;
+        } catch (android.content.pm.PackageManager.NameNotFoundException e) {
+            return null;
+        } catch (Exception e) {
+            Log.e(TAG, "Hearth's signature unreadable: %s", e.getMessage());
+            return null;
+        }
+    }
+
+    private static String toHex(byte[] bytes) {
+        StringBuilder result = new StringBuilder();
+        for (byte b : bytes) {
+            result.append(String.format("%02x", b));
+        }
+        return result.toString();
     }
 
     /**

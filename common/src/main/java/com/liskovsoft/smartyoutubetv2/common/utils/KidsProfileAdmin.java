@@ -78,6 +78,22 @@ public final class KidsProfileAdmin {
         }
     }
 
+    /**
+     * Without Hearth nothing stands in for Google TV's screen time, so in kids profiles HearthTube would only show
+     * "no Hearth" and, as an admin, couldn't even be uninstalled. Once Hearth is gone (or something else took its
+     * name), give the admin up and say so.
+     */
+    public static void dropIfHearthGone(Context context) {
+        if (context == null || !isAvailable(context) || !isActive(context)) {
+            return;
+        }
+
+        if (HearthProfile.isGenuine(context) != Boolean.TRUE) {
+            removeActive(context);
+            MessageHelpers.showLongMessage(context, R.string.hearth_kids_profiles_dropped);
+        }
+    }
+
     private static ComponentName component(Context context) {
         return new ComponentName(context.getPackageName(), RECEIVER);
     }

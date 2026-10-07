@@ -37,5 +37,15 @@
                 <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
             </intent-filter>
         </receiver>
+
+        <!-- Hearth uninstalled: give up the admin above even if HearthTube isn't opened again (HearthGoneReceiver) -->
+        <receiver
+            android:name="com.liskovsoft.smartyoutubetv2.tv.HearthGoneReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.PACKAGE_FULLY_REMOVED" />
+                <data android:scheme="package" />
+            </intent-filter>
+        </receiver>
     </application>
 </manifest>
