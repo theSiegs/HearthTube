@@ -44,6 +44,11 @@ public class HearthProfile {
     public final String gradientUuid;
     /** Changes when Hearth's wallpaper picture does; 0 when it shows a gradient instead. */
     public final long wallpaperStamp;
+    /** Hearth sees a Google TV kids profile; null when Hearth is too old to say */
+    @Nullable
+    public final Boolean kidsProfile;
+    /** Google TV's time-up or bedtime screen is on (kids screen time) */
+    public final boolean screenTimeUp;
 
     private HearthProfile(Cursor cursor) {
         String name = getString(cursor, "name");
@@ -55,6 +60,8 @@ public class HearthProfile {
         this.hasParentPin = getLong(cursor, "has_parent_pin") == 1;
         this.gradientUuid = getString(cursor, "gradient_uuid");
         this.wallpaperStamp = getLong(cursor, "wallpaper_stamp");
+        this.kidsProfile = cursor.getColumnIndex("kids_profile") != -1 ? getLong(cursor, "kids_profile") == 1 : null;
+        this.screenTimeUp = getLong(cursor, "screen_time_up") == 1;
     }
 
     /**

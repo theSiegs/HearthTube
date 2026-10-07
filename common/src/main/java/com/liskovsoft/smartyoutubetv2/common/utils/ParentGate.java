@@ -116,6 +116,12 @@ public final class ParentGate {
             return false;
         }
 
+        // Hearth's word first, when it has one (it can tell even when every app is approved)
+        HearthProfile hearth = HearthProfile.isHearthSuspended(context) ? null : HearthProfile.queryHearth(context);
+        if (hearth != null && Boolean.TRUE.equals(hearth.kidsProfile)) {
+            return true;
+        }
+
         PackageManager packageManager = context.getPackageManager();
 
         for (String category : new String[] {Intent.CATEGORY_LEANBACK_LAUNCHER, Intent.CATEGORY_LAUNCHER}) {

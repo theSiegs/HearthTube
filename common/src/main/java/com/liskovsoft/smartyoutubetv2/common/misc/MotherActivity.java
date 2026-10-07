@@ -222,6 +222,9 @@ public class MotherActivity extends FragmentActivity {
 
         // Restore this activity's screensaver policy after returning to the foreground.
         mScreensaverManager.resume();
+
+        // HearthTube: kids screen time (Google TV's time-up screen, through Hearth)
+        com.liskovsoft.smartyoutubetv2.common.utils.HearthScreenTime.onResume(this);
     }
 
     @Override
@@ -230,6 +233,8 @@ public class MotherActivity extends FragmentActivity {
 
         // Stop managing the screensaver so a paused activity cannot keep the display awake.
         mScreensaverManager.suspend();
+
+        com.liskovsoft.smartyoutubetv2.common.utils.HearthScreenTime.onPause(this);
     }
 
     @Override
