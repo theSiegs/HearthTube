@@ -125,4 +125,5 @@
     <string name="show_shorts_hint">Off: no Shorts anywhere. Kids profiles never get them.</string>
     <string name="subscriptions_all">All</string>
     <string name="screen_time_up">Screen time is up</string>
+    <string name="screen_time_unknown">HearthTube needs Hearth to watch screen time here. Ask a parent.</string>
 </resources>
