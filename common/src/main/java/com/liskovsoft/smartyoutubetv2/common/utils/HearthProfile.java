@@ -72,6 +72,11 @@ public class HearthProfile {
      */
     @Nullable
     public final String profileId;
+    /** Hearth's provider contract version (docs/provider-contract.md in Hearth); 1 before it was reported. */
+    public final int contractVersion;
+    /** The newest contract this code was written against: a newer Hearth may mean columns changed meaning. */
+    private static final int KNOWN_CONTRACT = 2;
+    private static boolean sWarnedNewerContract;
 
     private HearthProfile(Cursor cursor) {
         String name = getString(cursor, "name");
@@ -87,6 +92,12 @@ public class HearthProfile {
         this.screenTimeUp = getLong(cursor, "screen_time_up") == 1;
         this.serviceRunning = cursor.getColumnIndex("service_running") != -1 ? getLong(cursor, "service_running") == 1 : null;
         this.profileId = getString(cursor, "profile_id");
+        this.contractVersion = cursor.getColumnIndex("contract_version") != -1 ? (int) getLong(cursor, "contract_version") : 1;
+
+        if (contractVersion > KNOWN_CONTRACT && !sWarnedNewerContract) {
+            sWarnedNewerContract = true;
+            Log.e(TAG, "Hearth's provider contract is version %s; HearthTube knows up to %s", contractVersion, KNOWN_CONTRACT);
+        }
     }
 
     /** What to save per-profile things under: the lasting {@link #profileId}, or the name with an older Hearth. */
