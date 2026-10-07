@@ -19,7 +19,6 @@ import com.liskovsoft.smartyoutubetv2.common.R;
  */
 public final class KidsProfileAdmin {
     private static final String RECEIVER = "com.liskovsoft.smartyoutubetv2.tv.HearthTubeDeviceAdmin";
-    private static final String HEARTH_PACKAGE = "com.leanbitlab.ltvL";
 
     private KidsProfileAdmin() {
     }
@@ -40,17 +39,15 @@ public final class KidsProfileAdmin {
     }
 
     /**
-     * Whether Hearth can stand in for Google TV's screen time: it must be the home app (Google TV can't suspend
-     * that, so it keeps seeing profile switches and time-up screens) and new enough to report kids_profile and
-     * screen_time_up. Without it, nothing would stop HearthTube at bedtime once Google TV can't pause it.
+     * Whether Hearth can stand in for Google TV's screen time: installed, not suspended and new enough to report
+     * kids_profile and screen_time_up. Without it, nothing would stop HearthTube at bedtime once Google TV can't
+     * pause it. (Whether Hearth is the home app can't be read reliably: on Google TV, resolving HOME returns
+     * Google TV's home even when Hearth holds the role. If Hearth is suspended later, in a kids profile,
+     * HearthScreenTime's fail-safe shuts HearthTube.)
      */
     public static boolean canGuardScreenTime(Context context) {
-        Intent home = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME);
-        android.content.pm.ResolveInfo info = context.getPackageManager().resolveActivity(home, PackageManager.MATCH_DEFAULT_ONLY);
-        boolean hearthIsHome = info != null && info.activityInfo != null
-                && HEARTH_PACKAGE.equals(info.activityInfo.packageName);
         HearthProfile hearth = HearthProfile.queryHearth(context);
-        return hearthIsHome && hearth != null && hearth.kidsProfile != null;
+        return hearth != null && hearth.kidsProfile != null && !HearthProfile.isHearthSuspended(context);
     }
 
     /** Opens Android's own "Activate device admin" confirmation, if Hearth can guard screen time. */
