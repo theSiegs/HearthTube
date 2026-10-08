@@ -8,6 +8,8 @@ public class ProfileItem {
     public static final int TYPE_ACCOUNT = 0;
     public static final int TYPE_GUEST = 1;
     public static final int TYPE_ADD = 2;
+    /** The welcome's "Sign in" (no account yet): the add tile, worded for a first sign-in */
+    public static final int TYPE_SIGN_IN = 3;
 
     public final int type;
     public final Account account;

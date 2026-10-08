@@ -82,6 +82,11 @@ public class ProfilePickerPresenter extends BasePresenter<ProfilePickerView> {
         return isEnabled(context) && !isDeepLink(intent);
     }
 
+    /** A launch that goes straight to content (cast, shared link, voice search...), not a plain launcher tap */
+    public static boolean isDeepLinkIntent(Intent intent) {
+        return intent != null && isDeepLink(intent);
+    }
+
     private static boolean isDeepLink(Intent intent) {
         if (IntentExtractor.extractAccountName(intent) != null) {
             // Caller already specified which account to use.
@@ -139,6 +144,13 @@ public class ProfilePickerPresenter extends BasePresenter<ProfilePickerView> {
         links.setKidsProfile(key, kids);
 
         ProfileLinkData.Link link = links.getLink(key, accounts);
+
+        if (link == null && accounts.size() == 1 && !HearthProfile.isOwnerUser(getContext())) {
+            // Each Google TV profile runs its own copy of HearthTube: outside the owner's, its one account is
+            // that person's, nothing to ask
+            links.setLink(key, accounts.get(0));
+            link = links.getLink(key, accounts);
+        }
 
         if (link == null) {
             Account guess = ProfileLinkData.guessAccount(profile.name, accounts);
@@ -282,10 +294,31 @@ public class ProfilePickerPresenter extends BasePresenter<ProfilePickerView> {
     }
 
     public void onAddAccountPicked() {
+        // The picker stays until sign-in really starts (after the parent PIN in a kids profile), so cancelling
+        // the PIN leaves the welcome up rather than a signed-out Home. YTSignInPresenter closes it.
+        YTSignInPresenter.instance(getContext()).start();
+    }
+
+    /** Closes the picker, if it's open */
+    public void closeView() {
         if (getView() != null) {
             getView().finishView();
         }
+    }
 
-        YTSignInPresenter.instance(getContext()).start();
+    /**
+     * HearthTube's first screen in a copy nobody has signed in to: the picker as a welcome ("Hi, Sam" and
+     * "Sign in"). Not when someone can watch anyway (an account, or the guest where allowed).
+     */
+    public void showWelcomeIfNeeded() {
+        List<Account> accounts = mSignInService.getAccounts();
+        boolean guest = ProfileLinkData.instance(getContext()).isGuestEnabled() && !ParentGate.isKidsProfile(getContext());
+
+        if ((accounts != null && !accounts.isEmpty()) || guest) {
+            return;
+        }
+
+        mLinkingProfile = null;
+        getViewManager().startView(ProfilePickerView.class);
     }
 }

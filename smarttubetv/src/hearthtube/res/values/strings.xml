@@ -7,4 +7,10 @@
     <string name="settings_description">HearthTube Videos</string>
     <string translatable="false" name="search_authority">com.thesiegs.hearthtube</string>
 
+    <!-- Sign-in screen (SignInFragment), worded for a first sign-in on a TV. Overrides common's, so SmartTube
+         merges never conflict here. Sign-in finishes by itself once the code is entered: the button only cancels. -->
+    <string name="signin_view_title">Getting a code…</string>
+    <string name="signin_view_description">Scan the code with your phone, or open %s on a phone or computer and enter the code above. Use the YouTube account for this profile.</string>
+    <string name="signin_view_action_text">Cancel</string>
+
 </resources>

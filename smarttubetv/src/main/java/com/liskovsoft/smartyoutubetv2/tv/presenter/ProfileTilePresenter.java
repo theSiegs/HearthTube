@@ -64,8 +64,9 @@ public class ProfileTilePresenter extends Presenter {
                 lockBadge.setVisibility(View.GONE);
                 break;
             case ProfileItem.TYPE_ADD:
+            case ProfileItem.TYPE_SIGN_IN:
                 setIcon(avatar, R.drawable.ic_profile_add);
-                name.setText(R.string.profile_add_account);
+                name.setText(item.type == ProfileItem.TYPE_SIGN_IN ? R.string.profile_sign_in : R.string.profile_add_account);
                 lockBadge.setVisibility(View.GONE);
                 break;
             default:

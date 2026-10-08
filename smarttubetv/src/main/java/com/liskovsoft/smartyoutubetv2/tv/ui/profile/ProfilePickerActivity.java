@@ -29,6 +29,8 @@ public class ProfilePickerActivity extends LeanbackActivity implements ProfilePi
     private ViewGroup mRow;
     private ProfileTilePresenter mTilePresenter;
     private Disposable mBackgroundAction;
+    // No account yet: the picker is the welcome, with "Sign in"
+    private boolean mWelcome;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -66,12 +68,20 @@ public class ProfilePickerActivity extends LeanbackActivity implements ProfilePi
     @Override
     public void show(List<Account> accounts, List<Drawable> icons, List<Boolean> locked) {
         mRow.removeAllViews();
+        mWelcome = accounts.isEmpty();
 
-        String linkingProfile = ProfilePickerPresenter.instance(this).getLinkingProfile();
+        TextView title = findViewById(R.id.profile_picker_title);
         TextView hint = findViewById(R.id.profile_picker_hint);
-        hint.setVisibility(linkingProfile != null ? View.VISIBLE : View.GONE);
-        if (linkingProfile != null) {
-            hint.setText(getString(R.string.profile_picker_link_hint, linkingProfile));
+
+        if (mWelcome) {
+            showWelcome(title, hint);
+        } else {
+            title.setText(R.string.profile_picker_title);
+            String linkingProfile = ProfilePickerPresenter.instance(this).getLinkingProfile();
+            hint.setVisibility(linkingProfile != null ? View.VISIBLE : View.GONE);
+            if (linkingProfile != null) {
+                hint.setText(getString(R.string.profile_picker_link_hint, linkingProfile));
+            }
         }
 
         View focusTile = null;
@@ -92,16 +102,47 @@ public class ProfilePickerActivity extends LeanbackActivity implements ProfilePi
         boolean guest = com.liskovsoft.smartyoutubetv2.common.prefs.ProfileLinkData.instance(this).isGuestEnabled()
                 && !com.liskovsoft.smartyoutubetv2.common.utils.ParentGate.isKidsProfile(this);
         View guestTile = guest ? addTile(new ProfileItem(ProfileItem.TYPE_GUEST, null, null, false)) : null;
-        View addTile = addTile(new ProfileItem(ProfileItem.TYPE_ADD, null, null, false));
+        View addTile = addTile(new ProfileItem(mWelcome ? ProfileItem.TYPE_SIGN_IN : ProfileItem.TYPE_ADD, null, null, false));
 
-        // No account selected means the last one watching was the guest
-        if (focusTile == null) {
+        // No account selected means the last one watching was the guest; a welcome starts on "Sign in"
+        if (mWelcome) {
+            focusTile = addTile;
+        } else if (focusTile == null) {
             focusTile = guestTile != null ? guestTile : mRow.getChildCount() > 1 ? mRow.getChildAt(0) : addTile;
         }
 
         if (focusTile != null) {
             focusTile.requestFocus();
         }
+    }
+
+    /** "Hi, Sam" (the Google TV profile, through Hearth) and what signing in is for; kids: a grown-up does it */
+    private void showWelcome(TextView title, TextView hint) {
+        com.liskovsoft.smartyoutubetv2.common.utils.HearthProfile profile =
+                com.liskovsoft.smartyoutubetv2.common.utils.HearthProfile.query(this);
+        String name = profile != null ? profile.name : null;
+        title.setText(name != null ? getString(R.string.profile_welcome_title_named, name) : getString(R.string.profile_welcome_title));
+
+        boolean kids = com.liskovsoft.smartyoutubetv2.common.utils.ParentGate.isKidsProfile(this);
+        hint.setText(kids ? R.string.profile_welcome_hint_kids : R.string.profile_welcome_hint);
+        hint.setVisibility(View.VISIBLE);
+    }
+
+    @Override
+    public void onBackPressed() {
+        boolean guest = com.liskovsoft.smartyoutubetv2.common.prefs.ProfileLinkData.instance(this).isGuestEnabled()
+                && !com.liskovsoft.smartyoutubetv2.common.utils.ParentGate.isKidsProfile(this);
+
+        if (mWelcome && !guest) {
+            // Nobody can watch yet, and there's no signed-out Home to fall back to: Back leaves HearthTube
+            // (to Hearth when it's the home screen), and the welcome is here again next time
+            if (!com.liskovsoft.smartyoutubetv2.common.utils.HearthProfile.goHome(this)) {
+                com.liskovsoft.smartyoutubetv2.common.utils.Utils.properlyFinishTheApp(this);
+            }
+            return;
+        }
+
+        super.onBackPressed();
     }
 
     private View addTile(ProfileItem item) {
@@ -134,6 +175,7 @@ public class ProfilePickerActivity extends LeanbackActivity implements ProfilePi
                 presenter.onGuestPicked();
                 break;
             case ProfileItem.TYPE_ADD:
+            case ProfileItem.TYPE_SIGN_IN:
                 presenter.onAddAccountPicked();
                 break;
         }

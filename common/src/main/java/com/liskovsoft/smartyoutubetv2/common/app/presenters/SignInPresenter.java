@@ -34,6 +34,12 @@ public class SignInPresenter extends BasePresenter<SignInView> {
     @Override
     public void onViewDestroyed() {
         super.onViewDestroyed();
+
+        // HearthTube: the nested presenter hears it too (YTSignInPresenter brings the welcome back)
+        if (this.getClass() == SignInPresenter.class && mPresenter != null) {
+            mPresenter.onViewDestroyed();
+        }
+
         unhold();
     }
 

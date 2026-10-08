@@ -131,7 +131,7 @@ public class SplashPresenter extends BasePresenter<SplashView> {
         }
 
         if (!pickerShown) {
-            requireAccountIfNoGuest();
+            requireAccountIfNoGuest(newIntent);
         }
 
         // The Google TV profile already says who's watching
@@ -149,10 +149,10 @@ public class SplashPresenter extends BasePresenter<SplashView> {
     }
 
     /**
-     * HearthTube: with the guest off (the default), nobody watches signed out: pick an account, or sign in when
-     * there's none yet.
+     * HearthTube: with the guest off (the default), nobody watches signed out: pick an account, or, in a copy
+     * nobody has signed in to yet, the welcome with "Sign in". A deep link (cast, shared link) plays first.
      */
-    private void requireAccountIfNoGuest() {
+    private void requireAccountIfNoGuest(Intent intent) {
         if (com.liskovsoft.smartyoutubetv2.common.prefs.ProfileLinkData.instance(getContext()).isGuestEnabled()
                 || com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager.instance().getSelectedAccount() != null) {
             return;
@@ -160,8 +160,9 @@ public class SplashPresenter extends BasePresenter<SplashView> {
 
         com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager.instance().loadAccounts(accounts -> {
             if (accounts == null || accounts.isEmpty()) {
-                com.liskovsoft.sharedutils.helpers.MessageHelpers.showLongMessage(getContext(), R.string.sign_in_needed);
-                com.liskovsoft.smartyoutubetv2.common.app.presenters.YTSignInPresenter.instance(getContext()).start();
+                if (!ProfilePickerPresenter.isDeepLinkIntent(intent)) {
+                    ProfilePickerPresenter.instance(getContext()).showWelcomeIfNeeded();
+                }
             } else {
                 getViewManager().startView(ProfilePickerView.class);
             }
