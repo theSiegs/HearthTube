@@ -47,6 +47,8 @@ public class MotherActivity extends FragmentActivity {
     // Make static in case Don't keep activities enabled in Developer settings
     private static List<OnPermissions> mOnPermissions;
     private static List<OnResult> mOnResults;
+    /** HearthTube: the activity in front, for dialogs asked for from a presenter without one */
+    private static java.lang.ref.WeakReference<MotherActivity> sFront = new java.lang.ref.WeakReference<>(null);
     private long mLastKeyDownTime;
     private boolean mEnableThrottleKeyDown;
     private boolean mIsOculusQuestFixEnabled;
@@ -223,6 +225,8 @@ public class MotherActivity extends FragmentActivity {
         // Restore this activity's screensaver policy after returning to the foreground.
         mScreensaverManager.resume();
 
+        sFront = new java.lang.ref.WeakReference<>(this);
+
         // HearthTube: kids screen time (Google TV's time-up screen, through Hearth)
         com.liskovsoft.smartyoutubetv2.common.utils.HearthScreenTime.onResume(this);
     }
@@ -235,6 +239,16 @@ public class MotherActivity extends FragmentActivity {
         mScreensaverManager.suspend();
 
         com.liskovsoft.smartyoutubetv2.common.utils.HearthScreenTime.onPause(this);
+
+        if (sFront.get() == this) {
+            sFront = new java.lang.ref.WeakReference<>(null);
+        }
+    }
+
+    /** HearthTube: the activity in front (resumed), or null between screens */
+    public static MotherActivity getFrontActivity() {
+        MotherActivity activity = sFront.get();
+        return activity != null && !activity.isFinishing() ? activity : null;
     }
 
     @Override

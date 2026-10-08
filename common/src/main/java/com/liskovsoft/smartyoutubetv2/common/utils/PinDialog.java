@@ -1,5 +1,6 @@
 package com.liskovsoft.smartyoutubetv2.common.utils;
 
+import android.app.Activity;
 import android.app.Dialog;
 import android.content.Context;
 import android.view.Gravity;
@@ -17,6 +18,7 @@ import androidx.core.widget.ImageViewCompat;
 
 import com.liskovsoft.sharedutils.helpers.MessageHelpers;
 import com.liskovsoft.smartyoutubetv2.common.R;
+import com.liskovsoft.smartyoutubetv2.common.misc.MotherActivity;
 import com.liskovsoft.smartyoutubetv2.common.utils.SimpleEditDialog.OnChange;
 
 /**
@@ -39,6 +41,8 @@ public class PinDialog {
     private static final int SLOT_WIDTH_DP = 48;
     private static final int SLOT_GAP_DP = 16;
     private static final int WRONG_PIN_CLEAR_MS = 400;
+    private static final int WINDOW_TRIES = 10;
+    private static final long WINDOW_RETRY_MS = 500;
     private final Context mContext;
     private final OnChange mOnChange;
     private final StringBuilder mEntered = new StringBuilder();
@@ -60,7 +64,25 @@ public class PinDialog {
     }
 
     public static void show(Context context, String dialogTitle, String message, OnChange onChange, Runnable onDismiss) {
-        new PinDialog(context, onChange).showInt(dialogTitle, message, onDismiss);
+        showWhenOnScreen(context, dialogTitle, message, onChange, onDismiss, 0);
+    }
+
+    /**
+     * A dialog needs an activity's window. Presenters can hand over the application context (asked for while
+     * between screens, e.g. sign-in at the start of a fresh kid's copy, where the PIN comes first): then use the
+     * activity in front, waiting a little for one to come up.
+     */
+    private static void showWhenOnScreen(Context context, String dialogTitle, String message, OnChange onChange,
+                                         Runnable onDismiss, int tries) {
+        Context target = context instanceof Activity ? context : MotherActivity.getFrontActivity();
+
+        if (target == null && tries < WINDOW_TRIES) {
+            Utils.postDelayed(() -> showWhenOnScreen(context, dialogTitle, message, onChange, onDismiss, tries + 1),
+                    WINDOW_RETRY_MS);
+            return;
+        }
+
+        new PinDialog(target != null ? target : context, onChange).showInt(dialogTitle, message, onDismiss);
     }
 
     private PinDialog(Context context, OnChange onChange) {
