@@ -72,7 +72,7 @@ public class AiSlopMatcherTest {
 
     @Test
     public void windowsLineEndsAndByteOrderMark() throws IOException {
-        Set<String> ids = parse("﻿" + HEADER.replace("\n", "\r\n") + BLOCKED + "\r\n" + BLOCKED_2 + "\r\n");
+        Set<String> ids = parse("\uFEFF" + HEADER.replace("\n", "\r\n") + BLOCKED + "\r\n" + BLOCKED_2 + "\r\n");
 
         assertEquals(set(BLOCKED, BLOCKED_2), ids);
     }
@@ -161,5 +161,128 @@ public class AiSlopMatcherTest {
         assertEquals(AiSlopMatcher.SHOW, AiSlopMatcher.EMPTY.decide(BLOCKED, true, true));
         assertTrue(AiSlopMatcher.of(null, Collections.emptySet()).isEmpty());
         assertFalse(lists().isEmpty());
+        assertFalse(AiSlopMatcher.of(null, null, set("cat tales")).isEmpty());
+    }
+
+    // Channel names (the .tsv lists)
+
+    private static final String NAMES_HEADER = "! AiSList blocklist by YouTube channel ID\n"
+            + "! Format: channel ID, a tab, the channel's name on YouTube as of the last check\n"
+            + "! Names: 3 channels\n";
+
+    private static Set<String> parseNames(String text) throws IOException {
+        return AiSlopMatcher.parseNames(new StringReader(text));
+    }
+
+    /** Listed: BLOCKED is "Kitty Tales AI", WARNED is "Cat Stories" */
+    private static AiSlopMatcher listsWithNames() throws IOException {
+        return AiSlopMatcher.of(set(BLOCKED, BLOCKED_2), set(WARNED),
+                parseNames(NAMES_HEADER + BLOCKED + "\tKitty Tales AI\n" + WARNED + "\tCat Stories\n"));
+    }
+
+    @Test
+    public void normalizedNames() {
+        assertEquals("kitty tales ai", AiSlopMatcher.normalizeName("Kitty Tales AI"));
+        assertEquals("kitty tales ai", AiSlopMatcher.normalizeName("  KITTY   tales\tAI \n"));
+        // Other spaces: no-break, ideographic
+        assertEquals("kitty tales ai", AiSlopMatcher.normalizeName("Kitty Tales　AI"));
+        // Full-width letters, styled (mathematical bold) letters, a ligature
+        assertEquals("ai cat", AiSlopMatcher.normalizeName("ＡＩ Ｃａｔ"));
+        assertEquals("ai cat", AiSlopMatcher.normalizeName("𝐀𝐈 Cat"));
+        assertEquals("fish ai", AiSlopMatcher.normalizeName("ﬁsh AI"));
+        // Full case folding: ß is ss, final sigma is sigma
+        assertEquals(AiSlopMatcher.normalizeName("STRASSE"), AiSlopMatcher.normalizeName("Straße"));
+        assertEquals(AiSlopMatcher.normalizeName("ΚΟΣΜΟΣ"), AiSlopMatcher.normalizeName("κοσμος"));
+        // Accents stay: a different name
+        assertFalse(AiSlopMatcher.normalizeName("Pokémon AI").equals(AiSlopMatcher.normalizeName("Pokemon AI")));
+        assertEquals("", AiSlopMatcher.normalizeName(null));
+        assertEquals("", AiSlopMatcher.normalizeName(" \t "));
+    }
+
+    @Test
+    public void readsNames() throws IOException {
+        Set<String> names = parseNames(NAMES_HEADER
+                + BLOCKED + "\tKitty Tales AI\n"
+                + BLOCKED_2 + "\tCat  Stories \n"
+                + WARNED + "\tCAT STORIES\n"); // the same name twice: once
+
+        assertEquals(set("kitty tales ai", "cat stories"), names);
+    }
+
+    @Test
+    public void namesSkipBadLines() throws IOException {
+        Set<String> names = parseNames(NAMES_HEADER
+                + "\n"
+                + BLOCKED + "\n" // no name
+                + BLOCKED + "\t   \n" // nothing left of the name
+                + BLOCKED + " Kitty Tales AI\n" // no tab
+                + "UCtooshort\tShort ID\n"
+                + "@SomeHandle\tA handle\n"
+                + "! " + OTHER + "\tCommented out\n"
+                + WARNED + "\tCat Stories\n");
+
+        assertEquals(set("cat stories"), names);
+    }
+
+    @Test
+    public void namesWithWindowsLineEndsAndByteOrderMark() throws IOException {
+        Set<String> names = parseNames("﻿" + NAMES_HEADER.replace("\n", "\r\n")
+                + BLOCKED + "\tKitty Tales AI\r\n" + WARNED + "\tCat Stories");
+
+        assertEquals(set("kitty tales ai", "cat stories"), names);
+    }
+
+    @Test
+    public void namesNotAList() throws IOException {
+        assertNull(parseNames(""));
+        assertNull(parseNames("<!DOCTYPE html>\n<html>404: Not Found</html>\n"));
+        assertNull(parseNames("404: Not Found"));
+        assertNull(parseNames(BLOCKED + "\tKitty Tales AI\n"));
+        assertNull(AiSlopMatcher.parseNames(null));
+        assertTrue(parseNames(NAMES_HEADER).isEmpty());
+    }
+
+    @Test
+    public void exactNameOnly() throws IOException {
+        AiSlopMatcher matcher = listsWithNames();
+
+        assertTrue(matcher.isListedName("Kitty Tales AI"));
+        assertTrue(matcher.isListedName("kitty  tales ai "));
+        assertTrue(matcher.isListedName("Ｋｉｔｔｙ Tales AI"));
+        // Never part of a name, nor a name with more to it
+        assertFalse(matcher.isListedName("Kitty Tales"));
+        assertFalse(matcher.isListedName("Kitty Tales AI Official"));
+        assertFalse(matcher.isListedName("The Cat Stories"));
+        assertFalse(matcher.isListedName("CatStories"));
+        assertFalse(matcher.isListedName(""));
+        assertFalse(matcher.isListedName(null));
+        assertFalse(lists().isListedName("Kitty Tales AI")); // no name lists: IDs only
+    }
+
+    @Test
+    public void kidsHideByNameWhenThereIsNoId() throws IOException {
+        AiSlopMatcher matcher = listsWithNames();
+
+        assertEquals(AiSlopMatcher.HIDE, matcher.decide(null, "Kitty Tales AI", true, true));
+        assertEquals(AiSlopMatcher.HIDE, matcher.decide("", "cat stories", true, true));
+        assertEquals(AiSlopMatcher.HIDE, matcher.decide(null, "Kitty Tales AI", true, false));
+        assertEquals(AiSlopMatcher.SHOW, matcher.decide(null, "Kitty Tales AI Official", true, true));
+        assertEquals(AiSlopMatcher.SHOW, matcher.decide(null, null, true, true));
+        // A card with an ID goes by the ID: a channel that isn't listed but has a listed channel's name stays
+        assertEquals(AiSlopMatcher.SHOW, matcher.decide(OTHER, "Kitty Tales AI", true, true));
+        assertEquals(AiSlopMatcher.HIDE, matcher.decide(BLOCKED, "Some Other Name", true, true));
+    }
+
+    @Test
+    public void grownUpsAreNeverLabeledByName() throws IOException {
+        AiSlopMatcher matcher = listsWithNames();
+
+        assertEquals(AiSlopMatcher.SHOW, matcher.decide(null, "Kitty Tales AI", false, true));
+        assertEquals(AiSlopMatcher.SHOW, matcher.decide("", "Cat Stories", false, true));
+        assertEquals(AiSlopMatcher.SHOW, matcher.decide(OTHER, "Kitty Tales AI", false, true));
+        assertEquals(AiSlopMatcher.SHOW, matcher.decide(null, "Kitty Tales AI", false, false));
+        // By the ID, as before
+        assertEquals(AiSlopMatcher.LABEL, matcher.decide(BLOCKED, "Kitty Tales AI", false, true));
+        assertEquals(AiSlopMatcher.LABEL, matcher.decide(WARNED, null, false, true));
     }
 }

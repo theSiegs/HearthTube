@@ -19,7 +19,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.Reader;
 import java.nio.charset.Charset;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -35,7 +37,12 @@ import okhttp3.Response;
  * are (every row and grid, search, the player's suggestions, what plays next), and the player refuses one however it
  * got there. Everyone else sees it with a "Likely AI" label on its card, unless Settings › General turns labels off.
  * <p>
- * A copy of both lists ships in the app (fetched when it was built), so a kid is covered from the first start, even
+ * Most video tiles from YouTube's TV pages have the channel's name but not its ID. For those, kids profiles also go by
+ * the name: aislist-channel-ids publishes each listed channel's name too (the .tsv lists), and a tile whose channel name
+ * is exactly one of those is left out. Labels and the player go by the ID only. Without the name lists (an older app
+ * copy, a failed download) it's IDs only.
+ * <p>
+ * A copy of the lists ships in the app (fetched when it was built), so a kid is covered from the first start, even
  * offline. Newer copies come from raw.githubusercontent.com once a day at most, and go to the app's own storage; when
  * that fails the copy we have stays. Lists are read off the main thread, once, into sets: a check is a set lookup.
  * What to do with a channel is {@link AiSlopMatcher}.
@@ -45,6 +52,9 @@ public final class AiSlopList {
     private static final String URL = "https://raw.githubusercontent.com/theSiegs/aislist-channel-ids/main/lists/";
     private static final String BLOCKLIST = "aislist_blocklist_ids.txt";
     private static final String WARNLIST = "aislist_warnlist_ids.txt";
+    /** Channel ID, tab, channel name */
+    private static final String BLOCKLIST_NAMES = "aislist_blocklist_channels.tsv";
+    private static final String WARNLIST_NAMES = "aislist_warnlist_channels.tsv";
     /** In the app's files, and in its assets (the copy it shipped with) */
     private static final String DIR = "aislist";
     private static final String PREFS = "hearthtube_aislist";
@@ -66,6 +76,10 @@ public final class AiSlopList {
     private static final AtomicInteger sHiddenCount = new AtomicInteger();
 
     private AiSlopList() {
+    }
+
+    private interface Parser {
+        Set<String> parse(Reader reader) throws IOException;
     }
 
     /**
@@ -94,7 +108,7 @@ public final class AiSlopList {
             return false;
         }
 
-        if (decide(video.channelId) != AiSlopMatcher.HIDE) {
+        if (!isHiddenForKids(video)) {
             return false;
         }
 
@@ -104,10 +118,15 @@ public final class AiSlopList {
 
     /** What plays next on its own (KeywordFilter.checkNext), in a kids profile: skip this one */
     public static boolean isHidden(MediaItem item) {
-        return item != null && decide(item.getChannelId()) == AiSlopMatcher.HIDE;
+        if (item == null) {
+            return false;
+        }
+
+        start(null);
+        return sKids && isHiddenForKids(Video.from(item));
     }
 
-    /** The card's "Likely AI" label: anywhere but a kids profile, unless labels are off */
+    /** The card's "Likely AI" label: anywhere but a kids profile, unless labels are off. By the channel ID only. */
     public static boolean isLabeled(Video video) {
         return video != null && !video.isChapter && decide(video.channelId) == AiSlopMatcher.LABEL;
     }
@@ -175,6 +194,26 @@ public final class AiSlopList {
         return sMatcher.decide(channelId, sKids, sLabels);
     }
 
+    /**
+     * Kids profiles: by the channel ID, or, when the video has none, by its channel name (SmartTube's getAuthor(), which
+     * takes it out of "Channel • 1.2M views • 3 days ago")
+     */
+    private static boolean isHiddenForKids(Video video) {
+        if (video == null) {
+            return false;
+        }
+
+        start(null);
+        AiSlopMatcher matcher = sMatcher;
+
+        if (!sKids || matcher.isEmpty()) {
+            return false;
+        }
+
+        boolean byName = TextUtils.isEmpty(video.channelId) && matcher.getNamesSize() > 0;
+        return matcher.decide(video.channelId, byName ? video.getAuthor() : null, true, sLabels) == AiSlopMatcher.HIDE;
+    }
+
     /** In case nothing called init() (the app came back straight to a screen other than the splash) */
     private static void start(Context context) {
         if (!sStarted) {
@@ -189,23 +228,35 @@ public final class AiSlopList {
 
         sMatcher = read(context);
         sLoaded = true;
-        Log.d(TAG, "Lists read: %s blocklist and %s warnlist channels",
-                sMatcher.getBlocklistSize(), sMatcher.getWarnlistSize());
+        Log.d(TAG, "Lists read: %s blocklist and %s warnlist channels, %s names",
+                sMatcher.getBlocklistSize(), sMatcher.getWarnlistSize(), sMatcher.getNamesSize());
     }
 
     /** Our downloaded copy of each list, or else the one the app shipped with */
     private static AiSlopMatcher read(Context context) {
-        return AiSlopMatcher.of(read(context, BLOCKLIST), read(context, WARNLIST));
+        Set<String> names = new HashSet<>();
+        Set<String> blocklistNames = read(context, BLOCKLIST_NAMES, AiSlopMatcher::parseNames);
+        Set<String> warnlistNames = read(context, WARNLIST_NAMES, AiSlopMatcher::parseNames);
+
+        if (blocklistNames != null) {
+            names.addAll(blocklistNames);
+        }
+        if (warnlistNames != null) {
+            names.addAll(warnlistNames);
+        }
+
+        return AiSlopMatcher.of(read(context, BLOCKLIST, AiSlopMatcher::parse), read(context, WARNLIST, AiSlopMatcher::parse),
+                names);
     }
 
-    private static Set<String> read(Context context, String name) {
+    private static Set<String> read(Context context, String name, Parser parser) {
         File file = new File(dir(context), name);
 
         if (file.isFile()) {
             try (InputStream in = new FileInputStream(file)) {
-                Set<String> ids = AiSlopMatcher.parse(new InputStreamReader(in, UTF_8));
-                if (ids != null) {
-                    return ids;
+                Set<String> items = parser.parse(new InputStreamReader(in, UTF_8));
+                if (items != null) {
+                    return items;
                 }
             } catch (IOException e) {
                 Log.e(TAG, "Can't read %s: %s", name, e.getMessage());
@@ -213,9 +264,9 @@ public final class AiSlopList {
         }
 
         try (InputStream in = context.getAssets().open(DIR + "/" + name)) {
-            return AiSlopMatcher.parse(new InputStreamReader(in, UTF_8));
+            return parser.parse(new InputStreamReader(in, UTF_8));
         } catch (IOException e) {
-            return null; // a build without the lists
+            return null; // a build without this list
         }
     }
 
@@ -237,22 +288,25 @@ public final class AiSlopList {
 
         try {
             prefs.edit().putLong(TRIED_MS, now).apply();
-            boolean ok = download(context, BLOCKLIST) & download(context, WARNLIST);
+            boolean ok = download(context, BLOCKLIST, AiSlopMatcher::parse) & download(context, WARNLIST, AiSlopMatcher::parse);
+            // The name lists are extra: without them (not published, a failed download) the ID lists still do
+            download(context, BLOCKLIST_NAMES, AiSlopMatcher::parseNames);
+            download(context, WARNLIST_NAMES, AiSlopMatcher::parseNames);
 
             if (ok) {
                 prefs.edit().putLong(DOWNLOADED_MS, now).apply();
             }
 
             sMatcher = read(context);
-            Log.d(TAG, "Lists downloaded (%s): %s blocklist and %s warnlist channels", ok ? "all" : "some",
-                    sMatcher.getBlocklistSize(), sMatcher.getWarnlistSize());
+            Log.d(TAG, "Lists downloaded (%s): %s blocklist and %s warnlist channels, %s names", ok ? "all" : "some",
+                    sMatcher.getBlocklistSize(), sMatcher.getWarnlistSize(), sMatcher.getNamesSize());
         } finally {
             sDownloading.set(false);
         }
     }
 
     /** Into a temporary file, which replaces our copy only once it's in full and is a list */
-    private static boolean download(Context context, String name) {
+    private static boolean download(Context context, String name, Parser parser) {
         File dir = dir(context);
         File temp = new File(dir, name + ".tmp");
 
@@ -276,12 +330,12 @@ public final class AiSlopList {
                 }
             }
 
-            Set<String> ids;
+            Set<String> items;
             try (InputStream in = new FileInputStream(temp)) {
-                ids = AiSlopMatcher.parse(new InputStreamReader(in, UTF_8));
+                items = parser.parse(new InputStreamReader(in, UTF_8));
             }
 
-            if (ids == null || !temp.renameTo(new File(dir, name))) {
+            if (items == null || !temp.renameTo(new File(dir, name))) {
                 Log.e(TAG, "Not a list, or can't keep it: %s", name);
                 return false;
             }
