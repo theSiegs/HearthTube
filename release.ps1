@@ -3,9 +3,11 @@
 #
 # Usage:  .\release.ps1 -Notes "What changed"
 #         .\release.ps1 -DryRun     build and write the files, but publish nothing
+#         .\release.ps1 -Notes "..." -Trailer "Assisted-by: AI"   adds a trailer to the release commit
 # Needs:  GitHub CLI (winget install GitHub.cli), signed in once with: gh auth login
 param(
     [string]$Notes = "HearthTube update",
+    [string]$Trailer = "",
     [switch]$DryRun
 )
 
@@ -13,7 +15,7 @@ $ErrorActionPreference = 'Stop'
 Set-Location $PSScriptRoot
 
 $repo = 'theSiegs/HearthTube'
-$branch = 'my-changes'
+$branch = 'master'
 $base = "https://github.com/$repo/releases/download/latest"
 $abis = 'armeabi-v7a', 'arm64-v8a', 'x86'
 $numberFile = 'smarttubetv\src\hearthtube\release_number.txt'
@@ -74,7 +76,11 @@ if ($DryRun) {
 
 # Record the release number in git first, so the release points at the exact code it was built from
 git add $numberFile
-git commit -m "HearthTube release $versionName"
+if ($Trailer) {
+    git commit -m "HearthTube release $versionName" -m $Trailer
+} else {
+    git commit -m "HearthTube release $versionName"
+}
 git push
 
 # Replace the previous "latest" release (tools print to stderr when there's none yet; that's fine)
