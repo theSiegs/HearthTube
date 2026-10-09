@@ -85,6 +85,14 @@ public final class KidsShorts {
     }
 
     /**
+     * A TikTok or Instagram clip (or a compilation of them) in a kids profile, by its title or channel name alone. The
+     * player asks again once a link's or a cast's title is in, since it has none when the formats arrive.
+     */
+    public static boolean isBlockedClip(String title, String author) {
+        return sKids && ((title != null && CLIPS.matcher(title).find()) || (author != null && CLIPS.matcher(author).find()));
+    }
+
+    /**
      * The player's check, once the video's formats are known: a portrait video of up to three minutes is a Short, and
      * a TikTok or Instagram clip (or a compilation of them) counts too. In a kids profile neither plays, however it got
      * here (a search, a link, a cast, autoplay).
@@ -94,7 +102,7 @@ public final class KidsShorts {
             return false;
         }
 
-        if ((title != null && CLIPS.matcher(title).find()) || (author != null && CLIPS.matcher(author).find())) {
+        if (isBlockedClip(title, author)) {
             return true;
         }
 

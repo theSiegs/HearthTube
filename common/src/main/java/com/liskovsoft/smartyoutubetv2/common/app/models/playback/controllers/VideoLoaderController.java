@@ -550,12 +550,28 @@ public class VideoLoaderController extends BasePlayerController {
 
     @Override
     public void onMetadata(MediaItemMetadata metadata) {
-        // HearthTube: a link or a cast has no title until now, so the blocked words check runs again
-        if (refuseBlockedWord(null)) {
+        // HearthTube: a link or a cast has no title until now, so the kids checks by title run again
+        if (refuseClip() || refuseBlockedWord(null)) {
             return;
         }
 
         initRandomNext();
+    }
+
+    /** HearthTube: in a kids profile a TikTok-style clip doesn't play; for a link or a cast its title is only in now */
+    private boolean refuseClip() {
+        PlaybackView player = getPlayer();
+        Video video = getVideo();
+
+        if (player == null || video == null || video.isLive
+                || !com.liskovsoft.smartyoutubetv2.common.utils.KidsShorts.isBlockedClip(video.title, video.author)) {
+            return false;
+        }
+
+        MessageHelpers.showMessage(getContext(), R.string.kids_no_shorts);
+        player.showProgressBar(false);
+        player.finishReally();
+        return true;
     }
 
     /**
