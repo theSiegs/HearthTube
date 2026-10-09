@@ -17,6 +17,8 @@ public class TagPresenter extends LongClickPresenter {
     private static int sDefaultTextColor;
     private static int sSelectedBackgroundColor;
     private static int sSelectedTextColor;
+    /** HearthTube: search suggestions as Hearth's pills (the chips under the tabs), not black rectangles */
+    private static boolean sHearth;
 
     @Override
     public ViewHolder onCreateViewHolder(ViewGroup parent) {
@@ -28,6 +30,7 @@ public class TagPresenter extends LongClickPresenter {
                 ContextCompat.getColor(parent.getContext(), R.color.card_selected_background_white);
         sSelectedTextColor =
                 ContextCompat.getColor(parent.getContext(), R.color.card_selected_text_grey);
+        sHearth = com.liskovsoft.smartyoutubetv2.tv.util.CardFocusOutline.get(parent.getContext()) != 0;
 
         TagCardView cardView = new TagCardView(parent.getContext()) {
             @Override
@@ -49,10 +52,20 @@ public class TagPresenter extends LongClickPresenter {
     }
 
     private static void updateCardBackgroundColor(TagCardView view, boolean selected) {
+        if (sHearth) {
+            view.setBackgroundResource(R.drawable.hearth_chip_background); // follows focus and selection itself
+            return;
+        }
+
         view.setBackgroundColor(selected ? sSelectedBackgroundColor : sDefaultBackgroundColor);
     }
 
     private static void updateCardTextColor(TagCardView view, boolean selected) {
+        if (sHearth) {
+            view.setTextColor(selected ? 0xFF141418 : 0xFFFFFFFF);
+            return;
+        }
+
         view.setTextColor(selected ? sSelectedTextColor : sDefaultTextColor);
     }
 

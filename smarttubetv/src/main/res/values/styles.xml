@@ -70,6 +70,14 @@
         <item name="android:windowContentOverlay">@null</item>
     </style>
     <style name="App.Theme.Leanback.GuidedStep" parent="Theme.Leanback.GuidedStep">
+        <!-- HearthTube: Hearth's dark surfaces and its focused settings row (sign in, Add device) -->
+        <item name="guidedStepBackground">@color/hearth_background</item>
+        <item name="guidedActionsBackground">@color/hearth_surface</item>
+        <item name="guidedActionsBackgroundDark">@color/hearth_surface</item>
+        <item name="guidedActionsSelectorDrawable">@drawable/hearth_list_item_background</item>
+        <item name="guidedActionsElevation">0dp</item>
+        <item name="guidedActionItemTitleStyle">@style/Hearth.GuidedActionItemTitleStyle</item>
+        <item name="guidedActionItemDescriptionStyle">@style/Hearth.GuidedActionItemDescriptionStyle</item>
         <item name="android:windowBackground">@color/shelf_background_dark</item>
         <item name="shelfBackground">@color/shelf_background_dark</item>
         <!-- Disable activity transition animations -->

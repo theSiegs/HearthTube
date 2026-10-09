@@ -49,7 +49,7 @@
             android:maxWidth="200dp"
             android:singleLine="true"
             android:ellipsize="end"
-            android:textSize="18sp"
+            android:textSize="16sp"
             android:textColor="@color/white"
             android:shadowColor="#CC000000"
             android:shadowDx="0"

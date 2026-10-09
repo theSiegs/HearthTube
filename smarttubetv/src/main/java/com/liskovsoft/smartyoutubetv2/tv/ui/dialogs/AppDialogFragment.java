@@ -335,10 +335,23 @@ public class AppDialogFragment extends LeanbackSettingsFragment implements AppDi
 
             if (mIsLogoHeader && !mIsTransparent && view != null) {
                 ViewUtil.addLogoHeader(view, R.drawable.hearthtube_logo);
+            } else if (!mIsTransparent && view != null) {
+                ViewUtil.addTitleDivider(view);
             }
 
             if (!mIsTransparent && view != null) {
                 ViewUtil.fadeListTop(view);
+            }
+
+            // HearthTube: dim what's behind a panel, like Hearth's side panels; not the see-through player menus
+            if (getActivity() != null && getActivity().getWindow() != null) {
+                android.view.Window window = getActivity().getWindow();
+                if (mIsTransparent) {
+                    window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_DIM_BEHIND);
+                } else {
+                    window.addFlags(android.view.WindowManager.LayoutParams.FLAG_DIM_BEHIND);
+                    window.setDimAmount(0.6f);
+                }
             }
 
             if (mIsTransparent && view != null) {

@@ -175,7 +175,10 @@ class TooltipPopup {
                 outParams.y = yBelow;
             }
         } else {
-            if (yBelow + tooltipHeight <= mTmpDisplayFrame.height()) {
+            // HearthTube: above the button when it fits, so a player button's label doesn't cover the seek bar
+            if (yAbove >= 0) {
+                outParams.y = yAbove;
+            } else if (yBelow + tooltipHeight <= mTmpDisplayFrame.height()) {
                 outParams.y = yBelow;
             } else {
                 outParams.y = yAbove;

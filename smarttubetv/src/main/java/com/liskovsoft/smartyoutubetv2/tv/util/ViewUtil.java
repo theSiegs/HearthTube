@@ -244,7 +244,24 @@ public class ViewUtil {
             title.post(() -> titleContainer.setVisibility(TextUtils.isEmpty(title.getText()) ? View.GONE : View.VISIBLE));
         }
 
-        View divider = new View(context);
+        addTitleDivider(rootView);
+    }
+
+    /**
+     * HearthTube: a thin divider under a panel's title, like Hearth's settings pages (every panel, not only the
+     * ones with the logo).
+     */
+    public static void addTitleDivider(View rootView) {
+        View mainFrame = rootView.findViewById(R.id.main_frame);
+        View titleContainer = rootView.findViewById(R.id.decor_title_container);
+
+        if (!(mainFrame instanceof LinearLayout) || titleContainer == null) {
+            return;
+        }
+
+        LinearLayout frame = (LinearLayout) mainFrame;
+        float density = rootView.getResources().getDisplayMetrics().density;
+        View divider = new View(rootView.getContext());
         divider.setBackgroundColor(0x1FFFFFFF);
         LinearLayout.LayoutParams dividerParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Math.max(1, Math.round(density)));
         dividerParams.leftMargin = Math.round(16 * density);

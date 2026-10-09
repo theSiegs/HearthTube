@@ -82,10 +82,14 @@
     You can also override ShadowOverlayHelper.Options createShadowOverlayOptions() in
     ListRowPresenter which gives you some ability to change corner radius and focused and unfocused z.
     -->
-    <dimen name="lb_rounded_rect_corner_radius">12dp</dimen>
+    <dimen name="lb_rounded_rect_corner_radius">8dp</dimen>
 
     <!-- MOD: Zoom factor of focused button (SearchOrbView, default: 120%) -->
     <!--<item name="lb_search_orb_focused_zoom" type="fraction">120%</item>-->
+    <!-- HearthTube: round buttons like Hearth's top bar (focus_aware_app_bar.dart): 44dp, and focus fills them with
+         the accent instead of zooming -->
+    <dimen name="lb_search_orb_size">44dp</dimen>
+    <item name="lb_search_orb_focused_zoom" type="fraction">100%</item>
 
     <!-- MOD: Zoom factor of focused sidebar header (default: 1.2) -->
     <!--<item format="float" name="lb_browse_header_select_scale" type="dimen">1.2</item>-->

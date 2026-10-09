@@ -31,7 +31,8 @@ public class AboutSimpleSettingsPresenter extends BasePresenter<Void> {
     }
 
     public void show() {
-        String mainTitle = String.format("%s %s",
+        // HearthTube: titled like its menu entry, About, with the version after it
+        String mainTitle = String.format("%s %s %s", getContext().getString(R.string.settings_about),
                 getContext().getString(R.string.app_name),
                 AppInfoHelpers.getAppVersionName(getContext()));
 
@@ -41,7 +42,7 @@ public class AboutSimpleSettingsPresenter extends BasePresenter<Void> {
 
         appendUpdateCheckButton(settingsPresenter);
 
-        appendInstallBridge(settingsPresenter);
+        // "Enable global search" is a setting, under General
 
         AboutSettingsPresenter.appendBackgroundCredit(getContext(), settingsPresenter);
 

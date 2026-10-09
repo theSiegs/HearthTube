@@ -69,6 +69,18 @@ public class ErrorDialogFragment extends ErrorSupportFragment implements BrowseS
 
         setMessage(mDialogData.getMessage());
 
+        // HearthTube: the message and its button in a dark card with white text, like Hearth's "nothing to watch"
+        TextView message = (TextView) Helpers.getField(this, "mTextView");
+        if (hearth && message != null && message.getParent() instanceof View) {
+            float density = getResources().getDisplayMetrics().density;
+            View card = (View) message.getParent();
+            card.setBackgroundResource(R.drawable.hearth_empty_card);
+            card.setPadding(Math.round(40 * density), Math.round(28 * density), Math.round(40 * density), Math.round(28 * density));
+            message.setTextColor(0xFFFFFFFF);
+            message.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 20);
+            message.setPadding(0, 0, 0, Math.round(16 * density));
+        }
+
         TextView mTextView = (TextView) Helpers.getField(this, "mTextView");
         ImageView mImageView = (ImageView) Helpers.getField(this, "mImageView");
         if (mTextView != null && mImageView != null) {

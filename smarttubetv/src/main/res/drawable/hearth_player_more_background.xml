@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The player's More button: a white circle when focused, like the other control buttons -->
+<!-- The player's More button: the same soft white circle as the other control buttons when focused -->
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:state_focused="true">
         <shape android:shape="oval">
             <solid android:color="#33FFFFFF"/>
-            <stroke android:width="2dp" android:color="?attr/hearthAccent"/>
         </shape>
     </item>
     <item>

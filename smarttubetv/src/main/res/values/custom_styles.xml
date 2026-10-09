@@ -23,6 +23,13 @@
         <item name="android:fontFamily">sans-serif</item>
     </style>
 
+    <!-- HearthTube: the video title over the player in Roboto Medium, not Light (size: hearthtube flavor dimens) -->
+    <style name="TextAppearance.Leanback.DetailsDescriptionTitle">
+        <item name="android:textSize">@dimen/lb_details_description_title_text_size</item>
+        <item name="android:textColor">@color/lb_details_description_color</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
     <!-- Overrides leanback's row header style (same name) so every theme gets the pill -->
     <style name="Widget.Leanback.Row.Header" parent="Widget.Leanback.Header">
         <item name="android:textAppearance">@style/TextAppearance.Leanback.Row.Header</item>

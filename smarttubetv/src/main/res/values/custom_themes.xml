@@ -30,6 +30,24 @@
         <item name="android:colorAccent" tools:targetApi="21">?attr/hearthAccent</item>
         <item name="appLogo">@null</item>
         <item name="cardFocusOutline">@drawable/hearth_card_focus_outline</item>
+        <item name="guidedStepTheme">@style/App.Theme.Hearth.GuidedStep</item>
+    </style>
+    <!-- Sign in and Add device: Hearth's dark surfaces and its focused settings row, not leanback's greys -->
+    <style name="App.Theme.Hearth.GuidedStep" parent="Theme.Leanback.GuidedStep">
+        <item name="guidedStepBackground">@color/hearth_background</item>
+        <item name="guidedActionsBackground">@color/hearth_surface</item>
+        <item name="guidedActionsBackgroundDark">@color/hearth_surface</item>
+        <item name="guidedActionsSelectorDrawable">@drawable/hearth_list_item_background</item>
+        <item name="guidedActionsElevation">0dp</item>
+        <item name="guidedActionItemTitleStyle">@style/Hearth.GuidedActionItemTitleStyle</item>
+        <item name="guidedActionItemDescriptionStyle">@style/Hearth.GuidedActionItemDescriptionStyle</item>
+    </style>
+    <!-- Roboto, not leanback's condensed cut, on sign in and Add device -->
+    <style name="Hearth.GuidedActionItemTitleStyle" parent="Widget.Leanback.GuidedActionItemTitleStyle">
+        <item name="android:fontFamily">sans-serif</item>
+    </style>
+    <style name="Hearth.GuidedActionItemDescriptionStyle" parent="Widget.Leanback.GuidedActionItemDescriptionStyle">
+        <item name="android:fontFamily">sans-serif</item>
     </style>
     <style name="App.Theme.Hearth.Preferences" parent="App.Theme.Leanback.Preferences">
         <item name="android:colorPrimary" tools:targetApi="21">@color/hearth_surface</item>

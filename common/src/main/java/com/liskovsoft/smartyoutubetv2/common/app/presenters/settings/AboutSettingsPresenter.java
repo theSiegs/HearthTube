@@ -37,7 +37,8 @@ public class AboutSettingsPresenter extends BasePresenter<Void> {
     }
 
     public void show() {
-        String mainTitle = String.format("%s %s",
+        // HearthTube: titled like its menu entry, About, with the version after it
+        String mainTitle = String.format("%s %s %s", getContext().getString(R.string.settings_about),
                 getContext().getString(R.string.app_name),
                 AppInfoHelpers.getAppVersionName(getContext()));
 
@@ -55,7 +56,7 @@ public class AboutSettingsPresenter extends BasePresenter<Void> {
 
         appendUpdateSource(settingsPresenter);
 
-        appendInstallBridge(settingsPresenter);
+        // HearthTube: "Enable global search" is a setting, under General
 
         if (!Helpers.equalsAny(country, "RU", "UA")) {
             appendDonation(settingsPresenter);
@@ -206,22 +207,22 @@ public class AboutSettingsPresenter extends BasePresenter<Void> {
         }
     }
 
-    private void appendInstallBridge(AppDialogPresenter settingsPresenter) {
+    static void appendInstallBridge(Context context, AppDialogPresenter settingsPresenter) {
         OptionItem installBridgeOption = UiOptionItem.from(
-                getContext().getString(R.string.install_bridge),
-                option -> startBridgePresenter());
+                context.getString(R.string.enable_voice_search),
+                option -> startBridgePresenter(context));
 
         settingsPresenter.appendSingleButton(installBridgeOption);
     }
 
-    private void startBridgePresenter() {
-        MessageHelpers.showLongMessage(getContext(), R.string.enable_voice_search_desc);
+    private static void startBridgePresenter(Context context) {
+        MessageHelpers.showLongMessage(context, R.string.enable_voice_search_desc);
 
-        ATVBridgePresenter atvPresenter = ATVBridgePresenter.instance(getContext());
+        ATVBridgePresenter atvPresenter = ATVBridgePresenter.instance(context);
         atvPresenter.runBridgeInstaller(true);
         atvPresenter.unhold();
 
-        AmazonBridgePresenter amazonPresenter = AmazonBridgePresenter.instance(getContext());
+        AmazonBridgePresenter amazonPresenter = AmazonBridgePresenter.instance(context);
         amazonPresenter.runBridgeInstaller(true);
         amazonPresenter.unhold();
     }

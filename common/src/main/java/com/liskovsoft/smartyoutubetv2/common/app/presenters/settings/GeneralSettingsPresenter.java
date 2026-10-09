@@ -75,7 +75,8 @@ public class GeneralSettingsPresenter extends BasePresenter<Void> {
         AppDialogPresenter settingsPresenter = AppDialogPresenter.instance(getContext());
 
         appendBootToSection(settingsPresenter);
-        appendEnabledSections(settingsPresenter);
+        // HearthTube: which sections show is Edit menu and tabs, in the side menu
+        //appendEnabledSections(settingsPresenter);
         appendContextMenuItemsCategory(settingsPresenter);
         appendHideContent(settingsPresenter);
         appendAppExitCategory(settingsPresenter);
@@ -85,6 +86,7 @@ public class GeneralSettingsPresenter extends BasePresenter<Void> {
         appendInternetCensorship(settingsPresenter);
         appendHistoryCategory(settingsPresenter);
         appendMiscCategory(settingsPresenter);
+        AboutSettingsPresenter.appendInstallBridge(getContext(), settingsPresenter);
 
         settingsPresenter.showDialog(getContext().getString(R.string.settings_general), mOnFinish);
     }
