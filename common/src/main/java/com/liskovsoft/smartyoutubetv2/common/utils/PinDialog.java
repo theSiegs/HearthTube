@@ -21,23 +21,27 @@ import com.liskovsoft.smartyoutubetv2.common.R;
 import com.liskovsoft.smartyoutubetv2.common.misc.MotherActivity;
 import com.liskovsoft.smartyoutubetv2.common.utils.SimpleEditDialog.OnChange;
 
+import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 /**
  * Full-screen PIN entry in Google TV's style, the same screen as the Hearth launcher's parent PIN:
- * the title on the left, four slots over a round keypad on the right.<br/>
- * The D-pad moves around the keypad and OK presses a key; the remote's number keys type directly.
- * The PIN is checked as soon as the fourth digit is in. Back closes the screen.
+ * the title on the left, four slots over a shuffled "row pad" on the right.<br/>
+ * Four pill rows of three places hold the ten digits and two empty places, shuffled every time the pad opens.
+ * Up/Down moves between rows (and down to the backspace pill); Left, OK and Right enter the focused row's first,
+ * middle and last digit. Someone watching only learns each digit was one of three, a different three each time, so
+ * a parent can enter the PIN in front of the kids. Held keys don't repeat a digit; the remote's number keys type
+ * directly. The PIN is checked as soon as the fourth digit is in. Back closes the screen.
  */
 public class PinDialog {
     public static final int PIN_LENGTH = 4;
-    private static final String[][] KEYPAD = {
-            {"1", "2", "3"},
-            {"4", "5", "6"},
-            {"7", "8", "9"},
-            {null, "0", "⌫"}
-    };
-    private static final String BACKSPACE = "⌫";
-    private static final int KEY_SIZE_DP = 56;
-    private static final int KEY_MARGIN_DP = 7;
+    private static final int ROWS = 4;
+    private static final int PER_ROW = 3;
+    private static final int PLACE_WIDTH_DP = 48;
+    private static final int PLACE_HEIGHT_DP = 44;
+    private static final int ROW_GAP_DP = 12;
     private static final int SLOT_WIDTH_DP = 48;
     private static final int SLOT_GAP_DP = 16;
     private static final int WRONG_PIN_CLEAR_MS = 400;
@@ -49,6 +53,10 @@ public class PinDialog {
     private final View[] mDots = new View[PIN_LENGTH];
     private final View[] mUnderlines = new View[PIN_LENGTH];
     private Dialog mDialog;
+    /** ROWS x PER_ROW places, each a digit or null (empty) */
+    private final String[][] mLayout = shuffled();
+    private final View[] mRows = new View[ROWS];
+    private View mBackspace;
     private TextView mLabel;
     private boolean mError;
 
@@ -146,74 +154,170 @@ public class PinDialog {
         }
     }
 
-    /**
-     * @return the "1" key, which gets the initial focus
-     */
-    private View createKeypad(ViewGroup container) {
-        View firstKey = null;
-
-        for (String[] row : KEYPAD) {
-            LinearLayout rowView = new LinearLayout(mContext);
-            rowView.setOrientation(LinearLayout.HORIZONTAL);
-
-            for (String label : row) {
-                View key = label == null ? new View(mContext) : createKey(label);
-                LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(dp(KEY_SIZE_DP), dp(KEY_SIZE_DP));
-                params.setMargins(dp(KEY_MARGIN_DP), dp(KEY_MARGIN_DP), dp(KEY_MARGIN_DP), dp(KEY_MARGIN_DP));
-                rowView.addView(key, params);
-
-                if (firstKey == null && label != null) {
-                    firstKey = key;
-                }
-            }
-
-            container.addView(rowView);
+    private static String[][] shuffled() {
+        List<String> places = new ArrayList<>();
+        for (int digit = 0; digit <= 9; digit++) {
+            places.add(String.valueOf(digit));
         }
+        places.add(null);
+        places.add(null);
+        Collections.shuffle(places, new SecureRandom());
 
-        return firstKey;
+        String[][] layout = new String[ROWS][PER_ROW];
+        for (int i = 0; i < places.size(); i++) {
+            layout[i / PER_ROW][i % PER_ROW] = places.get(i);
+        }
+        return layout;
     }
 
-    private View createKey(String label) {
-        View key;
-
-        if (BACKSPACE.equals(label)) {
-            ImageView icon = new ImageView(mContext);
-            icon.setImageResource(R.drawable.ic_pin_backspace);
-            icon.setScaleType(ImageView.ScaleType.CENTER);
-            ImageViewCompat.setImageTintList(icon, ContextCompat.getColorStateList(mContext, R.color.pin_key_text));
-            icon.setContentDescription(label);
-            icon.setOnClickListener(v -> onBackspace());
-            key = icon;
-        } else {
-            TextView digit = new TextView(mContext);
-            digit.setText(label);
-            digit.setGravity(Gravity.CENTER);
-            digit.setTextSize(22);
-            digit.setTextColor(ContextCompat.getColorStateList(mContext, R.color.pin_key_text));
-            digit.setOnClickListener(v -> onDigit(label));
-            key = digit;
+    /**
+     * @return the first row, which gets the initial focus
+     */
+    private View createKeypad(ViewGroup container) {
+        if (container instanceof LinearLayout) {
+            ((LinearLayout) container).setGravity(Gravity.CENTER_HORIZONTAL);
         }
 
-        key.setBackgroundResource(R.drawable.pin_key_background);
-        key.setFocusable(true);
-        key.setClickable(true);
+        for (int row = 0; row < ROWS; row++) {
+            LinearLayout rowView = new LinearLayout(mContext);
+            rowView.setOrientation(LinearLayout.HORIZONTAL);
+            rowView.setGravity(Gravity.CENTER_VERTICAL);
+            rowView.setBackgroundResource(R.drawable.pin_row_background);
+            rowView.setPadding(dp(10), dp(6), dp(10), dp(6));
+            rowView.setFocusable(true);
+            rowView.setFocusableInTouchMode(true);
+            rowView.setTag(row);
 
-        return key;
+            // The chevrons say which button enters which digit; they don't change with the digit pressed
+            rowView.addView(createChevron(R.drawable.ic_pin_chevron_left));
+            for (int place = 0; place < PER_ROW; place++) {
+                rowView.addView(createPlace(row, place), new LinearLayout.LayoutParams(dp(PLACE_WIDTH_DP), dp(PLACE_HEIGHT_DP)));
+            }
+            rowView.addView(createChevron(R.drawable.ic_pin_chevron_right));
+
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            params.topMargin = row == 0 ? 0 : dp(ROW_GAP_DP);
+            container.addView(rowView, params);
+            mRows[row] = rowView;
+        }
+
+        ImageView backspace = new ImageView(mContext);
+        backspace.setImageResource(R.drawable.ic_pin_backspace);
+        backspace.setScaleType(ImageView.ScaleType.CENTER);
+        backspace.setDuplicateParentStateEnabled(false);
+        ImageViewCompat.setImageTintList(backspace, ContextCompat.getColorStateList(mContext, R.color.pin_key_text));
+        backspace.setBackgroundResource(R.drawable.pin_row_background);
+        backspace.setContentDescription("⌫");
+        backspace.setFocusable(true);
+        backspace.setFocusableInTouchMode(true);
+        backspace.setClickable(true);
+        backspace.setOnClickListener(v -> onBackspace());
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(dp(72), dp(PLACE_HEIGHT_DP));
+        params.topMargin = dp(ROW_GAP_DP + 8);
+        container.addView(backspace, params);
+        mBackspace = backspace;
+
+        return mRows[0];
+    }
+
+    private View createChevron(int iconResId) {
+        ImageView chevron = new ImageView(mContext);
+        chevron.setImageResource(iconResId);
+        chevron.setDuplicateParentStateEnabled(true);
+        ImageViewCompat.setImageTintList(chevron, ContextCompat.getColorStateList(mContext, R.color.pin_chevron));
+        return chevron;
+    }
+
+    private View createPlace(int row, int place) {
+        TextView digit = new TextView(mContext);
+        String label = mLayout[row][place];
+        digit.setText(label != null ? label : "");
+        digit.setGravity(Gravity.CENTER);
+        digit.setTextSize(24);
+        digit.setTextColor(ContextCompat.getColorStateList(mContext, R.color.pin_key_text));
+        digit.setDuplicateParentStateEnabled(true);
+        // Touch: tap the digit itself
+        digit.setOnClickListener(v -> enter(row, place));
+        return digit;
+    }
+
+    private void enter(int row, int place) {
+        String digit = mLayout[row][place];
+        if (digit != null) {
+            onDigit(digit);
+        }
+    }
+
+    private static boolean isOk(int keyCode) {
+        return keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyCode == KeyEvent.KEYCODE_ENTER
+                || keyCode == KeyEvent.KEYCODE_NUMPAD_ENTER || keyCode == KeyEvent.KEYCODE_BUTTON_A;
+    }
+
+    private static boolean isArrow(int keyCode) {
+        return keyCode == KeyEvent.KEYCODE_DPAD_UP || keyCode == KeyEvent.KEYCODE_DPAD_DOWN
+                || keyCode == KeyEvent.KEYCODE_DPAD_LEFT || keyCode == KeyEvent.KEYCODE_DPAD_RIGHT;
     }
 
     private boolean onKey(int keyCode, KeyEvent event) {
         int digit = toDigit(keyCode);
-        boolean handled = digit != -1 || keyCode == KeyEvent.KEYCODE_DEL;
 
-        // Swallow both down and up of the keys we own, act on down only
-        if (!handled || event.getAction() != KeyEvent.ACTION_DOWN) {
-            return handled;
+        if (digit != -1 || keyCode == KeyEvent.KEYCODE_DEL) {
+            // Swallow both down and up of the keys we own, act on down only
+            if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) {
+                if (digit != -1) {
+                    onDigit(String.valueOf(digit));
+                } else {
+                    onBackspace();
+                }
+            }
+            return true;
         }
 
-        if (digit != -1) {
-            onDigit(String.valueOf(digit));
+        if (!isOk(keyCode) && !isArrow(keyCode)) {
+            return false; // Back and the rest
+        }
+
+        // The pad keeps the selection: OK and the arrows never reach the views below
+        if (event.getAction() != KeyEvent.ACTION_DOWN) {
+            return true;
+        }
+
+        boolean move = keyCode == KeyEvent.KEYCODE_DPAD_UP || keyCode == KeyEvent.KEYCODE_DPAD_DOWN;
+        if (event.getRepeatCount() > 0 && !move) {
+            return true; // a held OK or arrow doesn't enter the same digit again and again
+        }
+
+        View focused = mDialog.getCurrentFocus();
+
+        if (focused == mBackspace) {
+            if (isOk(keyCode)) {
+                onBackspace();
+            } else if (keyCode == KeyEvent.KEYCODE_DPAD_UP) {
+                mRows[ROWS - 1].requestFocus();
+            }
+            return true;
+        }
+
+        int row = focused != null && focused.getTag() instanceof Integer ? (Integer) focused.getTag() : -1;
+
+        if (row == -1) {
+            mRows[0].requestFocus();
+            return true;
+        }
+
+        if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT) {
+            enter(row, 0);
+        } else if (isOk(keyCode)) {
+            enter(row, 1);
+        } else if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
+            enter(row, 2);
+        } else if (keyCode == KeyEvent.KEYCODE_DPAD_UP) {
+            if (row > 0) {
+                mRows[row - 1].requestFocus();
+            }
         } else {
-            onBackspace();
+            (row < ROWS - 1 ? mRows[row + 1] : mBackspace).requestFocus();
         }
 
         return true;
