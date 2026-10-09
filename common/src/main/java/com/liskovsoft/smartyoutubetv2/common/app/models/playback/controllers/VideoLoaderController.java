@@ -278,6 +278,14 @@ public class VideoLoaderController extends BasePlayerController {
 
         getVideo().sync(formatInfo);
 
+        // HearthTube: a Short doesn't play in a kids profile, however it got here (search, link, cast, autoplay)
+        if (com.liskovsoft.smartyoutubetv2.common.utils.KidsShorts.isBlockedFormat(formatInfo, getVideo().title, getVideo().author)) {
+            MessageHelpers.showMessage(getContext(), R.string.kids_no_shorts);
+            player.showProgressBar(false);
+            player.finishReally();
+            return;
+        }
+
         // Fix stretched video for a couple milliseconds (before the onVideoSizeChanged gets called)
         applyAspectRatio(formatInfo);
 

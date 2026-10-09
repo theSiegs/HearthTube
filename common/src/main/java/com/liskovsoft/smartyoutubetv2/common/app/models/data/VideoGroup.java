@@ -118,6 +118,10 @@ public class VideoGroup {
         }
 
         for (MediaItem item : mediaGroup.getMediaItems()) {
+            if (com.liskovsoft.smartyoutubetv2.common.utils.KidsShorts.isHiddenShort(item)) { // HearthTube: no Shorts while hidden
+                continue;
+            }
+
             Video video = Video.from(item);
 
             videoGroup.add(video);
@@ -139,6 +143,10 @@ public class VideoGroup {
         }
 
         for (MediaItem item : mediaGroup.getMediaItems()) {
+            if (com.liskovsoft.smartyoutubetv2.common.utils.KidsShorts.isHiddenShort(item)) { // HearthTube: no Shorts while hidden
+                continue;
+            }
+
             Video video = Video.from(item);
 
             baseGroup.add(video);

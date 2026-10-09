@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Text on hearth_button_background: dark on the white focused button, white otherwise -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_focused="true" android:color="#FF141418"/>
+    <item android:color="#FFFFFFFF"/>
+</selector>

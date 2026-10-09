@@ -40,7 +40,7 @@
     <string name="background_image_source">Bing image of the day</string>
     <string name="parent_pin_wait">Too many tries. Wait %d seconds.</string>
     <string name="works_with_hearth">Works with Hearth</string>
-    <string name="works_with_hearth_missing">These need the Hearth launcher, installed and up to date. Until then they do nothing.</string>
+    <string name="works_with_hearth_missing">Hearth isn\'t on this TV (or is out of date), so these do nothing yet.</string>
     <string name="hearth_follow_profile">Follow the Google TV profile</string>
     <string name="parent_pin_from_hearth">Parent PIN: Hearth\'s (change it in Hearth Settings → Parent PIN)</string>
     <string name="hearth_continue_watching">Show in Hearth\'s Continue Watching</string>
@@ -94,7 +94,7 @@
     <string name="side_menu_who">%s · Switch account</string>
     <string name="edit_menu_and_tabs">Edit menu and tabs</string>
     <string name="edit_tabs_at_top">Tabs at the top</string>
-    <string name="edit_shown_sections">Show (the rest go in this menu)</string>
+    <string name="edit_shown_sections">Tabs at the top (the rest are in the side menu)</string>
     <string name="notifications_bell">Notifications</string>
     <string name="enable_guest_account">Enable guest account</string>
     <string name="enable_guest_account_hint">Lets anyone watch signed out, without an account</string>

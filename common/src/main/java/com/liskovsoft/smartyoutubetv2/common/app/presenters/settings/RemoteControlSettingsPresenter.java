@@ -61,7 +61,7 @@ public class RemoteControlSettingsPresenter extends BasePresenter<Void> {
         appendRemoveAllDevicesButton(settingsPresenter);
         appendMiscCategory(settingsPresenter);
 
-        settingsPresenter.showDialog(getContext().getString(R.string.settings_remote_control), this::unhold);
+        settingsPresenter.showDialog(getContext().getString(R.string.settings_cast_from_phone), this::unhold);
     }
 
     private void appendDeviceLinkSwitch(AppDialogPresenter settingsPresenter) {

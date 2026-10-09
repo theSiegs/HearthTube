@@ -31,7 +31,7 @@ public class AutoFrameRateSettingsPresenter extends BasePresenter<Void> {
         appendAutoFrameRatePauseCategory(settingsPresenter);
         appendAutoFrameRateModesCategory(settingsPresenter);
 
-        settingsPresenter.showDialog(getContext().getString(R.string.auto_frame_rate), onFinish);
+        settingsPresenter.showDialog(getContext().getString(R.string.settings_frame_rate), onFinish);
     }
 
     private void appendAutoFrameRateCategory(AppDialogPresenter settingsPresenter) {

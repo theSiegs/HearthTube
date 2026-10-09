@@ -55,6 +55,23 @@ public class AccountSettingsPresenter extends BasePresenter<Void> {
         sInstance = null;
     }
 
+    /** PIN keypads opened from this panel, still open or about to open */
+    private int mPinsOpen;
+
+    /**
+     * A PIN keypad opened from Accounts. When the last one in a row closes (done, or Back), Accounts comes back
+     * instead of leaving you on Browse.
+     */
+    private void showPin(String title, String message, com.liskovsoft.smartyoutubetv2.common.utils.SimpleEditDialog.OnChange onChange) {
+        mPinsOpen++;
+        PinDialog.show(getContext(), title, message, onChange, () -> Utils.post(() -> {
+            // A next keypad (confirm, try again) is already counted by now
+            if (--mPinsOpen == 0) {
+                mMediaServiceManager.loadAccounts(this::fetchImagesAndShowDialog);
+            }
+        }));
+    }
+
     public void show() {
         // HearthTube: kids profiles can't change accounts, PINs or pairings
         ParentGate.run(getContext(), () -> mMediaServiceManager.loadAccounts(this::fetchImagesAndShowDialog));
@@ -94,7 +111,7 @@ public class AccountSettingsPresenter extends BasePresenter<Void> {
         List<OptionItem> optionItems = new ArrayList<>();
 
         // HearthTube: signed out only when the guest is allowed
-        if (ProfileLinkData.instance(getContext()).isGuestEnabled()) {
+        if (ProfileLinkData.instance(getContext()).isGuestAllowed()) {
             optionItems.add(UiOptionItem.from(
                     getContext().getString(R.string.dialog_account_none), optionItem -> {
                         AccountSelectionPresenter.instance(getContext()).selectAccount(null);
@@ -164,10 +181,6 @@ public class AccountSettingsPresenter extends BasePresenter<Void> {
     }
 
     /**
-     * The PIN that unlocks account changes in Google TV kids profiles (ParentGate). Only a parent gets here in a
-     * kids profile, so setting, changing or removing it needs no extra check.
-     */
-    /**
      * Watching signed out. Off by default; never offered in a kids profile (kids stay on their own account).
      */
     private void appendGuestSwitch(AppDialogPresenter settingsPresenter) {
@@ -181,6 +194,10 @@ public class AccountSettingsPresenter extends BasePresenter<Void> {
                 option -> links.setGuestEnabled(option.isSelected()), links.isGuestEnabled()));
     }
 
+    /**
+     * The PIN that unlocks account changes in Google TV kids profiles (ParentGate). Turning it off takes the PIN
+     * itself, in any profile: a kid could otherwise do it from a grown-up's profile.
+     */
     private void appendParentPin(AppDialogPresenter settingsPresenter) {
         // One PIN for both apps: with Hearth's set, HearthTube's own isn't used (or offered)
         if (ParentGate.usesHearthPin(getContext())) {
@@ -196,23 +213,31 @@ public class AccountSettingsPresenter extends BasePresenter<Void> {
             if (optionItem.isSelected()) {
                 showSetParentPinDialog(null);
             } else {
-                links.setParentPin(null);
+                showPin(getContext().getString(R.string.parent_pin_title), null,
+                        pin -> {
+                            if (links.checkParentPin(pin)) {
+                                links.setParentPin(null);
+                                MessageHelpers.showMessage(getContext(), R.string.msg_done);
+                                return true;
+                            }
+                            return false;
+                        });
             }
-        }, links.getParentPin() != null));
+        }, links.hasParentPin()));
     }
 
     private void showSetParentPinDialog(String message) {
-        PinDialog.show(
-                getContext(),
+        showPin(
                 getContext().getString(R.string.set_parent_pin),
                 message != null ? message : getContext().getString(R.string.parent_pin_setting_hint),
                 newPin -> {
-                    Utils.post(() -> PinDialog.show(
-                            getContext(),
+                    Utils.post(() -> showPin(
                             getContext().getString(R.string.confirm_profile_pin),
+                            null,
                             confirmed -> {
                                 if (newPin.equals(confirmed)) {
                                     ProfileLinkData.instance(getContext()).setParentPin(newPin);
+                                    MessageHelpers.showMessage(getContext(), R.string.msg_done);
                                 } else {
                                     Utils.post(() -> showSetParentPinDialog(getContext().getString(R.string.pin_mismatch)));
                                 }
@@ -223,6 +248,11 @@ public class AccountSettingsPresenter extends BasePresenter<Void> {
     }
 
     private void appendProtectAccountWithPassword(AppDialogPresenter settingsPresenter) {
+        // A PIN belongs to an account: nothing to lock while watching signed out
+        if (getSignInService().getSelectedAccount() == null) {
+            return;
+        }
+
         settingsPresenter.appendSingleSwitch(UiOptionItem.from(getContext().getString(R.string.protect_account_with_pin), optionItem -> {
             if (optionItem.isSelected()) {
                 showAddPasswordDialog(settingsPresenter);
@@ -273,7 +303,7 @@ public class AccountSettingsPresenter extends BasePresenter<Void> {
 
             optionItems.add(UiOptionItem.from(getContext().getString(R.string.google_tv_profile_ask),
                     option -> links.removeLink(profile), link == null));
-            if (links.isGuestEnabled()) {
+            if (links.isGuestAllowed()) {
                 optionItems.add(UiOptionItem.from(getContext().getString(R.string.profile_guest),
                         option -> links.setLink(profile, null), link != null && link.account == null));
             }
@@ -305,9 +335,9 @@ public class AccountSettingsPresenter extends BasePresenter<Void> {
         }
 
         settingsPresenter.closeDialog();
-        PinDialog.show(
-                getContext(),
+        showPin(
                 getContext().getString(R.string.enter_profile_pin),
+                null,
                 newValue -> {
                     if (Utils.passwordMatch(pin, newValue)) {
                         ProfileLinkData.instance(getContext()).setLink(profile, account);
@@ -344,8 +374,7 @@ public class AccountSettingsPresenter extends BasePresenter<Void> {
     }
 
     private void showSetPinDialog(String message) {
-        PinDialog.show(
-                getContext(),
+        showPin(
                 getContext().getString(R.string.set_profile_pin),
                 message,
                 newPin -> {
@@ -356,14 +385,15 @@ public class AccountSettingsPresenter extends BasePresenter<Void> {
     }
 
     private void showConfirmPinDialog(String newPin) {
-        PinDialog.show(
-                getContext(),
+        showPin(
                 getContext().getString(R.string.confirm_profile_pin),
+                null,
                 newValue -> {
                     if (newPin.equals(newValue)) {
                         AccountsData.instance(getContext()).setAccountPassword(newPin);
                         AccountsData.instance(getContext()).setPasswordAccepted(true); // the one who set it is already in
                         BrowsePresenter.instance(getContext()).updateSections();
+                        MessageHelpers.showMessage(getContext(), R.string.msg_done);
                     } else {
                         Utils.post(() -> showSetPinDialog(getContext().getString(R.string.pin_mismatch)));
                     }
@@ -379,9 +409,9 @@ public class AccountSettingsPresenter extends BasePresenter<Void> {
         }
 
         settingsPresenter.closeDialog();
-        PinDialog.show(
-                getContext(),
+        showPin(
                 getContext().getString(R.string.enter_profile_pin),
+                null,
                 newValue -> {
                     if (Utils.passwordMatch(password, newValue)) {
                         AccountsData.instance(getContext()).setAccountPassword(null);

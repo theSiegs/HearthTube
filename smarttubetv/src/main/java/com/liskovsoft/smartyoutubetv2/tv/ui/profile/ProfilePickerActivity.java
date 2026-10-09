@@ -99,8 +99,7 @@ public class ProfilePickerActivity extends LeanbackActivity implements ProfilePi
         }
 
         // HearthTube: the guest only when allowed (Accounts settings), never in a kids profile
-        boolean guest = com.liskovsoft.smartyoutubetv2.common.prefs.ProfileLinkData.instance(this).isGuestEnabled()
-                && !com.liskovsoft.smartyoutubetv2.common.utils.ParentGate.isKidsProfile(this);
+        boolean guest = com.liskovsoft.smartyoutubetv2.common.prefs.ProfileLinkData.instance(this).isGuestAllowed();
         View guestTile = guest ? addTile(new ProfileItem(ProfileItem.TYPE_GUEST, null, null, false)) : null;
         View addTile = addTile(new ProfileItem(mWelcome ? ProfileItem.TYPE_SIGN_IN : ProfileItem.TYPE_ADD, null, null, false));
 
@@ -130,8 +129,7 @@ public class ProfilePickerActivity extends LeanbackActivity implements ProfilePi
 
     @Override
     public void onBackPressed() {
-        boolean guest = com.liskovsoft.smartyoutubetv2.common.prefs.ProfileLinkData.instance(this).isGuestEnabled()
-                && !com.liskovsoft.smartyoutubetv2.common.utils.ParentGate.isKidsProfile(this);
+        boolean guest = com.liskovsoft.smartyoutubetv2.common.prefs.ProfileLinkData.instance(this).isGuestAllowed();
 
         if (mWelcome && !guest) {
             // Nobody can watch yet, and there's no signed-out Home to fall back to: Back leaves HearthTube

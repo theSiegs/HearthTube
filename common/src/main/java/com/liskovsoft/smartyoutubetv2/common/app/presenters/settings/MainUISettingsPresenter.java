@@ -52,7 +52,8 @@ public class MainUISettingsPresenter extends BasePresenter<Void> {
         appendWallpaper(settingsPresenter);
         appendShowShorts(settingsPresenter);
         appendTopButtonsCategory(settingsPresenter);
-        appendColorScheme(settingsPresenter);
+        // HearthTube: the Hearth look only (SmartTube's other schemes undo it); Accent color picks the color
+        //appendColorScheme(settingsPresenter);
         if (Build.VERSION.SDK_INT > 19) {
             appendCardTextScrollSpeed(settingsPresenter);
         }
@@ -69,7 +70,7 @@ public class MainUISettingsPresenter extends BasePresenter<Void> {
         //appendTimeFormatCategory(settingsPresenter);
         appendMiscCategory(settingsPresenter);
 
-        settingsPresenter.showDialog(getContext().getString(R.string.dialog_main_ui), mOnFinish);
+        settingsPresenter.showDialog(getContext().getString(R.string.settings_look_and_layout), mOnFinish);
     }
 
     /**

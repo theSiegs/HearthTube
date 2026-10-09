@@ -312,7 +312,7 @@ public class ProfilePickerPresenter extends BasePresenter<ProfilePickerView> {
      */
     public void showWelcomeIfNeeded() {
         List<Account> accounts = mSignInService.getAccounts();
-        boolean guest = ProfileLinkData.instance(getContext()).isGuestEnabled() && !ParentGate.isKidsProfile(getContext());
+        boolean guest = ProfileLinkData.instance(getContext()).isGuestAllowed();
 
         if ((accounts != null && !accounts.isEmpty()) || guest) {
             return;

@@ -120,6 +120,9 @@ public class PlaybackPresenter extends BasePresenter<PlaybackView> implements Pl
             return;
         }
 
+        // HearthTube: watching means the parent is done; the next account change asks for the PIN again
+        com.liskovsoft.smartyoutubetv2.common.utils.ParentGate.lock();
+
         if (getView() != null && getView().isEmbed()) { // switching from the embed player to the fullscreen one
             // The embed player doesn't disposed properly
             // NOTE: don't release after init check because this depends on timings

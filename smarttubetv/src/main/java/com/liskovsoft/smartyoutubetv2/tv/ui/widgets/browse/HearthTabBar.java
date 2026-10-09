@@ -76,14 +76,19 @@ public class HearthTabBar extends LinearLayout {
             return false;
         }
 
-        // Pages inside the browse screen (the sign-in prompt) have title bars of their own
+        // Pages inside the browse screen (the sign-in prompt, empty pages) have title bars of their own, with the same
+        // id: the browse screen's own has no error page around it
+        boolean browseTitle = false;
         for (View v = this; v != null; v = v.getParent() instanceof View ? (View) v.getParent() : null) {
+            if (v.getId() == androidx.leanback.R.id.error_frame) {
+                return false;
+            }
             if (v.getId() == androidx.leanback.R.id.browse_title_group) {
-                return true;
+                browseTitle = true;
             }
         }
 
-        return false;
+        return browseTitle;
     }
 
     @Override

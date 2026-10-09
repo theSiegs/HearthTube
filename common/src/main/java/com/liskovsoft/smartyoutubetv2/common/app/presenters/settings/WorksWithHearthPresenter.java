@@ -23,10 +23,6 @@ public class WorksWithHearthPresenter {
         HearthLinkData data = HearthLinkData.instance(context);
         HearthProfile hearth = HearthProfile.queryHearth(context);
 
-        if (hearth == null) {
-            dialog.appendSingleButton(UiOptionItem.from(context.getString(R.string.works_with_hearth_missing)));
-        }
-
         ProfileLinkData links = ProfileLinkData.instance(context);
         dialog.appendSingleSwitch(UiOptionItem.from(context.getString(R.string.hearth_follow_profile),
                 option -> links.setFollowEnabled(option.isSelected()), links.isFollowEnabled()));
@@ -51,6 +47,11 @@ public class WorksWithHearthPresenter {
 
         dialog.appendSingleSwitch(UiOptionItem.from(context.getString(R.string.hearth_home_assistant),
                 option -> data.setHomeAssistantEnabled(option.isSelected()), data.isHomeAssistantEnabled()));
+
+        // Last, so the switches get the first focus; it says why they do nothing yet
+        if (hearth == null) {
+            dialog.appendSingleButton(UiOptionItem.from(context.getString(R.string.works_with_hearth_missing)));
+        }
 
         dialog.showDialog(context.getString(R.string.works_with_hearth));
     }

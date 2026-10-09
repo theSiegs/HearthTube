@@ -21,8 +21,8 @@ import java.util.List;
  * knows their own. Without a parent PIN it's simply locked; a parent changes accounts from their own Google TV profile.
  */
 public final class ParentGate {
-    /** One PIN covers a few steps in a row (e.g. Accounts settings, then Sign in) */
-    private static final long UNLOCK_MS = 10 * 60 * 1_000;
+    /** One PIN covers a few steps in a row (e.g. Accounts settings, then Sign in); playing a video locks again */
+    private static final long UNLOCK_MS = 3 * 60 * 1_000;
     private static final long PANEL_CLOSE_MS = 300;
     private static long sUnlockedUntilMs;
 
@@ -58,12 +58,11 @@ public final class ParentGate {
             links.setUsingHearthPin(false);
             links.setParentPin(null);
             ask = () -> createPin(context, action, context.getString(R.string.parent_pin_hearth_gone));
-        } else if (links.getParentPin() == null) {
+        } else if (!links.hasParentPin()) {
             // No PIN yet (a kid's own copy starts empty): the parent setting it up chooses one
             ask = () -> createPin(context, action, null);
         } else {
-            String parentPin = links.getParentPin();
-            ask = () -> askPin(context, parentPin::equals, action);
+            ask = () -> askPin(context, links::checkParentPin, action);
         }
 
         // The PIN screen belongs to the screen below an open settings panel and would show under it
@@ -145,6 +144,26 @@ public final class ParentGate {
         return hearth != null && hearth.hasParentPin;
     }
 
+    /** The parent is done (a video starts playing): the next account change asks again */
+    public static void lock() {
+        sUnlockedUntilMs = 0;
+    }
+
+    /**
+     * Asks for the parent PIN that's set now (HearthTube's own), then runs the action: changing or removing it takes
+     * knowing it, wherever the setting is opened.
+     */
+    public static void confirmParentPin(Context context, Runnable action) {
+        ProfileLinkData links = ProfileLinkData.instance(context);
+
+        if (!links.hasParentPin()) {
+            action.run();
+            return;
+        }
+
+        askPin(context, links::checkParentPin, action);
+    }
+
     /** A parent entered the PIN in the last few minutes */
     public static boolean isUnlocked() {
         return System.currentTimeMillis() <= sUnlockedUntilMs;
@@ -165,6 +184,24 @@ public final class ParentGate {
         if (context == null || VERSION.SDK_INT < 24) {
             return false;
         }
+
+        // Asked many times per screen, and each answer can take a provider query and package scans: keep it a few
+        // seconds (a profile switch restarts the app anyway)
+        long now = android.os.SystemClock.elapsedRealtime();
+        if (now < sKidsCheckedUntilMs) {
+            return sKids;
+        }
+
+        sKids = isKidsProfileNow(context);
+        sKidsCheckedUntilMs = now + KIDS_CACHE_MS;
+        return sKids;
+    }
+
+    private static final long KIDS_CACHE_MS = 5_000;
+    private static volatile boolean sKids;
+    private static volatile long sKidsCheckedUntilMs;
+
+    private static boolean isKidsProfileNow(Context context) {
 
         // Hearth's word first, when it has one (it can tell even when every app is approved)
         HearthProfile hearth = HearthProfile.isHearthSuspended(context) ? null : HearthProfile.queryHearth(context);

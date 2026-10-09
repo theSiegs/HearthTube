@@ -60,7 +60,10 @@ public class ErrorDialogFragment extends ErrorSupportFragment implements BrowseS
             return;
         }
 
-        if (mDialogData instanceof CategoryEmptyError || mDialogData instanceof SignInError) {
+        boolean hearth = com.liskovsoft.smartyoutubetv2.tv.util.CardFocusOutline.get(getActivity()) != 0;
+
+        // HearthTube: no sad cloud in the Hearth look, just the message and a Hearth button
+        if (!hearth && (mDialogData instanceof CategoryEmptyError || mDialogData instanceof SignInError)) {
             setImageDrawable(ContextCompat.getDrawable(getActivity(), R.drawable.lb_ic_sad_cloud));
         }
 
@@ -75,6 +78,15 @@ public class ErrorDialogFragment extends ErrorSupportFragment implements BrowseS
         if (mDialogData.getActionText() != null) {
             setButtonText(mDialogData.getActionText());
             setButtonClickListener(v -> mDialogData.onAction());
+
+            Button button = (Button) Helpers.getField(this, "mButton");
+            if (hearth && button != null) {
+                float density = getResources().getDisplayMetrics().density;
+                button.setBackgroundResource(R.drawable.hearth_button_background);
+                button.setTextColor(ContextCompat.getColorStateList(getActivity(), R.color.hearth_button_text));
+                button.setAllCaps(false);
+                button.setPadding(Math.round(24 * density), Math.round(8 * density), Math.round(24 * density), Math.round(8 * density));
+            }
         } else {
             Button mButton = (Button) Helpers.getField(this, "mButton");
 

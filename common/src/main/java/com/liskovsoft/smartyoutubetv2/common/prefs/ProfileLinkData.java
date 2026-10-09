@@ -34,6 +34,7 @@ public class ProfileLinkData {
     @SuppressLint("StaticFieldLeak")
     private static ProfileLinkData sInstance;
     private final SharedPreferences mPrefs;
+    private final Context mContext;
 
     /** A profile's link: the account it watches with, or the guest when {@link #account} is null. */
     public static class Link {
@@ -46,6 +47,7 @@ public class ProfileLinkData {
     }
 
     private ProfileLinkData(Context context) {
+        mContext = context;
         mPrefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
     }
 
@@ -59,15 +61,49 @@ public class ProfileLinkData {
 
     /**
      * Unlocks account changes in kids profiles (ParentGate). Separate from account PINs, which a kid may know
-     * (their own). Null when not set.
+     * (their own).
      */
-    @Nullable
-    public String getParentPin() {
-        return mPrefs.getString(PARENT_PIN_KEY, null);
+    public boolean hasParentPin() {
+        return mPrefs.getString(PARENT_PIN_KEY, null) != null;
     }
 
+    /** True when the PIN is the parent PIN. A PIN saved as plain digits by an older version is hashed on success. */
+    public boolean checkParentPin(@Nullable String pin) {
+        String saved = mPrefs.getString(PARENT_PIN_KEY, null);
+
+        if (saved == null || pin == null) {
+            return false;
+        }
+
+        if (saved.equals(hash(pin))) {
+            return true;
+        }
+
+        if (saved.equals(pin)) { // older versions kept it as is
+            setParentPin(pin);
+            return true;
+        }
+
+        return false;
+    }
+
+    /** Saved hashed, not as the digits themselves. Null removes it. */
     public void setParentPin(@Nullable String pin) {
-        mPrefs.edit().putString(PARENT_PIN_KEY, pin).apply();
+        mPrefs.edit().putString(PARENT_PIN_KEY, pin != null ? hash(pin) : null).apply();
+    }
+
+    private static String hash(String pin) {
+        try {
+            java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
+            byte[] bytes = digest.digest(("hearthtube-parent-pin:" + pin).getBytes(java.nio.charset.Charset.forName("UTF-8")));
+            StringBuilder hex = new StringBuilder("sha256:");
+            for (byte b : bytes) {
+                hex.append(String.format(Locale.US, "%02x", b));
+            }
+            return hex.toString();
+        } catch (java.security.NoSuchAlgorithmException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     /** HearthTube has been using Hearth's parent PIN (so its own one, if any, is likely forgotten) */
@@ -87,6 +123,11 @@ public class ProfileLinkData {
      */
     public boolean isGuestEnabled() {
         return mPrefs.getBoolean(GUEST_ENABLED_KEY, false);
+    }
+
+    /** The guest is on, and this isn't a kids profile: kids always stay on their own account */
+    public boolean isGuestAllowed() {
+        return isGuestEnabled() && !com.liskovsoft.smartyoutubetv2.common.utils.ParentGate.isKidsProfile(mContext);
     }
 
     public void setGuestEnabled(boolean enabled) {
@@ -115,7 +156,7 @@ public class ProfileLinkData {
         }
 
         if (GUEST.equals(accountName)) {
-            return isGuestEnabled() ? new Link(null) : null;
+            return isGuestAllowed() ? new Link(null) : null;
         }
 
         Account account = findByName(accounts, accountName);

@@ -132,13 +132,13 @@ public class MainUIData extends DataChangeBase implements ProfileChangeListener 
     }
 
     /**
-     * HearthTube: existing installs move to the Hearth scheme (and get Add to queue) once; after that the user's pick sticks.
+     * HearthTube: always the Hearth scheme (Look and layout no longer offers SmartTube's others, which undo the Hearth
+     * look); existing installs also get Add to queue once.
      */
     private void applyHearthSchemeOnce() {
         android.content.SharedPreferences prefs = mContext.getSharedPreferences("hearthtube_migrations", Context.MODE_PRIVATE);
 
-        if (!prefs.getBoolean("hearth_color_scheme", false)) {
-            prefs.edit().putBoolean("hearth_color_scheme", true).apply();
+        if (mColorSchemeIndex != COLOR_SCHEME_HEARTH) {
             setColorScheme(mColorSchemes.get(COLOR_SCHEME_HEARTH));
         }
 
@@ -146,6 +146,14 @@ public class MainUIData extends DataChangeBase implements ProfileChangeListener 
         if (!prefs.getBoolean("no_debug_button", false)) {
             prefs.edit().putBoolean("no_debug_button", true).apply();
             PlayerTweaksData.instance(mContext).setPlayerButtonDisabled(PlayerTweaksData.PLAYER_BUTTON_VIDEO_STATS);
+        }
+
+        // A quieter player overlay: no codec line (240/30/VP9) and no "Remaining" next to the time, which already
+        // shows the length. Both can be turned back on under Player.
+        if (!prefs.getBoolean("quiet_player_info", false)) {
+            prefs.edit().putBoolean("quiet_player_info", true).apply();
+            PlayerData.instance(mContext).setQualityInfoEnabled(false);
+            PlayerData.instance(mContext).setRemainingTimeEnabled(false);
         }
 
         // The Queued tab needs "Add to queue" in the long-press menu

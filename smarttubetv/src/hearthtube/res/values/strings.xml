@@ -10,7 +10,21 @@
     <!-- Sign-in screen (SignInFragment), worded for a first sign-in on a TV. Overrides common's, so SmartTube
          merges never conflict here. Sign-in finishes by itself once the code is entered: the button only cancels. -->
     <string name="signin_view_title">Getting a code…</string>
-    <string name="signin_view_description">Scan the code with your phone, or open %s on a phone or computer and enter the code above. Use the YouTube account for this profile.</string>
+    <string name="signin_view_description">Scan the code with your phone, or open %s on a phone or computer and enter the code above.</string>
     <string name="signin_view_action_text">Cancel</string>
+
+    <!-- Upstream wording, said the HearthTube way (overrides common's, so merges never conflict here) -->
+    <string name="dialog_account_none">Guest</string>
+    <string name="login_from_browser">Sign in with a browser on this TV</string>
+    <string name="multi_profiles">Separate settings for each account</string>
+    <string name="select_account_on_boot">Ask who\'s watching when HearthTube starts</string>
+    <string name="subscribe_unsubscribe_from_channel">Subscribe or unsubscribe</string>
+    <string name="subscribe_to_channel">Subscribe</string>
+    <string name="unsubscribe_from_channel">Unsubscribe</string>
+    <string name="pin_channel">Pin channel to the menu</string>
+    <string name="pin_playlist">Pin playlist to the menu</string>
+    <string name="remote_control_permission">To start videos cast from a phone while HearthTube is closed, it needs \"Display over other apps\". Open that setting now? (Without it, casting still works while HearthTube is open.)</string>
+    <string name="add_device_view_description">On your phone, open the YouTube app, go to Settings, then Watch on TV, and enter this code.</string>
+    <string name="kids_no_shorts">Shorts and TikTok-style clips aren\'t available in kids profiles</string>
 
 </resources>

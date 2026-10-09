@@ -4,6 +4,9 @@ import android.content.Context;
 import android.content.SharedPreferences;
 
 import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup;
+import com.liskovsoft.mediaserviceinterfaces.data.MediaItem;
+import com.liskovsoft.mediaserviceinterfaces.data.MediaItemFormatInfo;
+import com.liskovsoft.mediaserviceinterfaces.data.MediaFormat;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.BrowsePresenter;
 import com.liskovsoft.youtubeapi.service.internal.MediaServiceData;
 
@@ -25,7 +28,86 @@ public final class KidsShorts {
             MediaServiceData.CONTENT_SHORTS_NEWS
     };
 
+    /** Longest video that counts as a Short (YouTube allows up to three minutes) */
+    private static final long SHORT_MAX_MS = 3 * 60_000;
+    /** Set by apply(): Shorts are hidden right now (kids profile, or Show Shorts off) */
+    private static volatile boolean sHidden = true;
+    /** Set by apply(): this is a kids profile */
+    private static volatile boolean sKids;
+
+    /**
+     * Shorts from elsewhere: TikTok and Instagram clips, and compilations of them, are Shorts by another name. Matched
+     * in the title or the channel name.
+     */
+    private static final java.util.regex.Pattern CLIPS = java.util.regex.Pattern.compile(
+            "tik\\s*-?\\s*toks?|instagram|\\binsta\\s+reels?|#reels?\\b|\\breels compilation|#fyp\\b|\\bfyp\\b",
+            java.util.regex.Pattern.CASE_INSENSITIVE);
+
     private KidsShorts() {
+    }
+
+    /**
+     * A video in a row that is a Short while Shorts are hidden: leave it out. YouTube marks only some Shorts, so also a
+     * #shorts title, a Shorts thumbnail, a plain video with no length (search results list Shorts that way), and
+     * TikTok or Instagram clips and their compilations.
+     */
+    public static boolean isHiddenShort(MediaItem item) {
+        if (!sHidden || item == null) {
+            return false;
+        }
+
+        if (item.isShorts()) {
+            return true;
+        }
+
+        if (item.getVideoId() == null || item.isLive() || item.isUpcoming()) {
+            return false;
+        }
+
+        String title = item.getTitle() != null ? item.getTitle().toLowerCase() : "";
+
+        if (CLIPS.matcher(title).find() || (item.getAuthor() != null && CLIPS.matcher(item.getAuthor()).find())) {
+            return true;
+        }
+
+        String image = item.getCardImageUrl() != null ? item.getCardImageUrl() : "";
+        long durationMs = item.getDurationMs();
+
+        // A mix or a playlist tile has no length either
+        boolean noLength = durationMs <= 0 && item.getPlaylistId() == null;
+
+        return title.contains("#short") || image.contains("/oar") || image.contains("-AG2CIACgA-") || noLength;
+    }
+
+    /**
+     * The player's check, once the video's formats are known: a portrait video of up to three minutes is a Short, and
+     * a TikTok or Instagram clip (or a compilation of them) counts too. In a kids profile neither plays, however it got
+     * here (a search, a link, a cast, autoplay).
+     */
+    public static boolean isBlockedFormat(MediaItemFormatInfo formatInfo, String title, String author) {
+        if (!sKids || formatInfo == null || formatInfo.isLive()) {
+            return false;
+        }
+
+        if ((title != null && CLIPS.matcher(title).find()) || (author != null && CLIPS.matcher(author).find())) {
+            return true;
+        }
+
+        MediaFormat format = formatInfo.containsDashFormats() && !formatInfo.getAdaptiveFormats().isEmpty() ?
+                formatInfo.getAdaptiveFormats().get(0) : null;
+
+        if (format == null || format.getWidth() <= 0 || format.getHeight() <= 0 || format.getWidth() >= format.getHeight()) {
+            return false;
+        }
+
+        long lengthMs;
+        try {
+            lengthMs = Long.parseLong(formatInfo.getLengthSeconds()) * 1_000;
+        } catch (NumberFormatException | NullPointerException e) {
+            lengthMs = 0;
+        }
+
+        return lengthMs <= SHORT_MAX_MS;
     }
 
     /** Look and layout > Show Shorts. Off by default; never applies in a kids profile. */
@@ -51,6 +133,8 @@ public final class KidsShorts {
         boolean forced = prefs.getBoolean(FORCED, false);
         boolean kids = ParentGate.isKidsProfile(context);
         boolean hide = kids || !isShowShortsEnabled(context);
+        sHidden = hide;
+        sKids = kids;
 
         if (hide && !forced) {
             SharedPreferences.Editor editor = prefs.edit();
