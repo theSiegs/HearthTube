@@ -95,6 +95,14 @@ public class VideoCardPresenter extends LongClickPresenter {
         cardView.setBackgroundColor(mDefaultBackgroundColor); // background is temporarily visible during animations
         if (mFocusOutline != 0) { // Hearth scheme: a 16:9 rectangle with the text over the thumbnail
             HearthCardStyle.apply(cardView);
+            // Hearth's press feedback (launcher_card_behavior.dart), lighter: a quick fade on OK
+            cardView.setOnKeyListener((v, keyCode, event) -> {
+                if (event.getAction() == android.view.KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0
+                        && (keyCode == android.view.KeyEvent.KEYCODE_DPAD_CENTER || keyCode == android.view.KeyEvent.KEYCODE_ENTER)) {
+                    v.animate().alpha(0.6f).setDuration(75).withEndAction(() -> v.animate().alpha(1f).setDuration(75)).start();
+                }
+                return false;
+            });
         }
         //if (VERSION.SDK_INT >= 23 && MainUIData.instance(context).isUiTweakEnabled(MainUIData.UI_TWEAK_ROUNDED_CORNERS)) {
         //    cardView.setForeground(ContextCompat.getDrawable(context, R.drawable.lb_card_outline));

@@ -198,6 +198,8 @@ public final class ParentGate {
     }
 
     private static final long KIDS_CACHE_MS = 5_000;
+    /** Suspended launcher apps that make a kids profile (a Digital Wellbeing pause is one or two) */
+    private static final int MIN_SUSPENDED_FOR_KIDS = 3;
     private static volatile boolean sKids;
     private static volatile long sKidsCheckedUntilMs;
 
@@ -216,6 +218,9 @@ public final class ParentGate {
         }
 
         PackageManager packageManager = context.getPackageManager();
+        // A kids profile suspends every app a parent hasn't approved, usually many. A grown-up pausing an app or two
+        // with Digital Wellbeing suspends them too, so one or two don't make a kids profile.
+        java.util.Set<String> suspended = new java.util.HashSet<>();
 
         for (String category : new String[] {Intent.CATEGORY_LEANBACK_LAUNCHER, Intent.CATEGORY_LAUNCHER}) {
             List<ResolveInfo> activities = packageManager.queryIntentActivities(
@@ -223,7 +228,10 @@ public final class ParentGate {
 
             for (ResolveInfo info : activities) {
                 if ((info.activityInfo.applicationInfo.flags & ApplicationInfo.FLAG_SUSPENDED) != 0) {
-                    return true;
+                    suspended.add(info.activityInfo.packageName);
+                    if (suspended.size() >= MIN_SUSPENDED_FOR_KIDS) {
+                        return true;
+                    }
                 }
             }
         }
