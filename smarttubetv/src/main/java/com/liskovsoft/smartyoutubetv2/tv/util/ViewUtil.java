@@ -278,8 +278,9 @@ public class ViewUtil {
         float density = root.getResources().getDisplayMetrics().density;
 
         View items = root.findViewById(androidx.leanback.R.id.lb_search_bar_items);
-        if (items != null) {
-            items.setBackgroundResource(R.drawable.hearth_tab_bar_background);
+        if (items instanceof ViewGroup) {
+            items.setBackgroundResource(R.drawable.hearth_search_bar_background);
+            ((ViewGroup) items).setAddStatesFromChildren(true); // the accent border while the text field has focus
         }
 
         android.widget.EditText editor = root.findViewById(androidx.leanback.R.id.lb_search_text_editor);

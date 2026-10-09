@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The search box, like Hearth's (search_entry.dart): #EE1E2026, 30dp corners, a 2dp accent border while typing.
+     The bar takes its focus from the text field inside it (addStatesFromChildren). -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_focused="true">
+        <shape android:shape="rectangle">
+            <solid android:color="#EE1E2026"/>
+            <stroke android:width="2dp" android:color="?attr/hearthAccent"/>
+            <corners android:radius="30dp"/>
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#EE1E2026"/>
+            <corners android:radius="30dp"/>
+        </shape>
+    </item>
+</selector>

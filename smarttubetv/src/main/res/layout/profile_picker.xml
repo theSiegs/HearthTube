@@ -33,7 +33,7 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="40dp"
             android:text="@string/profile_picker_title"
-            android:fontFamily="sans-serif"
+            android:fontFamily="sans-serif-medium"
             android:textSize="36sp"
             android:textColor="@color/profile_text"
             android:shadowColor="#CC000000"
