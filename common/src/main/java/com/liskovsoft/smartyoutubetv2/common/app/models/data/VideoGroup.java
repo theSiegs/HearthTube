@@ -466,6 +466,10 @@ public class VideoGroup {
             return;
         }
 
+        if (com.liskovsoft.smartyoutubetv2.common.utils.KeywordFilter.isHidden(video)) { // HearthTube: blocked words
+            return;
+        }
+
         if (mVideos == null) {
             mVideos = new ArrayList<>();
         }

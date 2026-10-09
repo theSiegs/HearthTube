@@ -178,6 +178,7 @@ public class SearchPresenter extends BasePresenter<SearchView> implements VideoG
 
         getView().clearSearch();
         boolean[] anyShown = {false};
+        int hiddenBefore = com.liskovsoft.smartyoutubetv2.common.utils.KeywordFilter.getHiddenCount();
 
         mLoadAction = contentService.getSearchObserve(searchText,
                 mUploadDateOptions | mDurationOptions | mTypeOptions | mFeatureOptions | mSortingOptions)
@@ -207,9 +208,10 @@ public class SearchPresenter extends BasePresenter<SearchView> implements VideoG
                             if (getView() != null) {
                                 getView().showProgressBar(false);
                             }
-                            // HearthTube: say why when every result was a Short or a TikTok-style clip
-                            if (!anyShown[0] && com.liskovsoft.smartyoutubetv2.common.utils.KidsShorts.isHidingShorts()) {
-                                com.liskovsoft.sharedutils.helpers.MessageHelpers.showLongMessage(getContext(), R.string.search_only_shorts);
+                            // HearthTube: say why when every result was a Short or a TikTok-style clip, or had a blocked word
+                            int why = com.liskovsoft.smartyoutubetv2.common.utils.KeywordFilter.getEmptySearchMessage(hiddenBefore);
+                            if (!anyShown[0] && why != 0) {
+                                com.liskovsoft.sharedutils.helpers.MessageHelpers.showLongMessage(getContext(), why);
                             }
                         }
                 );

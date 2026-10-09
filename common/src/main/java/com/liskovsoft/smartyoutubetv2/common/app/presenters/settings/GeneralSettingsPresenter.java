@@ -79,6 +79,7 @@ public class GeneralSettingsPresenter extends BasePresenter<Void> {
         //appendEnabledSections(settingsPresenter);
         appendContextMenuItemsCategory(settingsPresenter);
         appendHideContent(settingsPresenter);
+        BlockedWordsPresenter.appendSettingsButton(getContext(), settingsPresenter); // HearthTube
         appendAppExitCategory(settingsPresenter);
         appendBackgroundPlaybackCategory(settingsPresenter);
         appendScreenDimmingCategory(settingsPresenter);

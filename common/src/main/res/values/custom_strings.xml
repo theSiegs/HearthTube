@@ -138,4 +138,19 @@
     <string name="show_shorts_hint">Off: no Shorts anywhere. Kids profiles never get them.</string>
     <string name="subscriptions_all">All</string>
     <string name="screen_time_up">Screen time is up</string>
+    <string name="blocked_words">Blocked words</string>
+    <string name="blocked_words_add">Add a word or phrase</string>
+    <string name="blocked_words_add_hint">A word or phrase, like: try not to laugh</string>
+    <string name="blocked_words_hint">Videos with one of these in the title or channel name are hidden. Choose one to remove it.</string>
+    <string name="blocked_words_empty">None yet. Videos with a blocked word in the title or channel name are hidden.</string>
+    <string name="blocked_words_remove">Remove “%s”?</string>
+    <string name="blocked_words_no_letters">Type a word with letters or numbers</string>
+    <string name="blocked_words_already">“%s” is already blocked</string>
+    <string name="blocked_words_from_title">Hide videos with words from this title…</string>
+    <string name="blocked_words_pick">Hide videos with these words</string>
+    <string name="blocked_words_channel">%s (channel)</string>
+    <string name="blocked_words_hidden">Videos with these words are hidden now</string>
+    <string name="kids_blocked_word">This video has a blocked word</string>
+    <string name="search_only_blocked">Nothing to show: every result had a blocked word</string>
+    <string name="search_only_shorts_or_blocked">Nothing to show: every result was a Short or had a blocked word</string>
 </resources>

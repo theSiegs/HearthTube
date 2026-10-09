@@ -48,6 +48,7 @@ public final class HearthMenuIcons {
             {R.string.not_recommend_channel, R.drawable.ic_hearth_settings_block},
             {R.string.dialog_block_channel, R.drawable.ic_hearth_settings_block},
             {R.string.dialog_unblock_channel, R.drawable.ic_hearth_settings_block},
+            {R.string.blocked_words_from_title, R.drawable.ic_hearth_action_hide},
             {R.string.mark_as_watched, R.drawable.ic_hearth_action_done},
             {R.string.subscribe_to_channel, R.drawable.ic_hearth_action_bell},
             {R.string.unsubscribe_from_channel, R.drawable.ic_hearth_action_bell},

@@ -286,6 +286,11 @@ public class VideoLoaderController extends BasePlayerController {
             return;
         }
 
+        // HearthTube: nor a video with a blocked word (grown-ups only have those left out of rows and suggestions)
+        if (refuseBlockedWord(formatInfo)) {
+            return;
+        }
+
         // Fix stretched video for a couple milliseconds (before the onVideoSizeChanged gets called)
         applyAspectRatio(formatInfo);
 
@@ -545,7 +550,29 @@ public class VideoLoaderController extends BasePlayerController {
 
     @Override
     public void onMetadata(MediaItemMetadata metadata) {
+        // HearthTube: a link or a cast has no title until now, so the blocked words check runs again
+        if (refuseBlockedWord(null)) {
+            return;
+        }
+
         initRandomNext();
+    }
+
+    /**
+     * HearthTube: in a kids profile a video with a blocked word doesn't play, however it got here; the player closes
+     * with a message, like for a Short.
+     */
+    private boolean refuseBlockedWord(MediaItemFormatInfo formatInfo) {
+        PlaybackView player = getPlayer();
+
+        if (player == null || !com.liskovsoft.smartyoutubetv2.common.utils.KeywordFilter.isBlockedInPlayer(getContext(), formatInfo, getVideo())) {
+            return false;
+        }
+
+        MessageHelpers.showMessage(getContext(), R.string.kids_blocked_word);
+        player.showProgressBar(false);
+        player.finishReally();
+        return true;
     }
 
     private void initRandomNext() {

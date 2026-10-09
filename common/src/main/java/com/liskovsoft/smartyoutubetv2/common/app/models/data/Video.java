@@ -870,6 +870,9 @@ public final class Video {
             }
         }
 
+        // HearthTube: what plays next on its own has no blocked words either
+        nextVideo = com.liskovsoft.smartyoutubetv2.common.utils.KeywordFilter.checkNext(nextVideo, metadata, videoId);
+
         return nextVideo;
     }
 
