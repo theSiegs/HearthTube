@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The video title over the player: smaller than leanback's 34sp (28sp on two lines) -->
+    <dimen name="lb_details_description_title_text_size">24sp</dimen>
+    <dimen name="lb_details_description_title_resized_text_size">22sp</dimen>
+    <dimen name="lb_details_description_title_line_spacing">30dp</dimen>
+    <dimen name="lb_details_description_title_baseline">20dp</dimen>
+    <dimen name="lb_details_description_under_title_baseline_margin">26dp</dimen>
+    <dimen name="lb_details_description_subtitle_text_size">14sp</dimen>
+    <dimen name="lb_details_description_under_subtitle_baseline_margin">26dp</dimen>
+</resources>

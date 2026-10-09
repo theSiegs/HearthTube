@@ -258,9 +258,9 @@ public class HearthRowsFragment extends VideoRowsFragment {
         // The focused video's details, above the row
         LinearLayout details = new LinearLayout(context);
         details.setOrientation(LinearLayout.VERTICAL);
-        mTitle = text(context, 22, true, 0xFFFFFFFF, 2);
-        mMeta = text(context, 15, false, 0xE6FFFFFF, 1);
-        mDescription = text(context, 15, false, 0xD1FFFFFF, 2);
+        mTitle = text(context, 18, true, 0xFFFFFFFF, 2);
+        mMeta = text(context, 13, false, 0xE6FFFFFF, 1);
+        mDescription = text(context, 13, false, 0xD1FFFFFF, 2);
         details.addView(mTitle);
         details.addView(mMeta);
         details.addView(mDescription);
@@ -286,11 +286,11 @@ public class HearthRowsFragment extends VideoRowsFragment {
             return;
         }
 
-        // The one row fills its box from the top (leanback would align it lower and crop it)
+        // The one row sits in its box below the top padding, so the focus zoom fits (leanback would align it lower and crop it)
         int padding = dp(grid.getContext(), ROW_PADDING_DP);
-        if (grid.getWindowAlignment() != androidx.leanback.widget.BaseGridView.WINDOW_ALIGN_LOW_EDGE || grid.getPaddingTop() != padding) {
+        if (grid.getWindowAlignment() != androidx.leanback.widget.BaseGridView.WINDOW_ALIGN_LOW_EDGE || grid.getPaddingTop() != padding || grid.getWindowAlignmentOffset() != padding) {
             grid.setWindowAlignment(androidx.leanback.widget.BaseGridView.WINDOW_ALIGN_LOW_EDGE);
-            grid.setWindowAlignmentOffset(0);
+            grid.setWindowAlignmentOffset(padding);
             grid.setWindowAlignmentOffsetPercent(0);
             grid.setItemAlignmentOffset(0);
             grid.setItemAlignmentOffsetPercent(0);
