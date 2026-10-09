@@ -26,11 +26,12 @@ public class HearthProfile {
             ? new String[] {"com.thesiegs.hearth", "com.thesiegs.hearth.debug"}
             : new String[] {"com.thesiegs.hearth"};
     /**
-     * Hearth's signing certificates (SHA-256): its release key, and the developer key its debug builds share with
-     * HearthTube. Anything else answering as Hearth could otherwise say "not a kids profile" or pass any PIN.
+     * Hearth's signing certificates (SHA-256), checked against the key Hearth is signed with now (the last one in its
+     * rotation history): Hearth's release key (CN=Hearth, O=theSiegs), and the developer key debug builds share (Hearth's
+     * and HearthTube's). Anything else answering as Hearth could otherwise say "not a kids profile" or pass any PIN.
      */
     private static final String[] HEARTH_CERTS = {
-            "0438047b1a5eefe8693cad8f2b57189a418337bbcbd3c7dbdb79d20884beaf6e",
+            "243bf074648ab3bfebb260d129e7c8203b407ca7677507ce93dbe72b02396d4c",
             "6748528ff4d17fd57c30b6c5d522c467920d9951ea5d208597f91b66df9a2bfe"};
     /** The Hearth install (its ID and last update time) whose certificate checked out, so it's checked once per install */
     private static String sGenuinePackage;
