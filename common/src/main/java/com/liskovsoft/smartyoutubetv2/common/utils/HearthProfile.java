@@ -18,9 +18,13 @@ import com.liskovsoft.sharedutils.mylogger.Log;
  */
 public class HearthProfile {
     private static final String TAG = HearthProfile.class.getSimpleName();
-    private static final String HEARTH_PACKAGE = "com.leanbitlab.ltvL";
-    private static final String PROVIDER = HEARTH_PACKAGE + ".profile";
-    private static final String AUTHORITY = "content://" + PROVIDER;
+    /**
+     * Hearth's app ID; its provider is "{@code <id>.profile"}. A debug HearthTube also talks to Hearth's debug build
+     * ("{@code <id>.debug}"), after the release one.
+     */
+    private static final String[] HEARTH_PACKAGES = com.liskovsoft.smartyoutubetv2.common.BuildConfig.DEBUG
+            ? new String[] {"com.thesiegs.hearth", "com.thesiegs.hearth.debug"}
+            : new String[] {"com.thesiegs.hearth"};
     /**
      * Hearth's signing certificates (SHA-256): its release key, and the developer key its debug builds share with
      * HearthTube. Anything else answering as Hearth could otherwise say "not a kids profile" or pass any PIN.
@@ -28,12 +32,14 @@ public class HearthProfile {
     private static final String[] HEARTH_CERTS = {
             "0438047b1a5eefe8693cad8f2b57189a418337bbcbd3c7dbdb79d20884beaf6e",
             "6748528ff4d17fd57c30b6c5d522c467920d9951ea5d208597f91b66df9a2bfe"};
-    /** The Hearth install (its last update time) whose certificate checked out, so it's checked once per install */
+    /** The Hearth install (its ID and last update time) whose certificate checked out, so it's checked once per install */
+    private static String sGenuinePackage;
     private static long sGenuineInstall = -1;
-    /** Hearth's one-row cursor; Hearth notifies it when anything in the row changes (the wallpaper too) */
-    public static final Uri ACTIVE_URI = Uri.parse(AUTHORITY + "/active");
-    /** Hearth's current wallpaper picture (no picture = a gradient, see {@link #gradientUuid}) */
-    public static final Uri WALLPAPER_URI = Uri.parse(AUTHORITY + "/wallpaper");
+    /**
+     * Hearth's one-row cursor (also the debug Hearth's, in a debug HearthTube); Hearth notifies it when anything in the
+     * row changes (the wallpaper too).
+     */
+    public static final Uri[] ACTIVE_URIS = activeUris();
 
     /** The Google TV profile, or null when Hearth couldn't tell. */
     @Nullable
@@ -156,7 +162,7 @@ public class HearthProfile {
         try {
             String from = (String) android.app.Activity.class.getMethod("getLaunchedFromPackage").invoke(activity);
             if (from != null && !from.equals(activity.getPackageName())) {
-                sLaunchedFromHearth = from.startsWith(HEARTH_PACKAGE);
+                sLaunchedFromHearth = isHearthPackage(from);
             }
         } catch (Exception e) {
             // Can't tell: Hearth being the home app decides
@@ -168,10 +174,64 @@ public class HearthProfile {
         try {
             android.content.pm.ResolveInfo home = context.getPackageManager().resolveActivity(
                     new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME), android.content.pm.PackageManager.MATCH_DEFAULT_ONLY);
-            return home != null && home.activityInfo != null && home.activityInfo.packageName.startsWith(HEARTH_PACKAGE);
+            return home != null && home.activityInfo != null && isHearthPackage(home.activityInfo.packageName);
         } catch (Exception e) {
             return false;
         }
+    }
+
+    /** Hearth, release or debug ("<id>.debug"). Exact, since HearthTube's own ID starts like Hearth's. */
+    private static boolean isHearthPackage(String packageName) {
+        for (String hearth : HEARTH_PACKAGES) {
+            if (packageName.equals(hearth) || packageName.equals(hearth + ".debug")) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static Uri[] activeUris() {
+        Uri[] uris = new Uri[HEARTH_PACKAGES.length];
+        for (int i = 0; i < uris.length; i++) {
+            uris[i] = uri(HEARTH_PACKAGES[i], "active");
+        }
+        return uris;
+    }
+
+    /**
+     * The installed Hearth to talk to: the release one first, then (in a debug HearthTube) the debug one; one that
+     * Google TV left unsuspended comes before a suspended one. Null when none is installed.
+     */
+    @Nullable
+    private static String hearthPackage(Context context) {
+        String suspended = null;
+
+        for (String hearth : HEARTH_PACKAGES) {
+            try {
+                android.content.pm.ApplicationInfo info = context.getPackageManager().getApplicationInfo(hearth, 0);
+                if (android.os.Build.VERSION.SDK_INT < 24 || (info.flags & android.content.pm.ApplicationInfo.FLAG_SUSPENDED) == 0) {
+                    return hearth;
+                }
+                if (suspended == null) {
+                    suspended = hearth;
+                }
+            } catch (Exception e) {
+                // Not installed
+            }
+        }
+
+        return suspended;
+    }
+
+    private static Uri uri(String hearthPackage, String path) {
+        return Uri.parse("content://" + hearthPackage + ".profile/" + path);
+    }
+
+    /** Hearth's current wallpaper picture (no picture = a gradient, see {@link #gradientUuid}) */
+    public static Uri wallpaperUri(Context context) {
+        String hearth = trustedPackage(context);
+        return uri(hearth != null ? hearth : HEARTH_PACKAGES[0], "wallpaper");
     }
 
     /**
@@ -215,9 +275,11 @@ public class HearthProfile {
             return false;
         }
 
+        String hearth = hearthPackage(context);
+
         try {
-            android.content.pm.ApplicationInfo info = context.getPackageManager().getApplicationInfo("com.leanbitlab.ltvL", 0);
-            return (info.flags & android.content.pm.ApplicationInfo.FLAG_SUSPENDED) != 0;
+            return hearth != null && (context.getPackageManager().getApplicationInfo(hearth, 0).flags
+                    & android.content.pm.ApplicationInfo.FLAG_SUSPENDED) != 0;
         } catch (Exception e) {
             return false;
         }
@@ -228,11 +290,12 @@ public class HearthProfile {
      */
     @Nullable
     public static HearthProfile queryHearth(Context context) {
-        if (context == null || !isTrusted(context)) {
+        String hearth = context != null ? trustedPackage(context) : null;
+        if (hearth == null) {
             return null;
         }
 
-        try (Cursor cursor = context.getContentResolver().query(ACTIVE_URI, null, null, null, null)) {
+        try (Cursor cursor = context.getContentResolver().query(uri(hearth, "active"), null, null, null, null)) {
             if (cursor == null || !cursor.moveToFirst()) {
                 return null;
             }
@@ -280,12 +343,13 @@ public class HearthProfile {
      * after 5 wrong tries; then this returns the seconds left (a positive number).
      */
     public static int verifyParentPin(Context context, String pin) {
-        if (!isTrusted(context)) {
+        String hearth = trustedPackage(context);
+        if (hearth == null) {
             return PIN_UNAVAILABLE;
         }
 
         try {
-            Bundle result = context.getContentResolver().call(ACTIVE_URI, "verify_parent_pin", pin, null);
+            Bundle result = context.getContentResolver().call(uri(hearth, "active"), "verify_parent_pin", pin, null);
 
             if (result == null) {
                 return PIN_UNAVAILABLE;
@@ -305,42 +369,52 @@ public class HearthProfile {
 
     /** Hearth is installed (and new enough to talk to HearthTube) */
     public static boolean isInstalled(Context context) {
-        return isTrusted(context);
+        return context != null && trustedPackage(context) != null;
     }
 
-    /** The provider HearthTube talks to belongs to Hearth, signed with Hearth's key */
-    private static boolean isTrusted(Context context) {
-        if (context == null) {
-            return false;
-        }
+    /**
+     * The Hearth whose provider HearthTube talks to (see {@link #hearthPackage}): its provider belongs to it and it's
+     * signed with Hearth's key. Null when there's none.
+     */
+    @Nullable
+    private static String trustedPackage(Context context) {
+        String hearth = hearthPackage(context);
 
         try {
-            android.content.pm.ProviderInfo provider = context.getPackageManager().resolveContentProvider(PROVIDER, 0);
-            return provider != null && HEARTH_PACKAGE.equals(provider.packageName) && isGenuine(context) == Boolean.TRUE;
+            android.content.pm.ProviderInfo provider = hearth == null ? null
+                    : context.getPackageManager().resolveContentProvider(hearth + ".profile", 0);
+            return provider != null && hearth.equals(provider.packageName) && isGenuine(context, hearth) == Boolean.TRUE
+                    ? hearth : null;
         } catch (Exception e) {
-            return false;
+            return null;
         }
     }
 
     /**
-     * Whether the installed com.leanbitlab.ltvL is signed with Hearth's key: null when it isn't installed (or can't
+     * Whether the installed Hearth is signed with Hearth's key: null when it isn't installed (or can't
      * be read), false for an app that only took Hearth's name.
      */
     @Nullable
     public static Boolean isGenuine(Context context) {
+        String hearth = hearthPackage(context);
+        return hearth != null ? isGenuine(context, hearth) : null;
+    }
+
+    @Nullable
+    private static Boolean isGenuine(Context context, String hearth) {
         android.content.pm.PackageManager packageManager = context.getPackageManager();
 
         try {
-            long installed = packageManager.getPackageInfo(HEARTH_PACKAGE, 0).lastUpdateTime;
+            long installed = packageManager.getPackageInfo(hearth, 0).lastUpdateTime;
 
-            if (installed == sGenuineInstall) {
+            if (hearth.equals(sGenuinePackage) && installed == sGenuineInstall) {
                 return true;
             }
 
             android.content.pm.Signature[] signers;
             if (android.os.Build.VERSION.SDK_INT >= 28) {
                 android.content.pm.SigningInfo signing = packageManager.getPackageInfo(
-                        HEARTH_PACKAGE, android.content.pm.PackageManager.GET_SIGNING_CERTIFICATES).signingInfo;
+                        hearth, android.content.pm.PackageManager.GET_SIGNING_CERTIFICATES).signingInfo;
                 if (signing == null) {
                     return false;
                 }
@@ -349,7 +423,7 @@ public class HearthProfile {
                     signers = new android.content.pm.Signature[] {signers[signers.length - 1]}; // the current key
                 }
             } else {
-                signers = packageManager.getPackageInfo(HEARTH_PACKAGE, android.content.pm.PackageManager.GET_SIGNATURES).signatures;
+                signers = packageManager.getPackageInfo(hearth, android.content.pm.PackageManager.GET_SIGNATURES).signatures;
             }
 
             if (signers == null || signers.length == 0) {
@@ -365,6 +439,7 @@ public class HearthProfile {
                 }
             }
 
+            sGenuinePackage = hearth;
             sGenuineInstall = installed;
             return true;
         } catch (android.content.pm.PackageManager.NameNotFoundException e) {

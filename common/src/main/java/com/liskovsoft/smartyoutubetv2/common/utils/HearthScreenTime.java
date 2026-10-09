@@ -55,12 +55,13 @@ public final class HearthScreenTime {
         Utils.removeCallbacks(sCheck);
 
         if (!sObserving) {
-            try {
-                activity.getApplicationContext().getContentResolver()
-                        .registerContentObserver(Uri.parse("content://com.leanbitlab.ltvL.profile/active"), false, sObserver);
-                sObserving = true;
-            } catch (Exception e) {
-                // No Hearth (or too old): the half-minute check stays
+            sObserving = true;
+            for (Uri hearth : HearthProfile.ACTIVE_URIS) {
+                try {
+                    activity.getApplicationContext().getContentResolver().registerContentObserver(hearth, false, sObserver);
+                } catch (Exception e) {
+                    // No Hearth (or too old): the half-minute check stays
+                }
             }
         }
         if (check(activity)) {

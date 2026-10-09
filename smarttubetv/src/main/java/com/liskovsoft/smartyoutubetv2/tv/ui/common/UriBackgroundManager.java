@@ -80,11 +80,12 @@ public class UriBackgroundManager {
 
     public void onStart() {
         com.liskovsoft.smartyoutubetv2.common.utils.HearthProfile.noteLaunch(mActivity);
-        try {
-            mActivity.getContentResolver().registerContentObserver(
-                    com.liskovsoft.smartyoutubetv2.common.utils.HearthProfile.ACTIVE_URI, false, mHearthObserver);
-        } catch (Exception e) {
-            // No Hearth
+        for (android.net.Uri hearth : com.liskovsoft.smartyoutubetv2.common.utils.HearthProfile.ACTIVE_URIS) {
+            try {
+                mActivity.getContentResolver().registerContentObserver(hearth, false, mHearthObserver);
+            } catch (Exception e) {
+                // No Hearth
+            }
         }
 
         if (mBackgroundURI != null) {

@@ -97,7 +97,7 @@ public final class HearthWallpaper {
         if (key.startsWith("hearth:")) {
             return Glide.with(context)
                     .asBitmap()
-                    .load(HearthProfile.WALLPAPER_URI)
+                    .load(HearthProfile.wallpaperUri(context))
                     .signature(new ObjectKey(key))
                     .centerCrop()
                     .submit(WIDTH, HEIGHT)
@@ -157,7 +157,7 @@ public final class HearthWallpaper {
             try {
                 return Glide.with(context)
                         .asBitmap()
-                        .load(HearthProfile.WALLPAPER_URI)
+                        .load(HearthProfile.wallpaperUri(context))
                         .signature(new ObjectKey(key))
                         .centerCrop()
                         .submit(WIDTH, HEIGHT)
