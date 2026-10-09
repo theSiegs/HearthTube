@@ -12,6 +12,7 @@ import com.liskovsoft.smartyoutubetv2.common.app.presenters.AppDialogPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.BrowsePresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.menu.VideoMenuPresenter.VideoMenuCallback;
 import com.liskovsoft.smartyoutubetv2.common.prefs.MainUIData;
+import com.liskovsoft.smartyoutubetv2.common.utils.AiSlopList;
 import com.liskovsoft.smartyoutubetv2.common.utils.AppDialogUtil;
 import com.liskovsoft.smartyoutubetv2.common.utils.KeywordFilter;
 import com.liskovsoft.smartyoutubetv2.common.utils.KeywordMatcher;
@@ -25,7 +26,8 @@ import java.util.List;
 /**
  * HearthTube: the blocked words list (Settings › General › Blocked words), and the long-press menu's "Hide videos with
  * words from this title…", which picks words off a title so nobody has to type them with a remote. In a kids profile
- * both take the parent PIN. What a blocked word does is {@link KeywordFilter}.
+ * both take the parent PIN. What a blocked word does is {@link KeywordFilter}. Also the switch for "Likely AI" labels,
+ * which sits under Blocked words.
  */
 public final class BlockedWordsPresenter {
     private static final long PANEL_CLOSE_MS = 300;
@@ -41,6 +43,21 @@ public final class BlockedWordsPresenter {
     public static void appendSettingsButton(Context context, AppDialogPresenter settingsPresenter) {
         settingsPresenter.appendSingleButton(UiOptionItem.from(context.getString(R.string.blocked_words),
                 option -> ParentGate.run(context, () -> show(context))));
+    }
+
+    /**
+     * Settings › General, under Blocked words: the "Likely AI" label on videos from channels on AiSList
+     * ({@link com.liskovsoft.smartyoutubetv2.common.utils.AiSlopList}). On by default; kids profiles hide those videos
+     * instead.
+     */
+    public static void appendAiLabelsSwitch(Context context, AppDialogPresenter settingsPresenter) {
+        settingsPresenter.appendSingleSwitch(UiOptionItem.from(context.getString(R.string.ai_labels),
+                context.getString(R.string.ai_labels_desc),
+                option -> {
+                    AiSlopList.setLabelsEnabled(context, option.isSelected());
+                    BrowsePresenter.instance(context).refresh(false);
+                },
+                AiSlopList.isLabelsEnabled(context)));
     }
 
     /** Add a word or phrase, then the words, each a button that removes it */

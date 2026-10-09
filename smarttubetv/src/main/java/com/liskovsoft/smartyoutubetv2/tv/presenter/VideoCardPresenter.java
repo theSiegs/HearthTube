@@ -159,6 +159,7 @@ public class VideoCardPresenter extends LongClickPresenter {
         );
         cardView.setBadgeColor(video.hasNewContent || video.isLive || video.isUpcoming ?
                 ContextCompat.getColor(context, R.color.dark_red) : ContextCompat.getColor(context, R.color.black));
+        com.liskovsoft.smartyoutubetv2.tv.util.HearthAiLabel.bind(cardView, video, mFocusOutline != 0); // HearthTube: "Likely AI"
 
         if (mCardPreviewType != MainUIData.CARD_PREVIEW_DISABLED) {
             cardView.setPreview(video);

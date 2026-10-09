@@ -99,6 +99,9 @@ public class AboutSimpleSettingsPresenter extends BasePresenter<Void> {
                 {getContext().getString(R.string.credit_libraries), "https://github.com/yuliskov/SmartTube/blob/master/smarttubetv/build.gradle"},
                 {getContext().getString(R.string.credit_icons), "https://github.com/google/material-design-icons"},
                 {getContext().getString(R.string.credit_hearth), "https://github.com/theSiegs/Hearth"},
+                {getContext().getString(R.string.credit_aislist), "https://github.com/Override92/AiSList"},
+                {getContext().getString(R.string.credit_aislist_license), "https://creativecommons.org/licenses/by-nc/4.0/"},
+                {getContext().getString(R.string.credit_aislist_ids), "https://github.com/theSiegs/aislist-channel-ids"},
         };
 
         List<OptionItem> items = new ArrayList<>();

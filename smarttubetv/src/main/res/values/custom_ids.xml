@@ -2,4 +2,6 @@
 <resources>
     <!-- CardFocusOutline: the running pulse of a focused card's border -->
     <item name="hearth_focus_pulse" type="id"/>
+    <!-- HearthAiLabel: the "Likely AI" pill on a card's thumbnail -->
+    <item name="hearth_ai_label" type="id"/>
 </resources>

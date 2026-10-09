@@ -470,6 +470,10 @@ public class VideoGroup {
             return;
         }
 
+        if (com.liskovsoft.smartyoutubetv2.common.utils.AiSlopList.isHidden(video)) { // HearthTube: AI channels, kids profiles
+            return;
+        }
+
         if (mVideos == null) {
             mVideos = new ArrayList<>();
         }

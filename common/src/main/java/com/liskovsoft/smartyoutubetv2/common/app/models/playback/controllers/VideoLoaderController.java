@@ -286,8 +286,9 @@ public class VideoLoaderController extends BasePlayerController {
             return;
         }
 
-        // HearthTube: nor a video with a blocked word (grown-ups only have those left out of rows and suggestions)
-        if (refuseBlockedWord(formatInfo)) {
+        // HearthTube: nor a video with a blocked word (grown-ups only have those left out of rows and suggestions), nor
+        // one from an AI channel
+        if (refuseBlockedWord(formatInfo) || refuseAiChannel(formatInfo.getChannelId())) {
             return;
         }
 
@@ -551,7 +552,7 @@ public class VideoLoaderController extends BasePlayerController {
     @Override
     public void onMetadata(MediaItemMetadata metadata) {
         // HearthTube: a link or a cast has no title until now, so the kids checks by title run again
-        if (refuseClip() || refuseBlockedWord(null)) {
+        if (refuseClip() || refuseBlockedWord(null) || refuseAiChannel(metadata != null ? metadata.getChannelId() : null)) {
             return;
         }
 
@@ -586,6 +587,20 @@ public class VideoLoaderController extends BasePlayerController {
         }
 
         MessageHelpers.showMessage(getContext(), R.string.kids_blocked_word);
+        player.showProgressBar(false);
+        player.finishReally();
+        return true;
+    }
+
+    /** HearthTube: in a kids profile a video from a channel on AiSList (AI-made videos) doesn't play either */
+    private boolean refuseAiChannel(String channelId) {
+        PlaybackView player = getPlayer();
+
+        if (player == null || !com.liskovsoft.smartyoutubetv2.common.utils.AiSlopList.isBlockedInPlayer(getContext(), channelId, getVideo())) {
+            return false;
+        }
+
+        MessageHelpers.showMessage(getContext(), R.string.kids_ai_channel);
         player.showProgressBar(false);
         player.finishReally();
         return true;

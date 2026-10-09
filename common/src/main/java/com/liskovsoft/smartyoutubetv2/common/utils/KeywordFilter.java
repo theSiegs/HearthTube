@@ -117,10 +117,11 @@ public final class KeywordFilter {
 
     /**
      * What plays next on its own: YouTube's pick unless it has a blocked word, else the next one after it that
-     * doesn't (in a playlist, the rest of it), else the first suggestion that doesn't. Null when none is left.
+     * doesn't (in a playlist, the rest of it), else the first suggestion that doesn't. Null when none is left. In a
+     * kids profile the same goes for videos from AI channels ({@link AiSlopList}).
      */
     public static MediaItem checkNext(MediaItem next, MediaItemMetadata metadata, String currentVideoId) {
-        if (next == null || matcher().isEmpty() || !isHiddenNext(next)) {
+        if (next == null || !isHiddenNext(next)) {
             return next;
         }
 
@@ -181,8 +182,18 @@ public final class KeywordFilter {
     }
 
     private static boolean isHiddenNext(MediaItem item) {
+        if (AiSlopList.isHidden(item)) {
+            return true;
+        }
+
+        KeywordMatcher matcher = matcher();
+
+        if (matcher.isEmpty()) {
+            return false;
+        }
+
         Video video = Video.from(item);
-        return video != null && matcher().matches(video.title, video.getAuthor());
+        return video != null && matcher.matches(video.title, video.getAuthor());
     }
 
     private static boolean hasVideo(List<MediaItem> items, String videoId) {

@@ -339,7 +339,7 @@ public class HearthRowsFragment extends VideoRowsFragment {
         }
 
         mTitle.setText(video.getTitle());
-        CharSequence meta = video.getSecondTitle();
+        CharSequence meta = com.liskovsoft.smartyoutubetv2.common.utils.AiSlopList.withLabel(getContext(), video, video.getSecondTitle());
         mMeta.setText(meta);
         mMeta.setVisibility(TextUtils.isEmpty(meta) ? View.GONE : View.VISIBLE);
         mDescription.setText(video.description);

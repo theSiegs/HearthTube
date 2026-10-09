@@ -153,4 +153,13 @@
     <string name="kids_blocked_word">This video has a blocked word</string>
     <string name="search_only_blocked">Nothing to show: every result had a blocked word</string>
     <string name="search_only_shorts_or_blocked">Nothing to show: every result was a Short or had a blocked word</string>
+    <string name="ai_label">Likely AI</string>
+    <string name="ai_labels">Label videos from AI channels</string>
+    <string name="ai_labels_desc">“Likely AI” on videos from channels on AiSList, a list of channels that mainly post AI-made videos. Kids profiles don\'t show those videos at all.</string>
+    <string name="kids_ai_channel">This channel is on a list of AI-made channels</string>
+    <string name="search_only_ai">Nothing to show: every result was a Short or came from a channel on a list of AI-made channels</string>
+    <string name="search_only_ai_or_blocked">Nothing to show: every result was a Short, had a blocked word or came from a channel on a list of AI-made channels</string>
+    <string name="credit_aislist">AI channel list: AiSList, by its contributors</string>
+    <string name="credit_aislist_license">AiSList\'s license: CC BY-NC 4.0</string>
+    <string name="credit_aislist_ids">AiSList by channel ID</string>
 </resources>
