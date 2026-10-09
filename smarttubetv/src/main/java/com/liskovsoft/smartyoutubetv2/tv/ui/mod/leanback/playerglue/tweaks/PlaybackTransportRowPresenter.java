@@ -1020,7 +1020,8 @@ public class PlaybackTransportRowPresenter extends PlaybackRowPresenter {
         TypedValue outValue = new TypedValue();
         if (context.getTheme()
                 .resolveAttribute(R.attr.playbackProgressPrimaryColor, outValue, true)) {
-            return context.getResources().getColor(outValue.resourceId);
+            // HearthTube: the theme may give a color itself (the chosen accent), not a color resource
+            return outValue.resourceId != 0 ? context.getResources().getColor(outValue.resourceId) : outValue.data;
         }
         return context.getResources().getColor(R.color.lb_playback_progress_color_no_theme);
     }
@@ -1029,7 +1030,8 @@ public class PlaybackTransportRowPresenter extends PlaybackRowPresenter {
         TypedValue outValue = new TypedValue();
         if (context.getTheme()
                 .resolveAttribute(R.attr.playbackProgressSecondaryColor, outValue, true)) {
-            return context.getResources().getColor(outValue.resourceId);
+            // HearthTube: the theme may give a color itself (the chosen accent), not a color resource
+            return outValue.resourceId != 0 ? context.getResources().getColor(outValue.resourceId) : outValue.data;
         }
         return context.getResources().getColor(
                 R.color.lb_playback_progress_secondary_color_no_theme);

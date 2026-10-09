@@ -156,6 +156,15 @@ public class MainUIData extends DataChangeBase implements ProfileChangeListener 
             PlayerData.instance(mContext).setRemainingTimeEnabled(false);
         }
 
+        // A calmer "more" row in the player: no search, picture-in-picture, screen dimming, dislike or subscribe
+        // (all still in Player > Player buttons)
+        if (!prefs.getBoolean("calm_player_buttons", false)) {
+            prefs.edit().putBoolean("calm_player_buttons", true).apply();
+            PlayerTweaksData.instance(mContext).setPlayerButtonDisabled(PlayerTweaksData.PLAYER_BUTTON_SEARCH
+                    | PlayerTweaksData.PLAYER_BUTTON_PIP | PlayerTweaksData.PLAYER_BUTTON_SCREEN_DIMMING
+                    | PlayerTweaksData.PLAYER_BUTTON_DISLIKE | PlayerTweaksData.PLAYER_BUTTON_SUBSCRIBE);
+        }
+
         // The Queued tab needs "Add to queue" in the long-press menu
         if (!prefs.getBoolean("queue_menu_item", false)) {
             prefs.edit().putBoolean("queue_menu_item", true).apply();

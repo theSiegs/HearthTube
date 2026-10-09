@@ -103,7 +103,8 @@ public class PlaybackPresenter extends BasePresenter<PlaybackView> implements Pl
         }
 
         Video video = Video.from(videoId);
-        video.finishOnEnded = finishOnEnded;
+        // HearthTube: in a kids profile a shared link plays that video only, not whatever YouTube suggests next
+        video.finishOnEnded = finishOnEnded || com.liskovsoft.smartyoutubetv2.common.utils.ParentGate.isKidsProfile(getContext());
         video.pendingPosMs = timeMs;
         video.incognito = incognito;
         openVideo(video);

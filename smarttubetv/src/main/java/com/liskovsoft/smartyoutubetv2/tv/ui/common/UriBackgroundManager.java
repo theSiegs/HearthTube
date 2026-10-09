@@ -107,7 +107,10 @@ public class UriBackgroundManager {
                 return;
             }
 
-            mBackgroundManager.setBitmap(result.image);
+            // HearthTube: under Hearth's shade (darker at the top and bottom), so text reads on any picture
+            mBackgroundManager.setDrawable(new android.graphics.drawable.LayerDrawable(new android.graphics.drawable.Drawable[] {
+                    new android.graphics.drawable.BitmapDrawable(mActivity.getResources(), result.image),
+                    androidx.core.content.ContextCompat.getDrawable(mActivity, R.drawable.hearth_wallpaper_shade)}));
         });
     }
 

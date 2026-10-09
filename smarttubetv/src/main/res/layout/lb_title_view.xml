@@ -51,10 +51,10 @@
             android:ellipsize="end"
             android:textSize="18sp"
             android:textColor="@color/white"
-            android:shadowColor="#8A000000"
+            android:shadowColor="#CC000000"
             android:shadowDx="0"
             android:shadowDy="2"
-            android:shadowRadius="4"
+            android:shadowRadius="8"
             android:visibility="gone" />
 
         <!-- The bell (notifications), like the Hearth launcher's -->

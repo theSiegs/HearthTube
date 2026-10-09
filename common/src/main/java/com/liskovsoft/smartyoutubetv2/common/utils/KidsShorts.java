@@ -46,6 +46,11 @@ public final class KidsShorts {
     private KidsShorts() {
     }
 
+    /** Shorts (and TikTok-style clips) are being left out right now */
+    public static boolean isHidingShorts() {
+        return sHidden;
+    }
+
     /**
      * A video in a row that is a Short while Shorts are hidden: leave it out. YouTube marks only some Shorts, so also a
      * #shorts title, a Shorts thumbnail, a plain video with no length (search results list Shorts that way), and

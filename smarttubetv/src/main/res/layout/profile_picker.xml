@@ -13,6 +13,12 @@
         android:alpha="0"
         android:contentDescription="@null"/>
 
+    <!-- Hearth's shade over the wallpaper, so the welcome text reads on any picture -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/hearth_wallpaper_shade"/>
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -29,7 +35,11 @@
             android:text="@string/profile_picker_title"
             android:fontFamily="sans-serif"
             android:textSize="36sp"
-            android:textColor="@color/profile_text"/>
+            android:textColor="@color/profile_text"
+            android:shadowColor="#CC000000"
+            android:shadowDx="0"
+            android:shadowDy="2"
+            android:shadowRadius="8"/>
 
         <!-- Shown when picking the account a Google TV profile watches with -->
         <TextView
@@ -42,7 +52,11 @@
             android:visibility="gone"
             android:fontFamily="sans-serif"
             android:textSize="18sp"
-            android:textColor="@color/profile_text"/>
+            android:textColor="@color/profile_text"
+            android:shadowColor="#CC000000"
+            android:shadowDx="0"
+            android:shadowDy="2"
+            android:shadowRadius="8"/>
 
         <!-- A plain row rather than a grid: it centers itself and there are only a handful of tiles.
              Scrolling only kicks in when there are more accounts than fit on screen. -->

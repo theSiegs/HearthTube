@@ -253,6 +253,91 @@ public class ViewUtil {
         frame.addView(divider, frame.indexOfChild(titleContainer) + 1, dividerParams);
     }
 
+    /**
+     * HearthTube: a search bar (Search, and a channel's page) as one of Hearth's dark pills with readable white text,
+     * the search button then the filter button right after it, in that order on both screens.
+     */
+    public static void applyHearthSearchBar(View root) {
+        float density = root.getResources().getDisplayMetrics().density;
+
+        View items = root.findViewById(androidx.leanback.R.id.lb_search_bar_items);
+        if (items != null) {
+            items.setBackgroundResource(R.drawable.hearth_tab_bar_background);
+        }
+
+        android.widget.EditText editor = root.findViewById(androidx.leanback.R.id.lb_search_text_editor);
+        if (editor != null) {
+            editor.setTextColor(0xFFFFFFFF);
+            editor.setHintTextColor(0x99FFFFFF);
+            editor.setShadowLayer(4 * density, 0, 2 * density, 0x8A000000);
+        }
+
+        // Search and filter buttons right after the bar (not at the far right edge)
+        View searchOrb = root.findViewById(R.id.lb_search_bar_search_orb);
+        View settingsOrb = root.findViewById(R.id.search_settings_orb);
+        if (searchOrb != null && searchOrb.getLayoutParams() instanceof android.widget.RelativeLayout.LayoutParams
+                && settingsOrb != null && settingsOrb.getLayoutParams() instanceof android.widget.RelativeLayout.LayoutParams) {
+            android.widget.RelativeLayout.LayoutParams search = (android.widget.RelativeLayout.LayoutParams) searchOrb.getLayoutParams();
+            search.removeRule(android.widget.RelativeLayout.ALIGN_PARENT_END);
+            search.removeRule(android.widget.RelativeLayout.START_OF);
+            search.removeRule(android.widget.RelativeLayout.END_OF);
+            search.addRule(android.widget.RelativeLayout.END_OF, androidx.leanback.R.id.lb_search_bar_items);
+            search.setMarginStart(Math.round(12 * density));
+            searchOrb.setLayoutParams(search);
+
+            android.widget.RelativeLayout.LayoutParams settings = (android.widget.RelativeLayout.LayoutParams) settingsOrb.getLayoutParams();
+            settings.removeRule(android.widget.RelativeLayout.ALIGN_PARENT_END);
+            settings.removeRule(android.widget.RelativeLayout.START_OF);
+            settings.removeRule(android.widget.RelativeLayout.END_OF);
+            settings.addRule(android.widget.RelativeLayout.END_OF, R.id.lb_search_bar_search_orb);
+            settings.setMarginStart(Math.round(12 * density));
+            settingsOrb.setLayoutParams(settings);
+        }
+    }
+
+    /**
+     * HearthTube: a panel's list fades out under its header instead of cutting a row in half, and starts a little
+     * below it (a long two-line title no longer runs into the first row).
+     */
+    public static void fadeListTop(View rootView) {
+        View list = findList(rootView);
+
+        if (list == null) {
+            return;
+        }
+
+        float density = rootView.getResources().getDisplayMetrics().density;
+        list.setPadding(list.getPaddingLeft(), list.getPaddingTop() + Math.round(12 * density), list.getPaddingRight(), list.getPaddingBottom());
+
+        // Leanback's grid reports no scroll position, so Android's own fading edge never shows: a short gradient in
+        // the panel's color over the list's top edge does the same
+        if (list.getParent() instanceof FrameLayout) {
+            View fade = new View(rootView.getContext());
+            fade.setBackground(new android.graphics.drawable.GradientDrawable(
+                    android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM, new int[] {0xFF0F0F0F, 0x000F0F0F}));
+            ((FrameLayout) list.getParent()).addView(fade,
+                    new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Math.round(24 * density), Gravity.TOP));
+        }
+    }
+
+    private static View findList(View view) {
+        if (view instanceof androidx.recyclerview.widget.RecyclerView) {
+            return view;
+        }
+
+        if (view instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) {
+                View list = findList(group.getChildAt(i));
+                if (list != null) {
+                    return list;
+                }
+            }
+        }
+
+        return null;
+    }
+
     public static void enableLeftDialog(Context context, View rootView) {
         if (context == null || rootView == null || VERSION.SDK_INT <= 19) {
             return;

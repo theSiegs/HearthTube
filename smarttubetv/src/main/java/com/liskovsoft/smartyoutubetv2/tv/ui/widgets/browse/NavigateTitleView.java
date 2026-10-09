@@ -245,6 +245,27 @@ public class NavigateTitleView extends TitleView implements OnDataChange, Accoun
         }
     }
 
+    private void fillOnFocus(SearchOrbView orb) {
+        if (orb == null) {
+            return;
+        }
+
+        Colors colors = orb.getOrbColors();
+        orb.setOrbColors(new Colors(colors.color, com.liskovsoft.smartyoutubetv2.common.utils.HearthAccent.resolve(getContext()), colors.iconColor));
+    }
+
+    private static void describe(View orb, String label) {
+        if (orb == null) {
+            return;
+        }
+
+        orb.setContentDescription(label);
+        View icon = orb.findViewById(androidx.leanback.R.id.icon);
+        if (icon != null) {
+            icon.setContentDescription(label);
+        }
+    }
+
     @Override
     protected boolean onRequestFocusInDescendants(int direction, Rect previouslyFocusedRect) {
         // HearthTube: up from the videos lands on the open tab
@@ -340,6 +361,15 @@ public class NavigateTitleView extends TitleView implements OnDataChange, Accoun
         mSettingsView.setVisibility(View.VISIBLE); // hidden in the layout: plain leanback title bars (error pages) reuse it
         mSettingsView.setOnOrbClickedListener(v -> BrowsePresenter.instance(getContext()).selectSection(MediaGroup.TYPE_NOTIFICATIONS));
         updateSettingsButton();
+
+        // Screen readers: say what each round button is (leanback labels every orb "Search Action")
+        describe(mAccountView, getContext().getString(R.string.settings_accounts));
+        describe(mSettingsView, getContext().getString(R.string.header_notifications));
+        describe(mSearchOrbView, getContext().getString(R.string.action_search));
+        // Focus fills the circle with the accent, like Hearth's top bar, not just a slight zoom
+        fillOnFocus(mAccountView);
+        fillOnFocus(mSettingsView);
+        fillOnFocus(mSearchOrbView);
 
         mLanguageView = findViewById(R.id.language_orb);
         mLanguageView.setOnOrbClickedListener(v -> LanguageSettingsPresenter.instance(getContext()).show());

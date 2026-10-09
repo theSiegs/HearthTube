@@ -17,6 +17,12 @@
         <item name="android:paddingBottom">@dimen/text_on_image_pill_padding_v</item>
     </style>
 
+    <!-- HearthTube: Roboto everywhere, like Hearth (leanback's base text style is the condensed cut: row headers,
+         player rows, sign-in actions) -->
+    <style name="TextAppearance.Leanback" parent="TextAppearance.LeanbackBase">
+        <item name="android:fontFamily">sans-serif</item>
+    </style>
+
     <!-- Overrides leanback's row header style (same name) so every theme gets the pill -->
     <style name="Widget.Leanback.Row.Header" parent="Widget.Leanback.Header">
         <item name="android:textAppearance">@style/TextAppearance.Leanback.Row.Header</item>

@@ -230,7 +230,7 @@ public class HearthTabBar extends LinearLayout {
     private TextView createTab(String title, OnClickListener onClick) {
         TextView tab = new TextView(getContext());
         tab.setText(title);
-        tab.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+        tab.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15); // same as the chips under it
         tab.setTextColor(ContextCompat.getColorStateList(getContext(), R.color.hearth_tab_text));
         tab.setBackgroundResource(R.drawable.hearth_tab_background);
         tab.setSingleLine(true);

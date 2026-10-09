@@ -337,6 +337,10 @@ public class AppDialogFragment extends LeanbackSettingsFragment implements AppDi
                 ViewUtil.addLogoHeader(view, R.drawable.hearthtube_logo);
             }
 
+            if (!mIsTransparent && view != null) {
+                ViewUtil.fadeListTop(view);
+            }
+
             if (mIsTransparent && view != null) {
                 // Enable transparent shadow outline on parent (R.id.settings_preference_fragment_container)
                 ViewUtil.enableTransparentDialog(getActivity(), getParentFragment().getView());

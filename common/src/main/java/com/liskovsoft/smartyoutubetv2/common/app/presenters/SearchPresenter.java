@@ -177,6 +177,7 @@ public class SearchPresenter extends BasePresenter<SearchView> implements VideoG
         ContentService contentService = getContentService();
 
         getView().clearSearch();
+        boolean[] anyShown = {false};
 
         mLoadAction = contentService.getSearchObserve(searchText,
                 mUploadDateOptions | mDurationOptions | mTypeOptions | mFeatureOptions | mSortingOptions)
@@ -190,6 +191,7 @@ public class SearchPresenter extends BasePresenter<SearchView> implements VideoG
                                 }
 
                                 VideoGroup group = VideoGroup.from(mediaGroup);
+                                anyShown[0] |= !group.isEmpty();
                                 startPlayFirstVideo(group);
                                 getView().updateSearch(group);
                                 mBrowseProcessor.process(group);
@@ -204,6 +206,10 @@ public class SearchPresenter extends BasePresenter<SearchView> implements VideoG
                         () -> {
                             if (getView() != null) {
                                 getView().showProgressBar(false);
+                            }
+                            // HearthTube: say why when every result was a Short or a TikTok-style clip
+                            if (!anyShown[0] && com.liskovsoft.smartyoutubetv2.common.utils.KidsShorts.isHidingShorts()) {
+                                com.liskovsoft.sharedutils.helpers.MessageHelpers.showLongMessage(getContext(), R.string.search_only_shorts);
                             }
                         }
                 );

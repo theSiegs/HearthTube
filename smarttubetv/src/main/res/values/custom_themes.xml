@@ -10,9 +10,10 @@
     <attr name="cardFocusOutline" format="reference"/>
 
     <style name="App.Theme.Hearth.Player" parent="App.Theme.Leanback.Player">
-        <item name="playbackProgressPrimaryColor">@color/hearth_accent</item>
-        <item name="playbackProgressSecondaryColor">@color/hearth_accent_light</item>
-        <item name="playbackControlsIconHighlightColor">@color/hearth_accent</item>
+        <!-- The chosen accent (Look and layout, or Hearth's), not a fixed purple; buffered part in soft white -->
+        <item name="playbackProgressPrimaryColor">?attr/hearthAccent</item>
+        <item name="playbackProgressSecondaryColor">#66FFFFFF</item>
+        <item name="playbackControlsIconHighlightColor">?attr/hearthAccent</item>
         <item name="cardProgressStyle">@style/ProgressBarHorizontal.Hearth</item>
         <item name="shelfBackground">@color/hearth_background</item>
         <item name="cardDefaultBackground">@color/hearth_surface</item>
@@ -22,7 +23,7 @@
     <style name="App.Theme.Hearth.Browse" parent="App.Theme.Leanback.Browse">
         <item name="android:windowBackground">@color/hearth_background</item>
         <item name="brandColor">@color/hearth_surface</item>
-        <item name="brandAccentColor">@color/hearth_accent</item>
+        <item name="brandAccentColor">?attr/hearthAccent</item>
         <item name="cardProgressStyle">@style/ProgressBarHorizontal.Hearth</item>
         <item name="shelfBackground">@color/hearth_background</item>
         <item name="cardDefaultBackground">@color/hearth_surface</item>
