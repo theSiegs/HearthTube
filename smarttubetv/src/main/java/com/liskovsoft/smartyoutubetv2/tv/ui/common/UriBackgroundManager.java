@@ -67,7 +67,26 @@ public class UriBackgroundManager {
         // Selectively change background picture
     }
 
+    /** Hearth changed something (its wallpaper, maybe): show it again; unchanged versions load from the cache */
+    private final android.database.ContentObserver mHearthObserver = new android.database.ContentObserver(new Handler()) {
+        @Override
+        public void onChange(boolean selfChange) {
+            if (mBackgroundManager != null && mBackgroundURI == null && mBackgroundColor == -1
+                    && !com.liskovsoft.smartyoutubetv2.common.utils.DailyBackground.isShowing(mActivity)) {
+                showDailyBackground();
+            }
+        }
+    };
+
     public void onStart() {
+        com.liskovsoft.smartyoutubetv2.common.utils.HearthProfile.noteLaunch(mActivity);
+        try {
+            mActivity.getContentResolver().registerContentObserver(
+                    com.liskovsoft.smartyoutubetv2.common.utils.HearthProfile.ACTIVE_URI, false, mHearthObserver);
+        } catch (Exception e) {
+            // No Hearth
+        }
+
         if (mBackgroundURI != null) {
             showBackground(mBackgroundURI.toString());
         } else if (mBackgroundColor != -1) {
@@ -78,6 +97,7 @@ public class UriBackgroundManager {
     }
 
     public void onStop() {
+        mActivity.getContentResolver().unregisterContentObserver(mHearthObserver);
         mBackgroundManager.release();
     }
 

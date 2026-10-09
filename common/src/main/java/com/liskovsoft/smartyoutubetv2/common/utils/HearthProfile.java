@@ -30,7 +30,8 @@ public class HearthProfile {
             "6748528ff4d17fd57c30b6c5d522c467920d9951ea5d208597f91b66df9a2bfe"};
     /** The Hearth install (its last update time) whose certificate checked out, so it's checked once per install */
     private static long sGenuineInstall = -1;
-    private static final Uri ACTIVE_URI = Uri.parse(AUTHORITY + "/active");
+    /** Hearth's one-row cursor; Hearth notifies it when anything in the row changes (the wallpaper too) */
+    public static final Uri ACTIVE_URI = Uri.parse(AUTHORITY + "/active");
     /** Hearth's current wallpaper picture (no picture = a gradient, see {@link #gradientUuid}) */
     public static final Uri WALLPAPER_URI = Uri.parse(AUTHORITY + "/wallpaper");
 
@@ -89,8 +90,26 @@ public class HearthProfile {
     public final Boolean updatesHearthTube;
     /** Hearth's provider contract version (docs/provider-contract.md in Hearth); 1 before it was reported. */
     public final int contractVersion;
+    /** What Hearth shows (contract 5): "picture", "bing" or "gradient"; null with an older Hearth */
+    @Nullable
+    public final String wallpaperKind;
+    /** Changes whenever what Hearth shows does (contract 5): the cache key */
+    public final long wallpaperVersion;
+    /** The shown wallpaper's average brightness, 0 (black) .. 1 (white); null until Hearth has measured it */
+    @Nullable
+    public final Double wallpaperBrightness;
+    /** Hearth's gradient as JSON (colors, stops, begin/end or center/radius, rotation, brightness), or null */
+    @Nullable
+    public final String wallpaperGradient;
+    /** Bing's photo title and credit, only when {@link #wallpaperKind} is "bing" */
+    @Nullable
+    public final String wallpaperTitle;
+    @Nullable
+    public final String wallpaperCredit;
     /** The newest contract this code was written against: a newer Hearth may mean columns changed meaning. */
-    private static final int KNOWN_CONTRACT = 4;
+    private static final int KNOWN_CONTRACT = 5;
+    /** HearthTube was last opened by Hearth (Android 14+, Hearth's share-identity launch); null when unknown */
+    private static Boolean sLaunchedFromHearth;
     private static boolean sWarnedNewerContract;
 
     private HearthProfile(Cursor cursor) {
@@ -111,11 +130,60 @@ public class HearthProfile {
         this.switchGeneration = getLong(cursor, "switch_generation");
         this.updatesHearthTube = cursor.getColumnIndex("updates_hearthtube") != -1 ? getLong(cursor, "updates_hearthtube") == 1 : null;
         this.contractVersion = cursor.getColumnIndex("contract_version") != -1 ? (int) getLong(cursor, "contract_version") : 1;
+        this.wallpaperKind = getString(cursor, "wallpaper_kind");
+        this.wallpaperVersion = getLong(cursor, "wallpaper_version");
+        int brightness = cursor.getColumnIndex("wallpaper_brightness");
+        this.wallpaperBrightness = brightness != -1 && !cursor.isNull(brightness) ? cursor.getDouble(brightness) : null;
+        this.wallpaperGradient = getString(cursor, "wallpaper_gradient");
+        this.wallpaperTitle = getString(cursor, "wallpaper_title");
+        this.wallpaperCredit = getString(cursor, "wallpaper_credit");
 
         if (contractVersion > KNOWN_CONTRACT && !sWarnedNewerContract) {
             sWarnedNewerContract = true;
             Log.e(TAG, "Hearth's provider contract is version %s; HearthTube knows up to %s", contractVersion, KNOWN_CONTRACT);
         }
+    }
+
+    /**
+     * Notes who opened a screen (once per onStart). Android 14+ tells, since Hearth launches apps with share-identity
+     * options; a screen HearthTube opened itself keeps the earlier answer.
+     */
+    public static void noteLaunch(android.app.Activity activity) {
+        if (activity == null || android.os.Build.VERSION.SDK_INT < 34) {
+            return;
+        }
+
+        try {
+            String from = (String) android.app.Activity.class.getMethod("getLaunchedFromPackage").invoke(activity);
+            if (from != null && !from.equals(activity.getPackageName())) {
+                sLaunchedFromHearth = from.startsWith(HEARTH_PACKAGE);
+            }
+        } catch (Exception e) {
+            // Can't tell: Hearth being the home app decides
+        }
+    }
+
+    /** Hearth is the TV's home app */
+    public static boolean isHearthHome(Context context) {
+        try {
+            android.content.pm.ResolveInfo home = context.getPackageManager().resolveActivity(
+                    new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME), android.content.pm.PackageManager.MATCH_DEFAULT_ONLY);
+            return home != null && home.activityInfo != null && home.activityInfo.packageName.startsWith(HEARTH_PACKAGE);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * HearthTube runs "in Hearth" (wallpaper sync, Hearth's docs/design/wallpaper-sync.md): opened from Hearth, or
+     * Hearth is the home app.
+     */
+    public static boolean isInHearth(Context context) {
+        if (Boolean.TRUE.equals(sLaunchedFromHearth)) {
+            return true;
+        }
+
+        return isHearthHome(context);
     }
 
     /** What to save per-profile things under: the lasting {@link #profileId}, or the name with an older Hearth. */

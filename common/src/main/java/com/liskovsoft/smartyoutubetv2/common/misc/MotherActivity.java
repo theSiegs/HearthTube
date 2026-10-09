@@ -80,6 +80,8 @@ public class MotherActivity extends FragmentActivity {
 
         initDpi();
         initTheme();
+        // HearthTube: opened from Hearth? (wallpaper sync)
+        com.liskovsoft.smartyoutubetv2.common.utils.HearthProfile.noteLaunch(this);
         // HearthTube: Hearth's accent (or the one picked in Look and layout) over every screen's theme
         com.liskovsoft.smartyoutubetv2.common.utils.HearthAccent.applyTo(this);
 

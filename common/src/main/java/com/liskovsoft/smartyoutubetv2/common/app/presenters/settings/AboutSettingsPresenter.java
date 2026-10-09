@@ -124,6 +124,22 @@ public class AboutSettingsPresenter extends BasePresenter<Void> {
      * Shared with AboutSimpleSettingsPresenter (builds with a non-official package name)
      */
     static void appendBackgroundCredit(Context context, AppDialogPresenter settingsPresenter) {
+        // In Hearth: Hearth's wallpaper, so its Bing photo's title and credit, and none for a picture or gradient
+        com.liskovsoft.smartyoutubetv2.common.utils.HearthProfile synced =
+                com.liskovsoft.smartyoutubetv2.common.utils.HearthWallpaper.getSynced(context);
+        if (synced != null) {
+            if ("bing".equals(synced.wallpaperKind) && synced.wallpaperCredit != null) {
+                List<OptionItem> items = new ArrayList<>();
+                if (synced.wallpaperTitle != null) {
+                    items.add(UiOptionItem.from(synced.wallpaperTitle));
+                }
+                items.add(UiOptionItem.from(synced.wallpaperCredit));
+                items.add(UiOptionItem.from(context.getString(R.string.background_image_source)));
+                settingsPresenter.appendStringsCategory(context.getString(R.string.background_image), items);
+            }
+            return;
+        }
+
         String credit = DailyBackground.getCredit(context);
 
         if (credit == null) {

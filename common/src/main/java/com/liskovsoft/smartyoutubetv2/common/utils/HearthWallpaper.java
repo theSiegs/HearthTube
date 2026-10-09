@@ -25,6 +25,8 @@ public final class HearthWallpaper {
     public static final String BING = "bing";
     public static final String DARK = "dark";
     public static final String GRADIENT_PREFIX = "gradient:";
+    /** Hearth's wallpaper in Hearth (contract 5): "sync:<kind>:<version>" */
+    private static final String SYNC_PREFIX = "sync:";
     private static final int WIDTH = 1920;
     private static final int HEIGHT = 1080;
 
@@ -56,6 +58,12 @@ public final class HearthWallpaper {
     public static String getKey(Context context) {
         String choice = getChoice(context);
 
+        // In Hearth (contract 5), Hearth's wallpaper always: picture, Bing photo or gradient
+        HearthProfile synced = getSynced(context);
+        if (synced != null) {
+            return SYNC_PREFIX + synced.wallpaperKind + ":" + synced.wallpaperVersion;
+        }
+
         if (BING.equals(choice)) {
             return null;
         }
@@ -63,8 +71,8 @@ public final class HearthWallpaper {
         if (MATCH_HEARTH.equals(choice)) {
             HearthProfile hearth = HearthProfile.queryHearth(context);
 
-            if (hearth == null) {
-                return null; // no Hearth: Bing
+            if (hearth == null || hearth.wallpaperKind != null) {
+                return null; // no Hearth, or a Hearth that syncs but HearthTube isn't in it: Bing
             }
 
             return hearth.wallpaperStamp != 0 ? "hearth:" + hearth.wallpaperStamp : "hearth-gradient:" + hearth.gradientUuid;
@@ -80,6 +88,10 @@ public final class HearthWallpaper {
     public static Bitmap load(Context context, String key) throws Exception {
         if (DARK.equals(key)) {
             return null;
+        }
+
+        if (key.startsWith(SYNC_PREFIX)) {
+            return loadSynced(context, key);
         }
 
         if (key.startsWith("hearth:")) {
@@ -98,6 +110,131 @@ public final class HearthWallpaper {
         Object[] gradient = findGradient(uuid);
         // Hearth's default is Pitch Black
         return gradient != null ? draw((int[]) gradient[2], (double) gradient[3]) : null;
+    }
+
+    /**
+     * How bright the wallpaper is, 0 (black) .. 1 (white), when it's Hearth's (in Hearth); null when unknown. Text
+     * backgrounds darken more on a bright one.
+     */
+    @Nullable
+    public static Double getBrightness(Context context) {
+        HearthProfile synced = getSynced(context);
+
+        if (synced == null) {
+            return null;
+        }
+
+        if (synced.wallpaperBrightness != null) {
+            return synced.wallpaperBrightness;
+        }
+
+        try {
+            return synced.wallpaperGradient != null ? new org.json.JSONObject(synced.wallpaperGradient).getDouble("brightness") : null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /** Hearth answers with its contract 5 wallpaper and HearthTube runs in Hearth; else null */
+    @Nullable
+    public static HearthProfile getSynced(Context context) {
+        HearthProfile hearth = HearthProfile.queryHearth(context);
+
+        if (hearth == null || hearth.contractVersion < 5 || hearth.wallpaperKind == null) {
+            return null;
+        }
+
+        // In Hearth: opened from it, Hearth is the home app, or Hearth's service handles Home (Hearth takes over the
+        // Home button that way while Google TV's launcher stays the system's home): casts and voice open in Hearth too
+        boolean inHearth = HearthProfile.isInHearth(context) || Boolean.TRUE.equals(hearth.serviceRunning);
+        return inHearth ? hearth : null;
+    }
+
+    /** Hearth's picture (or Bing photo), else its gradient, else plain dark */
+    @Nullable
+    private static Bitmap loadSynced(Context context, String key) {
+        if (!key.startsWith(SYNC_PREFIX + "gradient:")) {
+            try {
+                return Glide.with(context)
+                        .asBitmap()
+                        .load(HearthProfile.WALLPAPER_URI)
+                        .signature(new ObjectKey(key))
+                        .centerCrop()
+                        .submit(WIDTH, HEIGHT)
+                        .get();
+            } catch (Exception e) {
+                // Hearth just switched to a gradient, or won't open it: its gradient
+            }
+        }
+
+        HearthProfile hearth = HearthProfile.queryHearth(context);
+        return hearth != null ? drawJson(hearth.wallpaperGradient) : null;
+    }
+
+    /** Hearth's gradient JSON (wallpaper-sync.md), drawn as Flutter does; null when missing or unreadable */
+    @Nullable
+    static Bitmap drawJson(@Nullable String json) {
+        if (json == null) {
+            return null;
+        }
+
+        try {
+            org.json.JSONObject gradient = new org.json.JSONObject(json);
+            org.json.JSONArray colorList = gradient.getJSONArray("colors");
+            int[] colors = new int[colorList.length()];
+            for (int i = 0; i < colors.length; i++) {
+                colors[i] = android.graphics.Color.parseColor(colorList.getString(i));
+            }
+
+            if (colors.length == 0) {
+                return null;
+            }
+
+            float[] stops = null;
+            org.json.JSONArray stopList = gradient.optJSONArray("stops");
+            if (stopList != null && stopList.length() == colors.length) {
+                stops = new float[colors.length];
+                for (int i = 0; i < stops.length; i++) {
+                    stops[i] = (float) stopList.getDouble(i);
+                }
+            }
+
+            Bitmap bitmap = Bitmap.createBitmap(WIDTH, HEIGHT, Bitmap.Config.RGB_565);
+            Canvas canvas = new Canvas(bitmap);
+            Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
+            String type = gradient.optString("type");
+
+            if (colors.length == 1 || (!"linear".equals(type) && !"radial".equals(type))) {
+                canvas.drawColor(colors[0]); // one color, or a kind this Hearth version doesn't know
+                return bitmap;
+            }
+
+            Shader shader;
+            if ("radial".equals(type)) {
+                org.json.JSONObject center = gradient.getJSONObject("center");
+                shader = new RadialGradient(px(center.getDouble("x"), WIDTH), px(center.getDouble("y"), HEIGHT),
+                        (float) (gradient.getDouble("radius") * Math.min(WIDTH, HEIGHT)), colors, stops, Shader.TileMode.CLAMP);
+            } else {
+                org.json.JSONObject begin = gradient.getJSONObject("begin");
+                org.json.JSONObject end = gradient.getJSONObject("end");
+                shader = new LinearGradient(px(begin.getDouble("x"), WIDTH), px(begin.getDouble("y"), HEIGHT),
+                        px(end.getDouble("x"), WIDTH), px(end.getDouble("y"), HEIGHT), colors, stops, Shader.TileMode.CLAMP);
+            }
+
+            Matrix matrix = new Matrix();
+            matrix.setRotate((float) Math.toDegrees(gradient.optDouble("rotation", 0)), WIDTH / 2f, HEIGHT / 2f);
+            shader.setLocalMatrix(matrix);
+            paint.setShader(shader);
+            canvas.drawRect(0, 0, WIDTH, HEIGHT, paint);
+            return bitmap;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /** Flutter's alignment (-1..1) to pixels */
+    private static float px(double alignment, int size) {
+        return (float) (size / 2.0 + alignment * size / 2.0);
     }
 
     @Nullable

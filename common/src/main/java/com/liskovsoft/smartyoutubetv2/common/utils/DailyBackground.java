@@ -80,6 +80,13 @@ public class DailyBackground {
                 error -> Log.e(TAG, "Daily background unavailable: %s", error.getMessage()));
     }
 
+    /** The wallpaper for this key is the one already shown (nothing to reload) */
+    public static boolean isShowing(Context context) {
+        String wallpaper = HearthWallpaper.getKey(context.getApplicationContext());
+        String key = wallpaper != null ? wallpaper : getToday();
+        return sResult != null && key.equals(sResultKey);
+    }
+
     /**
      * Caption and photographer of today's image, for the About screen. Null until the image has been fetched.
      */

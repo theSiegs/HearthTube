@@ -230,6 +230,11 @@ public class HearthRowsFragment extends VideoRowsFragment {
         root.addView(scrim, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                 Math.round(context.getResources().getDisplayMetrics().heightPixels * 0.78f), Gravity.BOTTOM));
         mScrim = scrim;
+        // In Hearth: lighter on a dark wallpaper, full on a bright one (Hearth's own scrim does the same)
+        Double brightness = com.liskovsoft.smartyoutubetv2.common.utils.HearthWallpaper.getBrightness(context);
+        if (brightness != null) {
+            scrim.setAlpha((float) (0.55 + 0.45 * Math.max(0, Math.min(1, brightness))));
+        }
 
         // The row of big cards, at the bottom
         int cardHeight = LargeVideoCardPresenter.getLargeCardDimensPx(context).second;

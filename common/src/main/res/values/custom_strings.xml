@@ -41,6 +41,8 @@
     <string name="background_image_source">Bing image of the day</string>
     <string name="parent_pin_wait">Too many tries. Wait %d seconds.</string>
     <string name="works_with_hearth">Works with Hearth</string>
+    <string name="wallpaper_follows_hearth">Wallpaper follows Hearth</string>
+    <string name="wallpaper_follows_hearth_hint">HearthTube shows Hearth\'s wallpaper while it runs in Hearth. Change it in Hearth\'s settings.</string>
     <string name="works_with_hearth_missing">Hearth isn\'t on this TV (or is out of date), so these do nothing yet.</string>
     <string name="hearth_follow_profile">Follow the Google TV profile</string>
     <string name="parent_pin_from_hearth">Parent PIN: Hearth\'s (change it in Hearth Settings → Parent PIN)</string>

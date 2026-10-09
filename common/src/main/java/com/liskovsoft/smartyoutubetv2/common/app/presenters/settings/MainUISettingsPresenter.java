@@ -107,6 +107,14 @@ public class MainUISettingsPresenter extends BasePresenter<Void> {
         String chosen = data.getWallpaper();
         List<OptionItem> options = new ArrayList<>();
 
+        // HearthTube in Hearth: Hearth's wallpaper, whatever is picked here (it's changed in Hearth)
+        if (com.liskovsoft.smartyoutubetv2.common.utils.HearthWallpaper.getSynced(getContext()) != null) {
+            settingsPresenter.appendSingleButton(UiOptionItem.from(getContext().getString(R.string.wallpaper_follows_hearth),
+                    option -> com.liskovsoft.sharedutils.helpers.MessageHelpers.showLongMessage(getContext(),
+                            R.string.wallpaper_follows_hearth_hint)));
+            return;
+        }
+
         String[][] basics = {
                 {getContext().getString(R.string.match_hearth), com.liskovsoft.smartyoutubetv2.common.utils.HearthWallpaper.MATCH_HEARTH},
                 {getContext().getString(R.string.wallpaper_bing), com.liskovsoft.smartyoutubetv2.common.utils.HearthWallpaper.BING},
