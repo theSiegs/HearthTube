@@ -151,12 +151,25 @@ public class ExoPlayerInitializer {
     private void setupVolumeBoost(SimpleExoPlayer player) {
         // 5.1 audio cannot be boosted (format isn't supported error)
         // also, other 2.0 tracks in 5.1 group is already too loud. so cancel them too.
-        float volume = mPlayerTweaksData.isPlayerAutoVolumeEnabled() ? mPlayerData.getPlayerVolume() * 2.0f : mPlayerData.getPlayerVolume();
+        // HearthTube: no doubling for auto volume, which no longer halves each video (LoudnessNormalizer)
+        float volume = mPlayerData.getPlayerVolume();
         if (volume > 1f && Build.VERSION.SDK_INT >= 19) {
             mVolumeBooster = new VolumeBooster(true, volume, player);
             player.addAudioListener(mVolumeBooster);
+        } else if (mPlayerTweaksData.isPlayerAutoVolumeEnabled() && Build.VERSION.SDK_INT >= 19) {
+            // HearthTube: "Even out volume" lifts quiet videos, see setVolume()
+            mVolumeBooster = VolumeBooster.forEvenVolume(player);
+            player.addAudioListener(mVolumeBooster);
         }
         mVolumeBoost = Math.max(volume, 1f);
+    }
+
+    /** HearthTube: each video's volume, for the booster that lifts quiet videos when "Even out volume" is on */
+    public void setVolume(float volume) {
+        if (mVolumeBooster != null && mVolumeBooster.isPerVideo()) {
+            mVolumeBooster.setVolume(volume);
+            mVolumeBoost = mVolumeBooster.getGain();
+        }
     }
 
     /**

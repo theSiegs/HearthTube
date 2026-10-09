@@ -33,6 +33,7 @@
     <string name="save_remove_playlist">Save or remove playlist in Library</string>
     <string name="dialog_add_remove_from">Add to or remove from %s</string>
     <string name="player_remaining_time">%s left</string>
+    <string name="player_auto_volume">Even out volume</string>
     <string name="remote_control_permission">To start videos cast from a phone while HearthTube is closed, it needs \"Display over other apps\". Open that setting now? (Without it, casting still works while HearthTube is open.)</string>
     <string name="add_device_view_description">On your phone, open the YouTube app, go to Settings, then Watch on TV, and enter this code.</string>
     <string name="kids_no_shorts">Shorts and TikTok-style clips aren\'t available in kids profiles</string>

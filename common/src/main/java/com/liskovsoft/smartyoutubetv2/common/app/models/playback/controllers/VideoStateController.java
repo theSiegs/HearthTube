@@ -15,6 +15,7 @@ import com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager;
 import com.liskovsoft.smartyoutubetv2.common.misc.ScreensaverManager;
 import com.liskovsoft.smartyoutubetv2.common.prefs.GeneralData;
 import com.liskovsoft.smartyoutubetv2.common.utils.AppDialogUtil;
+import com.liskovsoft.smartyoutubetv2.common.utils.LoudnessNormalizer;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 import com.liskovsoft.smartyoutubetv2.common.utils.WatchNextPublisher;
 import com.liskovsoft.youtubeapi.service.internal.MediaServiceData;
@@ -671,21 +672,10 @@ public class VideoStateController extends BasePlayerController {
             return;
         }
 
-        float newVolume = getPlayerData().getPlayerVolume();
-
-        if (getPlayerTweaksData().isPlayerAutoVolumeEnabled()) {
-            //newVolume *= getVideo().volume;
-            //newVolume = getVideo().volume;
-            if (newVolume < 1f) {
-                newVolume *= getVideo().volume;
-            } else {
-                newVolume = getVideo().volume;
-            }
-        }
-
-        if (getVideo().isShorts) {
-            newVolume /= 2;
-        }
+        // HearthTube: auto volume ("Even out volume") is youtube.com's loudness normalization, see LoudnessNormalizer
+        float newVolume = LoudnessNormalizer.getVolume(getPlayerData().getPlayerVolume(),
+                getPlayerTweaksData().isPlayerAutoVolumeEnabled(), getVideo().loudnessDb, getVideo().isLive, getVideo().isShorts);
+        Log.d(TAG, "Volume %s for loudness %s dB", newVolume, getVideo().loudnessDb);
 
         getPlayer().setVolume(newVolume);
     }

@@ -1133,6 +1133,7 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
     @Override
     public void setVolume(float volume) {
         mExoPlayerController.setVolume(volume);
+        mPlayerInitializer.setVolume(volume); // HearthTube: lifts quiet videos (LoudnessNormalizer)
     }
 
     @Override

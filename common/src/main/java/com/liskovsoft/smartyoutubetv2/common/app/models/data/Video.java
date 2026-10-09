@@ -23,6 +23,7 @@ import com.liskovsoft.sharedutils.prefs.GlobalPreferences;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.service.VideoStateService;
 import com.liskovsoft.smartyoutubetv2.common.prefs.BlockedChannelData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerTweaksData;
+import com.liskovsoft.smartyoutubetv2.common.utils.LoudnessNormalizer;
 import com.liskovsoft.googlecommon.common.helpers.ServiceHelper;
 import com.liskovsoft.googlecommon.common.helpers.YouTubeHelper;
 
@@ -94,6 +95,8 @@ public final class Video {
     public String dislikeCount;
     public String subscriberCount;
     public float volume = 1.0f;
+    /** HearthTube: how far YouTube measured it over its loudness reference, NaN when unknown (LoudnessNormalizer) */
+    public float loudnessDb = Float.NaN;
     public boolean deArrowProcessed;
     public boolean isLiveEnd;
     public boolean isShuffled;
@@ -795,6 +798,7 @@ public final class Video {
         }
 
         volume = formatInfo.getVolumeLevel();
+        loudnessDb = LoudnessNormalizer.loudnessDbOf(formatInfo); // HearthTube
         isUnplayable = formatInfo.isUnplayable();
     }
 

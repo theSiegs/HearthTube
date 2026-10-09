@@ -11,18 +11,20 @@ import com.google.android.exoplayer2.audio.AudioListener;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.smartyoutubetv2.common.misc.TickleManager;
 import com.liskovsoft.smartyoutubetv2.common.misc.TickleManager.TickleListener;
+import com.liskovsoft.smartyoutubetv2.common.utils.LoudnessNormalizer;
 
 public class VolumeBooster implements AudioListener, TickleListener {
     private static final String TAG = VolumeBooster.class.getSimpleName();
     private static final int DRIFT_FIX_INTERVAL_MINUTES = 5;
     private boolean mIsEnabled;
-    private final float mVolume;
+    private float mVolume;
     private final SimpleExoPlayer mPlayer;
     private LoudnessEnhancer mBooster;
     private boolean mIsSupported;
     private int mCurrentSessionId = -1;
     private int mGainMb;
     private int mTickleCount;
+    private boolean mIsPerVideo;
 
     public VolumeBooster(boolean enabled, float volume, @Nullable SimpleExoPlayer player) {
         mIsEnabled = enabled;
@@ -30,9 +32,19 @@ public class VolumeBooster implements AudioListener, TickleListener {
         mPlayer = player;
     }
 
+    /**
+     * HearthTube: the booster for "Even out volume", which lifts quiet videos (LoudnessNormalizer). Each video sets its
+     * lift with {@link #setVolume}; it's off, and so is its compressor, unless a video needs one.
+     */
+    public static VolumeBooster forEvenVolume(@Nullable SimpleExoPlayer player) {
+        VolumeBooster booster = new VolumeBooster(true, 1f, player);
+        booster.mIsPerVideo = true;
+        return booster;
+    }
+
     @Override
     public void onAudioSessionId(int audioSessionId) {
-        if (VERSION.SDK_INT < 19 || mVolume <= 1) {
+        if (VERSION.SDK_INT < 19 || (mVolume <= 1 && !mIsPerVideo)) {
             return;
         }
 
@@ -60,8 +72,11 @@ public class VolumeBooster implements AudioListener, TickleListener {
             //mBooster.setTargetGain((int) gainMb);
 
             double gainMb = 20 * Math.log10(mVolume * 3) * 100;
-            mGainMb = (int) gainMb;
+            mGainMb = mIsPerVideo ? getLiftMb() : (int) gainMb; // HearthTube: an exact lift
             mBooster.setTargetGain(mGainMb);
+            if (mIsPerVideo) {
+                mBooster.setEnabled(mIsEnabled && mGainMb > 0);
+            }
 
             //mBooster.setTargetGain((int) (1000 * mVolume));
 
@@ -109,6 +124,48 @@ public class VolumeBooster implements AudioListener, TickleListener {
 
     public boolean isSupported() {
         return mIsSupported;
+    }
+
+    public boolean isPerVideo() {
+        return mIsPerVideo;
+    }
+
+    /**
+     * HearthTube: this video's volume, see LoudnessNormalizer. Above 1 is the lift, which is up to 6 dB and stereo only
+     * (LoudnessEnhancer can't take more channels). Only a booster {@link #forEvenVolume} lifts.
+     */
+    public void setVolume(float volume) {
+        if (!mIsPerVideo) {
+            return; // SmartTube's boost is set once, when the player starts
+        }
+
+        mVolume = volume;
+
+        if (mBooster == null || !mIsSupported) {
+            return; // onAudioSessionId() applies it
+        }
+
+        try {
+            int gainMb = getLiftMb();
+            if (gainMb != mGainMb) {
+                mGainMb = gainMb;
+                mBooster.setTargetGain(gainMb);
+            }
+            mBooster.setEnabled(mIsEnabled && gainMb > 0);
+            Log.d(TAG, "Lift %s mB for volume %s, enabled %s", gainMb, volume, mBooster.getEnabled());
+        } catch (RuntimeException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /** HearthTube: what the booster adds now, 1 when it's off */
+    public float getGain() {
+        return mBooster != null && mIsSupported && mIsEnabled && mGainMb > 0 ? (float) Math.pow(10, mGainMb / 2000.0) : 1f;
+    }
+
+    private int getLiftMb() {
+        boolean isSurround = mPlayer != null && mPlayer.getAudioFormat() != null && mPlayer.getAudioFormat().channelCount > 2;
+        return isSurround ? 0 : LoudnessNormalizer.getLiftMb(mVolume);
     }
 
     public void release() {
