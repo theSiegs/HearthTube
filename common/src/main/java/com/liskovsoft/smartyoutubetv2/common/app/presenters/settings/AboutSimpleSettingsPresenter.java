@@ -12,6 +12,7 @@ import com.liskovsoft.smartyoutubetv2.common.app.presenters.base.BasePresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.ATVBridgePresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.AmazonBridgePresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.AppUpdatePresenter;
+import com.liskovsoft.smartyoutubetv2.common.utils.UpdateChannels;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 
 import java.util.ArrayList;
@@ -40,6 +41,8 @@ public class AboutSimpleSettingsPresenter extends BasePresenter<Void> {
 
         appendAutoUpdateSwitch(settingsPresenter);
 
+        appendPreReleasesSwitch(settingsPresenter);
+
         appendUpdateCheckButton(settingsPresenter);
 
         // "Enable global search" is a setting, under General
@@ -55,6 +58,17 @@ public class AboutSimpleSettingsPresenter extends BasePresenter<Void> {
         settingsPresenter.appendSingleSwitch(UiOptionItem.from(getContext().getString(R.string.check_updates_auto), optionItem -> {
             mUpdateChecker.setUpdateCheckEnabled(optionItem.isSelected());
         }, mUpdateChecker.isUpdateCheckEnabled()));
+    }
+
+    /** Stable releases are always offered; with this on, pre-releases too (UpdateChannels) */
+    private void appendPreReleasesSwitch(AppDialogPresenter settingsPresenter) {
+        if (!UpdateChannels.hasPreReleases(getContext())) {
+            return;
+        }
+
+        settingsPresenter.appendSingleSwitch(UiOptionItem.from(getContext().getString(R.string.include_prereleases),
+                optionItem -> UpdateChannels.setIncludePreReleases(getContext(), optionItem.isSelected()),
+                UpdateChannels.isIncludePreReleases(getContext())));
     }
 
     private void appendUpdateCheckButton(AppDialogPresenter settingsPresenter) {

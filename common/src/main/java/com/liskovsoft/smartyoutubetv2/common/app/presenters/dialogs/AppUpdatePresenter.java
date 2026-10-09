@@ -6,6 +6,7 @@ import android.content.Context;
 import com.liskovsoft.appupdatechecker2.AppUpdateChecker;
 import com.liskovsoft.appupdatechecker2.AppUpdateCheckerListener;
 import com.liskovsoft.sharedutils.helpers.MessageHelpers;
+import com.liskovsoft.sharedutils.rx.RxHelper;
 import com.liskovsoft.smartyoutubetv2.common.R;
 import com.liskovsoft.smartyoutubetv2.common.app.models.errors.ErrorFragmentData;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.OptionItem;
@@ -16,10 +17,13 @@ import com.liskovsoft.smartyoutubetv2.common.app.presenters.base.BasePresenter;
 import com.liskovsoft.smartyoutubetv2.common.prefs.GeneralData;
 import com.liskovsoft.smartyoutubetv2.common.utils.HearthProfile;
 import com.liskovsoft.smartyoutubetv2.common.utils.LoadingManager;
+import com.liskovsoft.smartyoutubetv2.common.utils.UpdateChannels;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import io.reactivex.disposables.Disposable;
 
 public class AppUpdatePresenter extends BasePresenter<Void> implements AppUpdateCheckerListener {
     @SuppressLint("StaticFieldLeak")
@@ -28,6 +32,7 @@ public class AppUpdatePresenter extends BasePresenter<Void> implements AppUpdate
     private final AppDialogPresenter mSettingsPresenter;
     private final String[] mUpdateManifestUrls;
     private boolean mIsForceCheck;
+    private Disposable mPickFeedsAction;
 
     public AppUpdatePresenter(Context context) {
         super(context);
@@ -64,9 +69,24 @@ public class AppUpdatePresenter extends BasePresenter<Void> implements AppUpdate
 
         if (forceCheck) {
             LoadingManager.showLoading(getContext(), true);
-            mUpdateChecker.forceCheckForUpdates(mUpdateManifestUrls);
+        }
+
+        // HearthTube: stable releases, and pre-releases when included; the checker gets the feed with the newest
+        if (UpdateChannels.hasPreReleases(getContext()) && (forceCheck || mUpdateChecker.isUpdateCheckEnabled())) {
+            RxHelper.disposeActions(mPickFeedsAction);
+            mPickFeedsAction = UpdateChannels.pickFeeds(getContext(), feeds -> checkForUpdates(forceCheck, feeds));
         } else {
-            mUpdateChecker.checkForUpdates(mUpdateManifestUrls);
+            checkForUpdates(forceCheck, mUpdateManifestUrls);
+        }
+    }
+
+    private void checkForUpdates(boolean forceCheck, String[] updateManifestUrls) {
+        if (updateManifestUrls.length == 0) { // HearthTube: nothing published on the channels yet
+            onUpdateError(new IllegalStateException(AppUpdateCheckerListener.LATEST_VERSION));
+        } else if (forceCheck) {
+            mUpdateChecker.forceCheckForUpdates(updateManifestUrls);
+        } else {
+            mUpdateChecker.checkForUpdates(updateManifestUrls);
         }
     }
 

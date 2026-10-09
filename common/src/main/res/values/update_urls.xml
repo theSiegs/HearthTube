@@ -4,4 +4,6 @@
         <!-- NOTE: Real urls moved to the flavor's folder -->
         <!--<item>https://github.com/yuliskov/SmartTubeNext/releases/download/latest/smarttube_beta.json</item>-->
     </string-array>
+    <!-- HearthTube: a pre-release channel, checked along with the above when included (UpdateChannels); none here -->
+    <string-array name="update_urls_prerelease" />
 </resources>

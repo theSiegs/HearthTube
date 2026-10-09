@@ -1,7 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- HearthTube checks its own GitHub releases (published by release.ps1), not SmartTube's -->
+    <!-- HearthTube checks its own GitHub releases (published by release.ps1), not SmartTube's: stable releases
+         (tag "stable") always, pre-releases (tag "latest") too when About > Include pre-releases is on; the newer
+         wins (common's UpdateChannels). Copies from before the stable channel poll only the "latest" feed. -->
     <string-array name="update_urls">
+        <item>https://github.com/theSiegs/HearthTube/releases/download/stable/hearthtube.json</item>
+    </string-array>
+    <string-array name="update_urls_prerelease">
         <item>https://github.com/theSiegs/HearthTube/releases/download/latest/hearthtube.json</item>
     </string-array>
 </resources>

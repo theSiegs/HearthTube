@@ -94,6 +94,8 @@ public class SplashPresenter extends BasePresenter<SplashView> {
             initProxy();
             initVideoStateService();
             initStreamReminderService();
+            // HearthTube: settle where "Include pre-releases" starts, once, so a later update can't change it
+            com.liskovsoft.smartyoutubetv2.common.utils.UpdateChannels.init(getContext());
         }
     }
 
