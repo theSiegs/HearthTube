@@ -225,6 +225,17 @@ public class AiSlopMatcherTest {
     }
 
     @Test
+    public void namesOfThreeCharactersOrFewerAreLeftToTheId() throws IOException {
+        Set<String> names = parseNames(NAMES_HEADER
+                + BLOCKED + "\ty\n"
+                + BLOCKED_2 + "\tCR7\n"
+                + OTHER + "\t W W \n" // "w w": three characters
+                + WARNED + "\tKiwi\n");
+
+        assertEquals(set("kiwi"), names);
+    }
+
+    @Test
     public void namesWithWindowsLineEndsAndByteOrderMark() throws IOException {
         Set<String> names = parseNames("﻿" + NAMES_HEADER.replace("\n", "\r\n")
                 + BLOCKED + "\tKitty Tales AI\r\n" + WARNED + "\tCat Stories");

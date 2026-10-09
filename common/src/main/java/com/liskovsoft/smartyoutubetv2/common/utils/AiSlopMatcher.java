@@ -28,6 +28,8 @@ public final class AiSlopMatcher {
     public static final int HIDE = 2;
 
     private static final int CHANNEL_ID_LENGTH = 24;
+    /** Shortest listed name matched by name: shorter ones ("y", "cr7") are left to the ID */
+    static final int MIN_NAME_LENGTH = 4;
     /** Any run of spaces, tabs, line ends and the like */
     private static final Pattern SPACES = Pattern.compile("[\\s\\p{Z}]+");
 
@@ -91,8 +93,9 @@ public final class AiSlopMatcher {
 
     /**
      * The channel names in a channel list (ID, tab, name), as {@link #normalizeName} has them. Skips comments, blank
-     * lines, lines without a channel ID and a tab, and names with nothing left once normalized. Null when it isn't one
-     * of these lists at all, like {@link #parse}.
+     * lines, lines without a channel ID and a tab, and names of {@link #MIN_NAME_LENGTH} - 1 characters or fewer once
+     * normalized ("y", "cr7": too likely to be some other channel's name too). Null when it isn't one of these lists at
+     * all, like {@link #parse}.
      */
     public static Set<String> parseNames(Reader reader) throws IOException {
         if (reader == null) {
@@ -125,7 +128,7 @@ public final class AiSlopMatcher {
 
             String name = normalizeName(line.substring(tab + 1));
 
-            if (!name.isEmpty()) {
+            if (name.codePointCount(0, name.length()) >= MIN_NAME_LENGTH) {
                 names.add(name);
             }
         }
