@@ -197,27 +197,31 @@ android {
     }
 }
 
-// HearthTube: AiSList's lists of AI channels, by channel ID, ship in the app (assets/aislist, read by AiSlopList), so
-// kids profiles are covered from the first start, even offline; the app fetches newer ones once a day. Each build
-// fetches them fresh (at most once a day, into build/), so a release has what the lists had that day. Offline, the
-// copy in src/hearthtube/aislist goes in instead and the build carries on. To refresh that copy now and then, copy
-// build/generated/aislist/assets/aislist/*.txt over it.
+// HearthTube: AiSList's lists of AI channels ship in the app (assets/aislist, read by AiSlopList), so kids profiles
+// are covered from the first start, even offline; the app fetches newer ones once a day. The ID lists are a must, the
+// channel name lists (.tsv) an extra. Each build fetches them fresh (at most once a day, into build/), so a release has
+// what the lists had that day. When a fetch fails, the copy from an earlier build stays, else the one in
+// src/hearthtube/aislist goes in, and the build carries on. To refresh that copy now and then, copy
+// build/generated/aislist/assets/aislist/* over it, leaving out any line this repository's personal-data check flags
+// (and saying so in the file's header, as now).
 def aislistAssets = file("$buildDir/generated/aislist/assets")
 def fetchAiSlopLists = tasks.register('fetchAiSlopLists') {
     def lists = ['aislist_blocklist_ids.txt', 'aislist_warnlist_ids.txt']
+    def extras = ['aislist_blocklist_channels.tsv', 'aislist_warnlist_channels.tsv']
     def out = new File(aislistAssets, 'aislist')
     def fallback = file('src/hearthtube/aislist')
     outputs.dir aislistAssets
     outputs.upToDateWhen {
-        lists.every { name ->
+        (lists + extras).every { name ->
             def list = new File(out, name)
             list.isFile() && System.currentTimeMillis() - list.lastModified() < 24 * 60 * 60 * 1000L
         }
     }
     doLast {
         out.mkdirs()
-        lists.each { name ->
+        (lists + extras).each { name ->
             def list = new File(out, name)
+            def copy = new File(fallback, name)
             try {
                 def connection = new URL("https://raw.githubusercontent.com/theSiegs/aislist-channel-ids/main/lists/$name").openConnection()
                 connection.connectTimeout = 5000
@@ -228,9 +232,14 @@ def fetchAiSlopLists = tasks.register('fetchAiSlopLists') {
                 }
                 list.setText(text, 'UTF-8')
             } catch (Exception e) {
-                logger.warn("AiSList: can't fetch $name (${e.message}); using the copy in src/hearthtube/aislist")
-                list.bytes = new File(fallback, name).bytes
-                list.setLastModified(0) // fetch again next build
+                if (!list.isFile() && copy.isFile()) {
+                    list.bytes = copy.bytes
+                }
+                logger.warn("AiSList: can't fetch $name (${e.message}); " +
+                        (list.isFile() ? "using the copy we have" : "the app goes without it"))
+                if (list.isFile()) {
+                    list.setLastModified(0) // fetch again next build
+                }
             }
         }
     }
