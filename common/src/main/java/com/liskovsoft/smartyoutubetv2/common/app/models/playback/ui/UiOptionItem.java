@@ -125,6 +125,11 @@ public class UiOptionItem implements OptionItem {
         return mTitle;
     }
 
+    /** HearthTube: the long-press menu puts an icon before the label (HearthMenuIcons) */
+    public void setTitle(CharSequence title) {
+        mTitle = title;
+    }
+
     @Override
     public CharSequence getDescription() {
         return mDescription;

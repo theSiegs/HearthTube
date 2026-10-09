@@ -67,6 +67,12 @@ public final class ProgressBarManager {
         progressBarView.setIndeterminate(true);
         progressBarView.setIndeterminateDrawable(
                 ContextCompat.getDrawable(rootView.getContext(), R.drawable.progress_large_holo));
+        // HearthTube: the spinner in the accent color, like Hearth's
+        if (android.os.Build.VERSION.SDK_INT >= 21
+                && com.liskovsoft.smartyoutubetv2.tv.util.CardFocusOutline.get(rootView.getContext()) != 0) {
+            progressBarView.setIndeterminateTintList(android.content.res.ColorStateList.valueOf(
+                    com.liskovsoft.smartyoutubetv2.common.utils.HearthAccent.resolve(rootView.getContext())));
+        }
 
         FrameLayout.LayoutParams progressBarParams = new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.WRAP_CONTENT,

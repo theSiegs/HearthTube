@@ -192,6 +192,7 @@ public class VideoMenuPresenter extends BaseMenuPresenter {
 
         if (!mDialogPresenter.isEmpty()) {
             String title = mVideo != null ? mVideo.getTitle() : null;
+            com.liskovsoft.smartyoutubetv2.common.utils.HearthMenuIcons.apply(getContext(), mDialogPresenter);
             // No need to add author because: 1) This could be a channel card. 2) This info isn't so important.
             mDialogPresenter.showDialog(title);
         }
@@ -213,6 +214,7 @@ public class VideoMenuPresenter extends BaseMenuPresenter {
 
         if (!mDialogPresenter.isEmpty()) {
             String title = mVideo != null ? mVideo.getTitle() : null;
+            com.liskovsoft.smartyoutubetv2.common.utils.HearthMenuIcons.apply(getContext(), mDialogPresenter);
             mDialogPresenter.showDialog(title);
         }
     }

@@ -273,6 +273,21 @@ public class AppDialogPresenter extends BasePresenter<AppDialogView> {
         return mCategories == null || mCategories.isEmpty();
     }
 
+    /** The buttons added so far (single-button rows), e.g. to put icons before their labels */
+    public List<OptionItem> getSingleButtons() {
+        List<OptionItem> buttons = new ArrayList<>();
+
+        if (mCategories != null) {
+            for (OptionCategory category : mCategories) {
+                if (category.type == OptionCategory.TYPE_SINGLE_BUTTON && category.options != null) {
+                    buttons.addAll(category.options);
+                }
+            }
+        }
+
+        return buttons;
+    }
+
     private void setupTimeout() {
         mHandler.removeCallbacks(mCloseDialog);
 
