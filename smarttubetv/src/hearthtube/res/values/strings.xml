@@ -15,6 +15,7 @@
 
     <!-- Upstream wording, said the HearthTube way (overrides common's, so merges never conflict here) -->
     <string name="dialog_account_none">Guest</string>
+    <string name="action_signin">Sign in</string>
     <string name="login_from_browser">Sign in with a browser on this TV</string>
     <string name="multi_profiles">Separate settings for each account</string>
     <string name="select_account_on_boot">Ask who\'s watching when HearthTube starts</string>
