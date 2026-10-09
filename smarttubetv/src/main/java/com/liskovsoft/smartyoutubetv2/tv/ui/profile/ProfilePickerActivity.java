@@ -98,16 +98,13 @@ public class ProfilePickerActivity extends LeanbackActivity implements ProfilePi
             }
         }
 
-        // HearthTube: the guest only when allowed (Accounts settings), never in a kids profile
-        boolean guest = com.liskovsoft.smartyoutubetv2.common.prefs.ProfileLinkData.instance(this).isGuestAllowed();
-        View guestTile = guest ? addTile(new ProfileItem(ProfileItem.TYPE_GUEST, null, null, false)) : null;
         View addTile = addTile(new ProfileItem(mWelcome ? ProfileItem.TYPE_SIGN_IN : ProfileItem.TYPE_ADD, null, null, false));
 
-        // No account selected means the last one watching was the guest; a welcome starts on "Sign in"
+        // A welcome starts on "Sign in"; with no account selected, the first one
         if (mWelcome) {
             focusTile = addTile;
         } else if (focusTile == null) {
-            focusTile = guestTile != null ? guestTile : mRow.getChildCount() > 1 ? mRow.getChildAt(0) : addTile;
+            focusTile = mRow.getChildCount() > 1 ? mRow.getChildAt(0) : addTile;
         }
 
         if (focusTile != null) {
@@ -129,9 +126,7 @@ public class ProfilePickerActivity extends LeanbackActivity implements ProfilePi
 
     @Override
     public void onBackPressed() {
-        boolean guest = com.liskovsoft.smartyoutubetv2.common.prefs.ProfileLinkData.instance(this).isGuestAllowed();
-
-        if (mWelcome && !guest) {
+        if (mWelcome) {
             // Nobody can watch yet, and there's no signed-out Home to fall back to: Back leaves HearthTube
             // (to Hearth when it's the home screen), and the welcome is here again next time
             if (!com.liskovsoft.smartyoutubetv2.common.utils.HearthProfile.goHome(this)) {
@@ -168,9 +163,6 @@ public class ProfilePickerActivity extends LeanbackActivity implements ProfilePi
         switch (item.type) {
             case ProfileItem.TYPE_ACCOUNT:
                 presenter.onAccountPicked(item.account);
-                break;
-            case ProfileItem.TYPE_GUEST:
-                presenter.onGuestPicked();
                 break;
             case ProfileItem.TYPE_ADD:
             case ProfileItem.TYPE_SIGN_IN:

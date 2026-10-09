@@ -115,7 +115,7 @@ public class ProfilePickerPresenter extends BasePresenter<ProfilePickerView> {
 
         List<Account> accounts = mSignInService.getAccounts();
 
-        // Nothing to choose between: everyone watches as the guest
+        // Nobody signed in yet: the welcome asks for that
         if (accounts == null || accounts.isEmpty()) {
             return FOLLOW_NONE;
         }
@@ -124,7 +124,7 @@ public class ProfilePickerPresenter extends BasePresenter<ProfilePickerView> {
         boolean kids = ParentGate.isKidsProfile(getContext());
 
         if (profile == null) {
-            // Can't tell who's watching. In a kids profile, a grown-up's account (or the guest) isn't kept:
+            // Can't tell who's watching. In a kids profile, a grown-up's account isn't kept:
             // the picker asks, and only a kid's account goes through without the parent PIN.
             if (kids && links.isGrownUpAccount(mSignInService.getSelectedAccount()) && !ParentGate.isUnlocked()) {
                 if (isDeepLink(intent)) {
@@ -242,7 +242,7 @@ public class ProfilePickerPresenter extends BasePresenter<ProfilePickerView> {
     }
 
     public void onAccountPicked(Account account) {
-        // In a kids profile, a grown-up's account (or the guest) is a parent's call; so is pairing the profile
+        // In a kids profile, a grown-up's account is a parent's call; so is pairing the profile
         boolean grownUp = ProfileLinkData.instance(getContext()).isGrownUpAccount(account);
         if ((mLinkingProfile != null || grownUp) && ParentGate.isLocked(getContext())) {
             ParentGate.run(getContext(), () -> switchTo(account, true));
@@ -289,10 +289,6 @@ public class ProfilePickerPresenter extends BasePresenter<ProfilePickerView> {
         }
     }
 
-    public void onGuestPicked() {
-        onAccountPicked(null);
-    }
-
     public void onAddAccountPicked() {
         // The picker stays until sign-in really starts (after the parent PIN in a kids profile), so cancelling
         // the PIN leaves the welcome up rather than a signed-out Home. YTSignInPresenter closes it.
@@ -308,13 +304,12 @@ public class ProfilePickerPresenter extends BasePresenter<ProfilePickerView> {
 
     /**
      * HearthTube's first screen in a copy nobody has signed in to: the picker as a welcome ("Hi, Sam" and
-     * "Sign in"). Not when someone can watch anyway (an account, or the guest where allowed).
+     * "Sign in"). Not when there's an account to watch with.
      */
     public void showWelcomeIfNeeded() {
         List<Account> accounts = mSignInService.getAccounts();
-        boolean guest = ProfileLinkData.instance(getContext()).isGuestAllowed();
 
-        if ((accounts != null && !accounts.isEmpty()) || guest) {
+        if (accounts != null && !accounts.isEmpty()) {
             return;
         }
 

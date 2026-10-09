@@ -131,7 +131,7 @@ public class SplashPresenter extends BasePresenter<SplashView> {
         }
 
         if (!pickerShown) {
-            requireAccountIfNoGuest(newIntent);
+            requireAccount(newIntent);
         }
 
         // The Google TV profile already says who's watching
@@ -149,12 +149,11 @@ public class SplashPresenter extends BasePresenter<SplashView> {
     }
 
     /**
-     * HearthTube: with the guest off (the default), nobody watches signed out: pick an account, or, in a copy
+     * HearthTube: nobody watches signed out (there's no guest): pick an account, or, in a copy
      * nobody has signed in to yet, the welcome with "Sign in". A deep link (cast, shared link) plays first.
      */
-    private void requireAccountIfNoGuest(Intent intent) {
-        if (com.liskovsoft.smartyoutubetv2.common.prefs.ProfileLinkData.instance(getContext()).isGuestAllowed()
-                || com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager.instance().getSelectedAccount() != null) {
+    private void requireAccount(Intent intent) {
+        if (com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager.instance().getSelectedAccount() != null) {
             return;
         }
 

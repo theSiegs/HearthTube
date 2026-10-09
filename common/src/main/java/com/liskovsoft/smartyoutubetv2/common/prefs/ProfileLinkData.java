@@ -17,7 +17,7 @@ import java.util.Locale;
 /**
  * Which YouTube account each Google TV profile watches with. Keys are Google TV profile names
  * (from {@link com.liskovsoft.smartyoutubetv2.common.utils.HearthProfile}), values are account names
- * (the same key {@link AccountsData} uses for PINs), or "" for the guest.
+ * (the same key {@link AccountsData} uses for PINs). Nobody watches signed out: there's no guest.
  */
 public class ProfileLinkData {
     private static final String PREFS_NAME = "hearth_profile_links";
@@ -25,23 +25,24 @@ public class ProfileLinkData {
     private static final String FOLLOW_KEY = "follow_google_tv_profile";
     private static final String PARENT_PIN_KEY = "parent_pin";
     private static final String USING_HEARTH_PIN_KEY = "using_hearth_pin";
+    /** Gone: HearthTube has no guest. Removed from older installs. */
     private static final String GUEST_ENABLED_KEY = "guest_enabled";
     /** "kids:<profile>" = true for a Google TV kids profile, false for a grown-up's (as last seen) */
     private static final String KIDS_PREFIX = "kids:";
     /** "name:<key>" = the profile's name when last seen (links are saved under Hearth's lasting profile key) */
     private static final String NAME_PREFIX = "name:";
+    /** A link to the guest, saved by older versions: treated as no link */
     private static final String GUEST = "";
     @SuppressLint("StaticFieldLeak")
     private static ProfileLinkData sInstance;
     private final SharedPreferences mPrefs;
     private final Context mContext;
 
-    /** A profile's link: the account it watches with, or the guest when {@link #account} is null. */
+    /** A profile's link: the account it watches with. */
     public static class Link {
-        @Nullable
         public final Account account;
 
-        private Link(@Nullable Account account) {
+        private Link(Account account) {
             this.account = account;
         }
     }
@@ -49,6 +50,10 @@ public class ProfileLinkData {
     private ProfileLinkData(Context context) {
         mContext = context;
         mPrefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+
+        if (mPrefs.contains(GUEST_ENABLED_KEY)) {
+            mPrefs.edit().remove(GUEST_ENABLED_KEY).apply();
+        }
     }
 
     public static ProfileLinkData instance(Context context) {
@@ -117,23 +122,6 @@ public class ProfileLinkData {
         }
     }
 
-    /**
-     * Watching signed out (the guest) is allowed. Off by default: everyone watches as themselves, and a
-     * profile linked to the guest asks again.
-     */
-    public boolean isGuestEnabled() {
-        return mPrefs.getBoolean(GUEST_ENABLED_KEY, false);
-    }
-
-    /** The guest is on, and this isn't a kids profile: kids always stay on their own account */
-    public boolean isGuestAllowed() {
-        return isGuestEnabled() && !com.liskovsoft.smartyoutubetv2.common.utils.ParentGate.isKidsProfile(mContext);
-    }
-
-    public void setGuestEnabled(boolean enabled) {
-        mPrefs.edit().putBoolean(GUEST_ENABLED_KEY, enabled).apply();
-    }
-
     /** Switch accounts to follow the Google TV profile. On by default; does nothing without Hearth. */
     public boolean isFollowEnabled() {
         return mPrefs.getBoolean(FOLLOW_KEY, true);
@@ -156,7 +144,7 @@ public class ProfileLinkData {
         }
 
         if (GUEST.equals(accountName)) {
-            return isGuestAllowed() ? new Link(null) : null;
+            return null; // linked to the guest by an older version: ask again
         }
 
         Account account = findByName(accounts, accountName);
@@ -164,10 +152,13 @@ public class ProfileLinkData {
         return account != null ? new Link(account) : null;
     }
 
-    /** Link a profile to an account, or to the guest with null. */
-    public void setLink(String profileName, @Nullable Account account) {
-        String value = account != null && account.getName() != null ? account.getName() : GUEST;
-        mPrefs.edit().putString(LINK_PREFIX + profileName, value).apply();
+    /** Link a profile to an account. */
+    public void setLink(String profileName, Account account) {
+        if (account == null || account.getName() == null) {
+            return;
+        }
+
+        mPrefs.edit().putString(LINK_PREFIX + profileName, account.getName()).apply();
     }
 
     /** Note whether this Google TV profile is a kids profile (it was the active one just now) */
@@ -178,8 +169,8 @@ public class ProfileLinkData {
     }
 
     /**
-     * The account is a grown-up's: some profile seen as not a kids profile watches with it. The guest counts too:
-     * signed out, nothing is filtered.
+     * The account is a grown-up's: some profile seen as not a kids profile watches with it. Signed out (no account)
+     * counts too: nothing is filtered.
      */
     public boolean isGrownUpAccount(@Nullable Account account) {
         return isGrownUp(mPrefs.getAll(), account != null ? account.getName() : null);

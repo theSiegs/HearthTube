@@ -165,7 +165,7 @@ public class NavigateTitleView extends TitleView implements OnDataChange, Accoun
         }
 
         mSettingsView.setOrbIcon(ContextCompat.getDrawable(getContext(), R.drawable.ic_orb_bell));
-        TooltipCompatHandler.setTooltipText(mSettingsView, getContext().getString(R.string.notifications_bell));
+        // HearthTube: no tooltips on the top buttons, like Hearth (they covered the chips); screen readers get labels
     }
 
     /** 0: everything shows. 1: no name by the avatar. 2: no date in the clock either. */
@@ -355,7 +355,6 @@ public class NavigateTitleView extends TitleView implements OnDataChange, Accoun
             AccountSettingsPresenter.instance(getContext()).show();
             return true;
         });
-        TooltipCompatHandler.setTooltipText(mAccountView, getContext().getString(R.string.settings_accounts));
 
         mSettingsView = findViewById(R.id.settings_orb);
         mSettingsView.setVisibility(View.VISIBLE); // hidden in the layout: plain leanback title bars (error pages) reuse it
@@ -470,19 +469,17 @@ public class NavigateTitleView extends TitleView implements OnDataChange, Accoun
         if (current != null && current.getAvatarImageUrl() != null) {
             loadIcon(mAccountView, current.getAvatarImageUrl(), false);
             String accountName = current.getName() != null ? current.getName() : current.getEmail();
-            //TooltipCompatHandler.setTooltipText(mAccountView, Utils.updateTooltip(getContext(), accountName));
-            TooltipCompatHandler.setTooltipText(mAccountView, accountName);
+            mAccountView.setContentDescription(accountName);
         } else {
             Colors orbColors = mAccountView.getOrbColors();
             mAccountView.setOrbColors(new Colors(orbColors.color, orbColors.brightColor, ContextCompat.getColor(getContext(), R.color.orb_icon_color)));
             mAccountView.setOrbIcon(ContextCompat.getDrawable(getContext(), R.drawable.browse_title_account));
-            TooltipCompatHandler.setTooltipText(mAccountView, getContext().getString(R.string.profile_guest));
         }
     }
 
     /**
      * Who's watching: the Google TV profile's name (through Hearth), like Hearth's top bar. Without Hearth, the
-     * account's first name ("Alex Rivera" -> "Alex"), or the guest when nobody's signed in.
+     * account's first name ("Alex Rivera" -> "Alex"), or "Sign in" when nobody's signed in yet.
      */
     private String getFirstName(Account account) {
         com.liskovsoft.smartyoutubetv2.common.utils.HearthProfile profile =
@@ -495,7 +492,7 @@ public class NavigateTitleView extends TitleView implements OnDataChange, Accoun
         String name = account != null ? (account.getName() != null ? account.getName() : account.getEmail()) : null;
 
         if (name == null || name.trim().isEmpty()) {
-            return getContext().getString(R.string.profile_guest);
+            return getContext().getString(R.string.dialog_add_account);
         }
 
         String[] words = name.trim().split("\\s+");

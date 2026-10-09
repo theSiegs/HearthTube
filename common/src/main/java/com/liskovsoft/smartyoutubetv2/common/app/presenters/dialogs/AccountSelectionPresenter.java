@@ -99,15 +99,7 @@ public class AccountSelectionPresenter extends BasePresenter<Void> {
     private void appendAccountSelection(List<Account> accounts, List<Drawable> icons, AppDialogPresenter settingsPresenter) {
         List<OptionItem> optionItems = new ArrayList<>();
 
-        // HearthTube: signed out only when the guest is allowed (Accounts settings)
-        if (com.liskovsoft.smartyoutubetv2.common.prefs.ProfileLinkData.instance(getContext()).isGuestAllowed()) {
-            optionItems.add(UiOptionItem.from(
-                    getContext().getString(R.string.dialog_account_none), optionItem -> {
-                        selectAccount(null);
-                        settingsPresenter.closeDialog();
-                    }, true
-            ));
-        }
+        // HearthTube: no signed-out choice, nobody watches as a guest
 
         int index = -1;
 

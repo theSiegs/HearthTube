@@ -6,7 +6,7 @@ import com.liskovsoft.mediaserviceinterfaces.oauth.Account;
 
 public class ProfileItem {
     public static final int TYPE_ACCOUNT = 0;
-    public static final int TYPE_GUEST = 1;
+    // 1 was the guest, gone
     public static final int TYPE_ADD = 2;
     /** The welcome's "Sign in" (no account yet): the add tile, worded for a first sign-in */
     public static final int TYPE_SIGN_IN = 3;

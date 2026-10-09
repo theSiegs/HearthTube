@@ -58,11 +58,6 @@ public class ProfileTilePresenter extends Presenter {
         ImageView lockBadge = view.findViewById(R.id.profile_lock_badge);
 
         switch (item.type) {
-            case ProfileItem.TYPE_GUEST:
-                setIcon(avatar, R.drawable.ic_profile_guest);
-                name.setText(R.string.profile_guest);
-                lockBadge.setVisibility(View.GONE);
-                break;
             case ProfileItem.TYPE_ADD:
             case ProfileItem.TYPE_SIGN_IN:
                 setIcon(avatar, R.drawable.ic_profile_add);
@@ -80,7 +75,7 @@ public class ProfileTilePresenter extends Presenter {
     }
 
     /**
-     * Guest and Add account: a small glyph centered on the placeholder circle
+     * Add account: a small glyph centered on the placeholder circle
      */
     private static void setIcon(ImageView avatar, int iconResId) {
         int padding = avatar.getLayoutParams().width / 4;
