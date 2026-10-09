@@ -28,6 +28,27 @@ def keystorePropertiesFile = rootProject.file("keystore.properties")
 def keystoreProperties = new Properties()
 if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+
+    // HearthTube: keystore.properties (git-ignored) holds storeFile, storePassword, keyAlias and keyPassword, or a
+    // single signingPropertiesFile=<path> line pointing at a file that holds them (Hearth's git-ignored
+    // local.properties: one copy of the passwords). release.ps1 reads them the same way.
+    def pointer = keystoreProperties['signingPropertiesFile']
+    if (pointer) {
+        def signingFile = new File(pointer)
+        if (!signingFile.isFile()) {
+            throw new GradleException("keystore.properties: signingPropertiesFile not found")
+        }
+        keystoreProperties = new Properties()
+        signingFile.withReader('UTF-8') { keystoreProperties.load(it) }
+        // A Windows path with single backslashes loses them to .properties escaping (C:\keys\a.jks reads as
+        // C:keysa.jks): take the line as written when only that names an existing file
+        def storeFile = keystoreProperties['storeFile']
+        def rawLine = signingFile.readLines('UTF-8').find { it.trim().startsWith('storeFile=') }
+        def raw = rawLine != null ? rawLine.trim().substring('storeFile='.length()).trim() : null
+        if (storeFile != null && !new File(storeFile).isFile() && raw != null && new File(raw).isFile()) {
+            keystoreProperties['storeFile'] = raw
+        }
+    }
 }
 
 // The first letter of the flavor name must be in uppercase
@@ -112,11 +133,13 @@ android {
             }
         }
         // Use same key for release and debug for testing
-        debug {
-            if (keystorePropertiesFile.exists()) {
-                signingConfig signingConfigs.release
-            }
-        }
+        // HearthTube: no, debug builds keep this PC's Android debug key: adb installs of debug builds, and Hearth's
+        // debug builds, rely on it. Releases are release builds, re-signed by release.ps1 with the key-rotation lineage.
+        //debug {
+        //    if (keystorePropertiesFile.exists()) {
+        //        signingConfig signingConfigs.release
+        //    }
+        //}
     }
 
     // naming example: SmartYouTubeTV_Xwalk_v6.8.12_r.apk
