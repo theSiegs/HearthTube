@@ -467,7 +467,8 @@ public class VideoMenuPresenter extends BaseMenuPresenter {
                 : getContext().getString(R.string.dialog_block_channel);
 
         mDialogPresenter.appendSingleButton(
-                UiOptionItem.from(buttonText, optionItem -> {
+                // HearthTube: in a kids profile, blocking or unblocking takes the parent PIN
+                UiOptionItem.from(buttonText, optionItem -> com.liskovsoft.smartyoutubetv2.common.utils.ParentGate.run(getContext(), () -> {
                     if (isBlocked) {
                         blockedChannelData.removeChannel(channelId, channelName);
                         MessageHelpers.showMessage(getContext(), R.string.channel_unblocked);
@@ -481,7 +482,7 @@ public class VideoMenuPresenter extends BaseMenuPresenter {
                     }
                     mDialogPresenter.closeDialog();
                     showHideBlockedChannelsSection(blockedChannelData);
-                }));
+                })));
     }
 
     private void showHideBlockedChannelsSection(BlockedChannelData blockedChannelData) {
@@ -974,6 +975,12 @@ public class VideoMenuPresenter extends BaseMenuPresenter {
 
     private void toggleSubscribe(Video video) {
         if (video == null) {
+            return;
+        }
+
+        // HearthTube: in a kids profile, unsubscribing takes the parent PIN
+        if (video.isSubscribed && com.liskovsoft.smartyoutubetv2.common.utils.ParentGate.isLocked(getContext())) {
+            com.liskovsoft.smartyoutubetv2.common.utils.ParentGate.run(getContext(), () -> toggleSubscribe(video));
             return;
         }
 
