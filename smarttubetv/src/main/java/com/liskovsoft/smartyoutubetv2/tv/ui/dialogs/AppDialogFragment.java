@@ -343,16 +343,8 @@ public class AppDialogFragment extends LeanbackSettingsFragment implements AppDi
                 ViewUtil.fadeListTop(view);
             }
 
-            // HearthTube: dim what's behind a panel, like Hearth's side panels; not the see-through player menus
-            if (getActivity() != null && getActivity().getWindow() != null) {
-                android.view.Window window = getActivity().getWindow();
-                if (mIsTransparent) {
-                    window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_DIM_BEHIND);
-                } else {
-                    window.addFlags(android.view.WindowManager.LayoutParams.FLAG_DIM_BEHIND);
-                    window.setDimAmount(0.6f);
-                }
-            }
+            // HearthTube: no dim behind a panel, like Hearth's side panels now: the panel's own solid surface keeps its
+            // text readable over any wallpaper (the theme has backgroundDimEnabled off)
 
             if (mIsTransparent && view != null) {
                 // Enable transparent shadow outline on parent (R.id.settings_preference_fragment_container)
