@@ -86,6 +86,33 @@ public class YouTubeAllowanceTest {
     }
 
     @Test
+    public void homeAssistantLockOverHearthsOwnMinutes() {
+        // Hearth limit 60, 10 played, Home Assistant locks with its own words: the minutes stay Hearth's
+        Decision decision = mAllowance.decide(new Row(6, KID, 50, true, "School time", HEARTH, NOW - MINUTE), NOW);
+
+        assertEquals(Verdict.LOCKED, decision.verdict);
+        assertEquals("School time", decision.message);
+
+        // Once Home Assistant is gone long enough, its lock lapses and Hearth's 50 minutes count as given
+        Decision later = mAllowance.decide(new Row(6, KID, 50, true, "School time", HEARTH, NOW - MINUTE), NOW + 20 * MINUTE);
+        assertEquals(Verdict.PLAY, later.verdict);
+        assertEquals(Long.valueOf(50 * MINUTE), later.msLeft);
+    }
+
+    @Test
+    public void homeAssistantMinutesUnderALockKeepCountingDown() {
+        // Home Assistant's own minutes while it locks: remembered, so when the lock lapses (Home Assistant away) they
+        // count down by what HearthTube plays
+        long readAt = NOW - 30 * MINUTE;
+        mAllowance.decide(locked(20, "Bedtime", readAt), readAt);
+        play(readAt + 16 * MINUTE, 8);
+
+        Decision decision = mAllowance.decide(locked(20, "Bedtime", readAt), NOW);
+        assertEquals(Verdict.PLAY, decision.verdict);
+        assertEquals(Long.valueOf(12 * MINUTE), decision.msLeft);
+    }
+
+    @Test
     public void homeAssistantLimit() {
         Decision some = mAllowance.decide(haRow(7, null, NOW - 20_000), NOW);
         assertEquals(Verdict.PLAY, some.verdict);

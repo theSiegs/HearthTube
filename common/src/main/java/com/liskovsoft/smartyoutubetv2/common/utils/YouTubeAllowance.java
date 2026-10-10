@@ -147,9 +147,10 @@ public final class YouTubeAllowance {
         mProfileKey = row.profileKey;
         boolean fromHa = SOURCE_HOME_ASSISTANT.equals(row.source);
 
-        // Home Assistant's own minutes (with a lock they may be Hearth's, which a lock marks as Home Assistant's too):
-        // remembered as of the read, with what's been played since
-        if (fromHa && !row.scheduleLocked && row.minutesLeft != null && row.checkedAt != null && row.profileKey != null) {
+        // Home Assistant's own minutes (allowance_source names whose minutes they are, also while Home Assistant's
+        // schedule is locked): remembered as of the read, with what's been played since, so they keep counting down
+        // if the lock lapses because Home Assistant went away
+        if (fromHa && row.minutesLeft != null && row.checkedAt != null && row.profileKey != null) {
             if (!isHaRead(row.profileKey, row.checkedAt)) {
                 mHasHaRead = true;
                 mHaProfileKey = row.profileKey;
