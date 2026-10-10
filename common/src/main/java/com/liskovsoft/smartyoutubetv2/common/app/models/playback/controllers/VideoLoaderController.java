@@ -292,6 +292,12 @@ public class VideoLoaderController extends BasePlayerController {
             return;
         }
 
+        // HearthTube: nor anything once Hearth's daily YouTube allowance is used up, or at bedtime (however it got here:
+        // autoplay, a suggestion, a link)
+        if (com.liskovsoft.smartyoutubetv2.common.utils.HearthAllowance.stopIfRefused(getContext(), player)) {
+            return;
+        }
+
         // Fix stretched video for a couple milliseconds (before the onVideoSizeChanged gets called)
         applyAspectRatio(formatInfo);
 

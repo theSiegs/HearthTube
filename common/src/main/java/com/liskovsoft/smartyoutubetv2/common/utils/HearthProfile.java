@@ -113,8 +113,27 @@ public class HearthProfile {
     public final String wallpaperTitle;
     @Nullable
     public final String wallpaperCredit;
+    /**
+     * The active profile's YouTube minutes left today (contract 6): the limit set in Hearth less what HearthTube
+     * reported playing, or Home Assistant's say when it's smaller. Null when there's no limit, or with an older Hearth.
+     */
+    @Nullable
+    public final Integer youtubeMinutesLeft;
+    /** Home Assistant says the profile's schedule is locked (bedtime, school time; contract 6) */
+    public final boolean scheduleLocked;
+    /** What Home Assistant wants the viewer told when it stops playing, if it gave something (contract 6) */
+    @Nullable
+    public final String allowanceMessage;
+    /** Whose limit {@link #youtubeMinutesLeft} and {@link #scheduleLocked} are: "hearth", "home_assistant" or null */
+    @Nullable
+    public final String allowanceSource;
+    /** When Hearth last read Home Assistant's allowance today (epoch ms); null when it hasn't today */
+    @Nullable
+    public final Long allowanceCheckedAt;
     /** The newest contract this code was written against: a newer Hearth may mean columns changed meaning. */
-    private static final int KNOWN_CONTRACT = 5;
+    private static final int KNOWN_CONTRACT = 6;
+    /** Hearth takes at most this much playing time in one {@link #reportPlaying} */
+    public static final long MAX_REPORT_MS = 10 * 60_000;
     /** HearthTube was last opened by Hearth (Android 14+, Hearth's share-identity launch); null when unknown */
     private static Boolean sLaunchedFromHearth;
     private static boolean sWarnedNewerContract;
@@ -144,6 +163,12 @@ public class HearthProfile {
         this.wallpaperGradient = getString(cursor, "wallpaper_gradient");
         this.wallpaperTitle = getString(cursor, "wallpaper_title");
         this.wallpaperCredit = getString(cursor, "wallpaper_credit");
+        Long minutesLeft = getLongOrNull(cursor, "youtube_minutes_left");
+        this.youtubeMinutesLeft = minutesLeft != null ? (int) Math.max(0, Math.min(minutesLeft, Integer.MAX_VALUE)) : null;
+        this.scheduleLocked = getLong(cursor, "schedule_locked") == 1;
+        this.allowanceMessage = getString(cursor, "allowance_message");
+        this.allowanceSource = getString(cursor, "allowance_source");
+        this.allowanceCheckedAt = getLongOrNull(cursor, "allowance_checked_at");
 
         if (contractVersion > KNOWN_CONTRACT && !sWarnedNewerContract) {
             sWarnedNewerContract = true;
@@ -368,6 +393,28 @@ public class HearthProfile {
         }
     }
 
+    /**
+     * Tells Hearth that HearthTube played this long (ms, at most {@link #MAX_REPORT_MS}) for the active profile, so its
+     * YouTube allowance counts down (contract 6). Blocking: call it off the main thread. False when Hearth didn't take
+     * it (missing, too old, or this HearthTube isn't signed with Hearth's key); the caller keeps the time for later.
+     */
+    public static boolean reportPlaying(Context context, long ms) {
+        String hearth = context != null && ms > 0 && ms <= MAX_REPORT_MS ? trustedPackage(context) : null;
+        if (hearth == null) {
+            return false;
+        }
+
+        try {
+            Bundle extras = new Bundle();
+            extras.putLong("ms", ms);
+            Bundle result = context.getContentResolver().call(uri(hearth, "active"), "report_playing", null, extras);
+            return result != null && result.getBoolean("ok");
+        } catch (Exception e) {
+            Log.d(TAG, "Hearth didn't take the playing time: %s", e.getMessage());
+            return false;
+        }
+    }
+
     /** Hearth is installed (and new enough to talk to HearthTube) */
     public static boolean isInstalled(Context context) {
         return context != null && trustedPackage(context) != null;
@@ -527,6 +574,13 @@ public class HearthProfile {
     private static long getLong(Cursor cursor, String column) {
         int index = cursor.getColumnIndex(column);
         return index != -1 && !cursor.isNull(index) ? cursor.getLong(index) : 0;
+    }
+
+    /** Null when the column is missing (an older Hearth) or null */
+    @Nullable
+    private static Long getLongOrNull(Cursor cursor, String column) {
+        int index = cursor.getColumnIndex(column);
+        return index != -1 && !cursor.isNull(index) ? cursor.getLong(index) : null;
     }
 
     /** "7C4DFF" (Hearth's format) to an opaque color. */

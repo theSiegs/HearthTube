@@ -14,6 +14,7 @@ import com.liskovsoft.smartyoutubetv2.common.app.models.playback.controllers.Com
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.controllers.ErrorFixerController;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.controllers.SponsorBlockController;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.controllers.HQDialogController;
+import com.liskovsoft.smartyoutubetv2.common.app.models.playback.controllers.HearthAllowanceController;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.controllers.PlayerUIController;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.controllers.RemoteController;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.controllers.SuggestionsController;
@@ -66,6 +67,8 @@ public class PlaybackPresenter extends BasePresenter<PlaybackView> implements Pl
         mEventListeners.add(new HQDialogController());
         mEventListeners.add(new ChatController());
         mEventListeners.add(new CommentsController());
+        // HearthTube: Hearth's daily YouTube allowance
+        mEventListeners.add(new HearthAllowanceController());
     }
 
     public static PlaybackPresenter instance(Context context) {
@@ -118,6 +121,13 @@ public class PlaybackPresenter extends BasePresenter<PlaybackView> implements Pl
         // HearthTube: no Shorts in Google TV kids profiles, even from a link or a cast
         if (com.liskovsoft.smartyoutubetv2.common.utils.KidsShorts.isBlocked(getContext(), video.isShorts)) {
             com.liskovsoft.sharedutils.helpers.MessageHelpers.showMessage(getContext(), com.liskovsoft.smartyoutubetv2.common.R.string.kids_no_shorts);
+            return;
+        }
+
+        // HearthTube: nothing plays once Hearth's daily YouTube allowance is used up, or at bedtime
+        String allowanceRefusal = com.liskovsoft.smartyoutubetv2.common.utils.HearthAllowance.refusal(getContext());
+        if (allowanceRefusal != null) {
+            com.liskovsoft.sharedutils.helpers.MessageHelpers.showLongMessage(getContext(), allowanceRefusal);
             return;
         }
 

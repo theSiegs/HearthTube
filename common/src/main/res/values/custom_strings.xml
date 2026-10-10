@@ -139,6 +139,9 @@
     <string name="show_shorts_hint">Off: no Shorts anywhere. Kids profiles never get them.</string>
     <string name="subscriptions_all">All</string>
     <string name="screen_time_up">Screen time is up</string>
+    <string name="youtube_time_used_up">YouTube time is used up for today</string>
+    <string name="youtube_time_used_up_shared">YouTube time is used up for today, shared with your phone</string>
+    <string name="youtube_bedtime">It\'s bedtime</string>
     <string name="blocked_words">Blocked words</string>
     <string name="blocked_words_add">Add a word or phrase</string>
     <string name="blocked_words_add_hint">A word or phrase, like: try not to laugh</string>
