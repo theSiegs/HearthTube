@@ -51,6 +51,31 @@ if (keystorePropertiesFile.exists()) {
     }
 }
 
+// HearthTube's version, from src/hearthtube/release_version.txt (written by release.ps1): "yyyy.MM.dd.N", the last
+// release's date and N, its number that day (0 = no release yet that day). versionName is the date, with ".N" from a
+// day's second release on (2026.10.10, 2026.10.10.2); versionCode is yyMMddNN (26101001, 26101002), so it rises with
+// every release and stays above the SmartTube-style versions before (SmartTube's versionCode * 1000 + n: 2453007).
+def readHearthTubeVersion(File file) {
+    def text = file.text.trim()
+    def match = text =~ /^(\d{4})\.(\d{2})\.(\d{2})\.(\d{1,2})$/
+    if (!match.matches()) {
+        throw new GradleException("${file.name}: expected yyyy.MM.dd.N (like 2026.10.10.1), found \"$text\"")
+    }
+    def (year, month, day, number) = (1..4).collect { match.group(it) as int }
+    // yyMMddNN fits an int (and Android's limit, 2100000000) through 2099
+    if (year < 2026 || year > 2099) {
+        throw new GradleException("${file.name}: the year must be 2026 to 2099, found \"$text\"")
+    }
+    try {
+        java.time.LocalDate.of(year, month, day)
+    } catch (java.time.DateTimeException ignored) {
+        throw new GradleException("${file.name}: no such date, \"$text\"")
+    }
+    def date = String.format('%04d.%02d.%02d', year, month, day)
+    return [name: number == 1 ? date : "${date}.${number}",
+            code: ((year % 100) * 10000 + month * 100 + day) * 100 + number]
+}
+
 // The first letter of the flavor name must be in uppercase
 if (new File("${projectDir}/google-services.json").exists() && (getGradle().getStartParameter().getTaskRequests().toString().contains("Stbeta") ||
         getGradle().getStartParameter().getTaskRequests().toString().contains("Ststable"))) {
@@ -201,11 +226,12 @@ android {
             targetSdkVersion project.properties.compileSdkVersion
             matchingFallbacks = ['ststable']
 
-            // Own update feed (src/hearthtube/res/values/update_urls.xml) only offers a higher versionCode, so:
-            // SmartTube's versionCode * 1000 + our release number (bumped by release.ps1)
-            def releaseNumber = file('src/hearthtube/release_number.txt').text.trim() as int
-            versionCode android.defaultConfig.versionCode * 1000 + releaseNumber
-            versionNameSuffix "+" + releaseNumber
+            // Versions are release dates (readHearthTubeVersion above), like Hearth's; the update feed
+            // (src/hearthtube/res/values/update_urls.xml) and Hearth only offer a higher versionCode. SmartTube's own
+            // version (defaultConfig) stays the base it's built on.
+            def hearthTubeVersion = readHearthTubeVersion(file('src/hearthtube/release_version.txt'))
+            versionCode hearthTubeVersion.code
+            versionName hearthTubeVersion.name
         }
         stfdroid {
             applicationId "app.smarttube.fdroid"

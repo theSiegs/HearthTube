@@ -6,6 +6,11 @@
 # from before that setting check only "latest"); Hearth's updater picks by version from both. Downloader can install
 # from the APK links.
 #
+# Versions are release dates: 2026.10.10, and a second release that day 2026.10.10.2 (versionCode yyMMddNN, 26101001
+# and 26101002). smarttubetv\src\hearthtube\release_version.txt holds the last one as yyyy.MM.dd.N; this script moves it
+# to today and smarttubetv\build.gradle makes versionName and versionCode from it. Release names keep the version last
+# ("HearthTube 2026.10.10", "HearthTube pre-release 2026.10.10"): Hearth reads it from there when a release has no feed.
+#
 # Usage:  .\release.ps1 -Notes "What changed"            a pre-release
 #         .\release.ps1 -Notes "What changed" -Stable    a stable release
 #         .\release.ps1 -DryRun [-Stable]     build, sign and write the files, but publish nothing
@@ -25,10 +30,10 @@ Set-Location $PSScriptRoot
 $repo = 'theSiegs/HearthTube'
 $branch = 'master'
 $tag = if ($Stable) { 'stable' } else { 'latest' }
-$channel = if ($Stable) { 'release' } else { 'pre-release' }
 $base = "https://github.com/$repo/releases/download/$tag"
 $abis = 'armeabi-v7a', 'arm64-v8a', 'x86'
-$numberFile = 'smarttubetv\src\hearthtube\release_number.txt'
+$versionFile = 'smarttubetv\src\hearthtube\release_version.txt'
+$apkDir = 'smarttubetv\build\outputs\apk\hearthtube\release'
 
 # Signing. HearthTube's first releases were debug builds, signed with this PC's Android debug key (SHA-256 6748528f...).
 # Releases are now release builds signed with Hearth's release key (CN=Hearth, O=theSiegs, SHA-256 243bf074...), and
@@ -124,29 +129,44 @@ $apksigner = $apksigner.FullName
 $lineageDigests = @(Get-CertDigests (& $apksigner lineage --in $lineage --print-certs) 'in lineage')
 if ($LASTEXITCODE -ne 0 -or $lineageDigests.Count -lt 2) { throw "The key-rotation lineage can't be read: $lineage" }
 
-# Each release must have a higher version code than the one before (on both channels), or TVs won't offer it
-$number = [int](Get-Content $numberFile) + 1
-if (-not $DryRun) { Set-Content $numberFile $number -Encoding ascii }
+# Each release must have a higher versionCode than the one before (on both channels), or TVs won't offer it: today's
+# date, numbered after the last release when that was today too. A date before the last release's (a wrong clock) stops.
+$last = (Get-Content $versionFile -TotalCount 1).Trim()
+if ($last -notmatch '^(\d{4})\.(\d{2})\.(\d{2})\.(\d{1,2})$') { throw "$versionFile should hold yyyy.MM.dd.N, not: $last" }
+$lastDay = [int]"$($Matches[1])$($Matches[2])$($Matches[3])"
+$lastNumber = [int]$Matches[4]
+$now = Get-Date
+$today = $now.ToString('yyyy.MM.dd', [System.Globalization.CultureInfo]::InvariantCulture)
+$day = [int]$now.ToString('yyyyMMdd', [System.Globalization.CultureInfo]::InvariantCulture)
+if ($lastDay -gt $day) { throw "The last release ($last) is dated after today ($today). Is this PC's clock right?" }
+$number = if ($lastDay -eq $day) { $lastNumber + 1 } else { 1 }
+if ($number -gt 99) { throw "99 releases today already: the versionCode (yyMMddNN) has no room for more." }
+$expectedName = if ($number -eq 1) { $today } else { "$today.$number" }
+
+# The build reads the new version from the file. A dry run, and a failed build, put the last one back afterwards.
+$versionPath = Join-Path $PSScriptRoot $versionFile
+$lastText = [System.IO.File]::ReadAllText($versionPath)
+Set-Content $versionFile "$today.$number" -Encoding ascii
 
 & .\gradlew.bat :smarttubetv:assembleHearthtubeRelease
-if ($LASTEXITCODE -ne 0) {
-    if (-not $DryRun) { git checkout -- $numberFile }
-    exit $LASTEXITCODE
-}
+$buildExit = $LASTEXITCODE
+if ($DryRun -or $buildExit -ne 0) { [System.IO.File]::WriteAllText($versionPath, $lastText) }
+if ($buildExit -ne 0) { exit $buildExit }
 
-# Same formula as the hearthtube flavor in smarttubetv\build.gradle
-$gradle = Get-Content smarttubetv\build.gradle -Raw
-$baseCode = [int]([regex]::Match($gradle, 'versionCode (\d+)').Groups[1].Value)
-$baseName = [regex]::Match($gradle, 'versionName "([^"]+)"').Groups[1].Value
-$releaseNumber = [int](Get-Content $numberFile)
-$versionCode = $baseCode * 1000 + $releaseNumber
-$versionName = "$baseName+$releaseNumber"
+# The version as built (the Android Gradle plugin's list of the APKs it made)
+$built = (Get-Content "$apkDir\output-metadata.json" -Raw | ConvertFrom-Json).elements
+$versionName = $built[0].versionName
+$versionCode = [int]$built[0].versionCode
+if ($versionName -ne $expectedName -or @($built | Where-Object { $_.versionName -ne $versionName -or $_.versionCode -ne $versionCode }).Count) {
+    throw "The build made version $versionName ($versionCode), not ${expectedName}: see readHearthTubeVersion in smarttubetv\build.gradle."
+}
+# The SmartTube version it's built on (defaultConfig in smarttubetv\build.gradle), for the release notes
+$baseName = [regex]::Match((Get-Content smarttubetv\build.gradle -Raw), 'versionName "([^"]+)"').Groups[1].Value
 
 # Fixed file names, so the links used by Downloader and the update feed never change
 $dist = Join-Path $env:TEMP "hearthtube-release-$tag"
 Remove-Item $dist -Recurse -Force -ErrorAction SilentlyContinue
 New-Item -ItemType Directory $dist | Out-Null
-$apkDir = 'smarttubetv\build\outputs\apk\hearthtube\release'
 
 $env:HEARTHTUBE_DEBUG_KEY_PASS = 'android' # the Android SDK's standard debug key password
 $env:HEARTHTUBE_STORE_PASS = $key.storePassword
@@ -195,19 +215,24 @@ $feed[$versionName] = [ordered]@{ versionCode = $versionCode; changelog = @($Not
 # No BOM: the app's JSON parser rejects it
 [System.IO.File]::WriteAllText("$dist\hearthtube.json", ($feed | ConvertTo-Json -Depth 5), (New-Object System.Text.UTF8Encoding $false))
 
-Write-Host "HearthTube $channel $versionName (versionCode $versionCode, tag $tag), files in $dist"
+# For the commit and the release: the version last in the title (Hearth reads it from there when a release has no
+# feed), the SmartTube version it's built on in the notes
+$title = if ($Stable) { "HearthTube $versionName" } else { "HearthTube pre-release $versionName" }
+$releaseNotes = "$Notes`n`nBased on SmartTube $baseName."
+
+Write-Host "$title (versionCode $versionCode, tag $tag, based on SmartTube $baseName), files in $dist"
 
 if ($DryRun) {
     Write-Host "Dry run: nothing published."
     exit 0
 }
 
-# Record the release number in git first, so the release points at the exact code it was built from
-git add $numberFile
+# Record the version in git first, so the release points at the exact code it was built from
+git add $versionFile
 if ($Trailer) {
-    git commit -m "HearthTube $channel $versionName" -m $Trailer
+    git commit -m $title -m $Trailer
 } else {
-    git commit -m "HearthTube $channel $versionName"
+    git commit -m $title
 }
 git push
 
@@ -218,10 +243,10 @@ $ErrorActionPreference = 'Stop'
 
 if ($Stable) {
     gh release create $tag (Get-ChildItem $dist).FullName --repo $repo --target $branch `
-        --title "HearthTube $versionName" --notes $Notes --latest
+        --title $title --notes $releaseNotes --latest
 } else {
     gh release create $tag (Get-ChildItem $dist).FullName --repo $repo --target $branch `
-        --title "HearthTube $versionName (pre-release)" --notes $Notes --prerelease
+        --title $title --notes $releaseNotes --prerelease
 }
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 

@@ -45,6 +45,13 @@ public class UpdateFeedPickerTest {
     }
 
     @Test
+    public void readsDateVersions() {
+        // Versions are release dates now, a second release that day numbered: versionCode yyMMddNN
+        assertEquals(26101002, UpdateFeedPicker.newestVersionCode(
+                feed("2026.10.10", "26101001", "2026.10.10.2", "26101002")));
+    }
+
+    @Test
     public void notAFeedIsFailed() {
         assertEquals(FAILED, UpdateFeedPicker.newestVersionCode(null));
         assertEquals(FAILED, UpdateFeedPicker.newestVersionCode(""));
@@ -74,6 +81,13 @@ public class UpdateFeedPickerTest {
     public void newerStableWins() {
         // A stable release published after the last pre-release reaches pre-release users too
         assertEquals(0, UpdateFeedPicker.pick(new int[] {2453007, 2453006}));
+    }
+
+    @Test
+    public void aDateVersionBeatsTheSmartTubeStyleOnes() {
+        // The first date release on one channel while the other still offers 32.63+7
+        assertEquals(1, UpdateFeedPicker.pick(new int[] {2453007, 26101001}));
+        assertEquals(0, UpdateFeedPicker.pick(new int[] {26101001, 2453007}));
     }
 
     @Test
