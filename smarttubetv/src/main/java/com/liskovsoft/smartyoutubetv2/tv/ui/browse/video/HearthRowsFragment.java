@@ -357,6 +357,11 @@ public class HearthRowsFragment extends VideoRowsFragment {
     @Override
     protected void onStripChanged(List<String> titles, List<String> icons, int selected) {
         boolean rebuild = !titles.equals(mTitles) || !icons.equals(mIcons);
+        // Rows come in one after another while the section loads: their chips are added after the others, so a
+        // chip that has the focus keeps it
+        boolean appended = rebuild && mChips != null && mChips.getChildCount() == mTitles.size()
+                && startsWith(titles, mTitles) && startsWith(icons, mIcons) && hasIcons(icons) == hasIcons();
+        int shown = mTitles.size();
         mTitles = new ArrayList<>(titles);
         mIcons = new ArrayList<>(icons);
         mSelected = selected;
@@ -365,7 +370,14 @@ public class HearthRowsFragment extends VideoRowsFragment {
             return;
         }
 
-        if (rebuild) {
+        if (appended) {
+            boolean circles = hasIcons();
+            for (int i = shown; i < mTitles.size(); i++) {
+                addChip(mChips.getContext(), i, circles);
+            }
+            mChipScroll.setVisibility(mTitles.size() > 1 ? View.VISIBLE : View.GONE);
+            updateSelection();
+        } else if (rebuild) {
             showChips();
         } else {
             updateSelection();
@@ -399,22 +411,7 @@ public class HearthRowsFragment extends VideoRowsFragment {
         boolean circles = hasIcons();
 
         for (int i = 0; i < mTitles.size(); i++) {
-            int index = i;
-            View chip = circles ? createCircle(context, mTitles.get(i), mIcons.get(i)) : createChip(context, mTitles.get(i));
-            chip.setFocusable(true);
-            chip.setClickable(true);
-            // Moving along the strip switches the row; OK goes down to it
-            chip.setOnFocusChangeListener((v, hasFocus) -> {
-                if (hasFocus && index != mSelected) {
-                    selectStripRow(index);
-                }
-            });
-            chip.setOnClickListener(v -> focusRow());
-
-            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT);
-            params.rightMargin = dp(context, circles ? 20 : 10);
-            mChips.addView(chip, params);
+            addChip(context, i, circles);
         }
 
         // One row needs no choosing
@@ -426,14 +423,40 @@ public class HearthRowsFragment extends VideoRowsFragment {
         }
     }
 
+    private void addChip(Context context, int index, boolean circles) {
+        View chip = circles ? createCircle(context, mTitles.get(index), mIcons.get(index)) : createChip(context, mTitles.get(index));
+        chip.setFocusable(true);
+        chip.setClickable(true);
+        // Moving along the strip switches the row; OK goes down to it
+        chip.setOnFocusChangeListener((v, hasFocus) -> {
+            if (hasFocus && index != mSelected) {
+                selectStripRow(index);
+            }
+        });
+        chip.setOnClickListener(v -> focusRow());
+
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT);
+        params.rightMargin = dp(context, circles ? 20 : 10);
+        mChips.addView(chip, params);
+    }
+
     private boolean hasIcons() {
-        for (String icon : mIcons) {
+        return hasIcons(mIcons);
+    }
+
+    private static boolean hasIcons(List<String> icons) {
+        for (String icon : icons) {
             if (icon != null) {
                 return true;
             }
         }
 
         return false;
+    }
+
+    private static boolean startsWith(List<String> list, List<String> start) {
+        return list.size() >= start.size() && list.subList(0, start.size()).equals(start);
     }
 
     private TextView createChip(Context context, String title) {

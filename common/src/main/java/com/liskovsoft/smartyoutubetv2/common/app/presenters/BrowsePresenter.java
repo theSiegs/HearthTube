@@ -1151,6 +1151,14 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
     }
 
     public void selectSection(int sectionId) {
+        selectSection(sectionId, true);
+    }
+
+    /**
+     * HearthTube: focusOnContent false keeps the focus where it is (the tabs at the top open the tab focus rests on,
+     * and stay focused while it loads).
+     */
+    public void selectSection(int sectionId, boolean focusOnContent) {
         getViewManager().startView(BrowseView.class); // focus view
 
         if (getView() == null) {
@@ -1167,7 +1175,7 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
         }
 
         if (sectionIndex != -1) {
-            getView().selectSection(sectionIndex, true);
+            getView().selectSection(sectionIndex, focusOnContent);
         }
     }
 

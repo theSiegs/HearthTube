@@ -6,6 +6,7 @@ import android.content.ContextWrapper;
 import android.util.AttributeSet;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.KeyEvent;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -26,11 +27,24 @@ import java.util.List;
 
 /**
  * The tabs at the top of the browse screen, in one pill: Home, Subscriptions, Music, Ambiance, Library (Edit menu
- * and tabs changes them), then "Queued (n)" while videos wait in the queue. OK opens a tab; the open one is white.
+ * and tabs changes them), then "Queued (n)" while videos wait in the queue. The open one is white.
+ * <p>
+ * Like the strip under them (HearthRowsFragment's chips and Subscriptions' circles), a tab opens as focus lands on it,
+ * and focus stays on it: only Down goes to the videos. It opens once focus rests there for a moment, so sweeping
+ * across the tabs loads nothing on the way. OK opens it at once.
  */
 public class HearthTabBar extends LinearLayout {
     /** The queue can change behind our back (phone casting, the player): look again now and then */
     private static final long QUEUE_CHECK_MS = 3_000;
+    /** How long focus rests on a tab before it opens */
+    private static final long FOCUS_OPEN_MS = 350;
+    private static final int NO_SECTION = Integer.MIN_VALUE;
+    /** The tab focus is resting on, waiting to open; null when none is */
+    private View mPendingTab;
+    private int mPendingId = NO_SECTION;
+    private final Runnable mOpenPending = this::openPending;
+    /** The tab focus opened and still rests on: OK there keeps it as it is rather than loading it again */
+    private int mFocusOpenedId = NO_SECTION;
     private final Runnable mOnSectionChange = this::update;
     private final Runnable mQueueCheck = new Runnable() {
         @Override
@@ -111,6 +125,8 @@ public class HearthTabBar extends LinearLayout {
 
         BrowsePresenter.instance(getContext()).removeOnSectionChange(mOnSectionChange);
         Utils.removeCallbacks(mQueueCheck);
+        Utils.removeCallbacks(mOpenPending);
+        mPendingTab = null;
     }
 
     @Override
@@ -157,39 +173,142 @@ public class HearthTabBar extends LinearLayout {
             }
         }
 
+        boolean refocus = false;
+
         if (!tabIds.equals(mTabIds) || mQueued == null) {
-            rebuild(tabIds, titles);
+            refocus = rebuild(tabIds, titles);
         }
 
-        BrowseSection current = presenter.getCurrentSection();
-        int currentId = current != null ? current.getId() : -1;
+        // A tab waiting to open already shows as open
+        int shownId = mPendingTab != null ? mPendingId : getCurrentId();
 
         for (int i = 0; i < mTabIds.size(); i++) {
-            getChildAt(i).setSelected(mTabIds.get(i) == currentId);
+            getChildAt(i).setSelected(mTabIds.get(i) == shownId);
         }
 
-        mQueued.setSelected(currentId == MediaGroup.TYPE_PLAYBACK_QUEUE);
+        mQueued.setSelected(shownId == MediaGroup.TYPE_PLAYBACK_QUEUE);
         updateQueued();
+
+        if (refocus) {
+            // Back on the open tab (the first one would open itself)
+            View tab = getSelectedTab();
+            if (tab != null) {
+                tab.requestFocus();
+            }
+        }
     }
 
-    private void rebuild(List<Integer> tabIds, List<String> titles) {
+    private int getCurrentId() {
+        BrowseSection current = BrowsePresenter.instance(getContext()).getCurrentSection();
+        return current != null ? current.getId() : NO_SECTION;
+    }
+
+    /** @return the tabs had focus */
+    private boolean rebuild(List<Integer> tabIds, List<String> titles) {
         View focused = findFocus();
+        Utils.removeCallbacks(mOpenPending);
+        mPendingTab = null;
         removeAllViews();
         mTabIds.clear();
         mTabIds.addAll(tabIds);
 
         for (int i = 0; i < tabIds.size(); i++) {
-            int id = tabIds.get(i);
-            addView(createTab(titles.get(i), v -> BrowsePresenter.instance(getContext()).selectSection(id)));
+            addView(createTab(titles.get(i), tabIds.get(i)));
         }
 
-        mQueued = createTab("", v -> BrowsePresenter.instance(getContext()).selectSection(MediaGroup.TYPE_PLAYBACK_QUEUE));
+        mQueued = createTab("", MediaGroup.TYPE_PLAYBACK_QUEUE);
         mQueued.setVisibility(GONE);
         addView(mQueued);
 
-        if (focused != null && getChildCount() > 0) {
-            getChildAt(0).requestFocus();
+        return focused != null && getChildCount() > 0;
+    }
+
+    /** Focus landed on a tab, or left it */
+    private void onTabFocus(View tab, int sectionId, boolean hasFocus) {
+        if (!hasFocus) {
+            if (tab == mPendingTab) {
+                // Moved on before it opened (to the next tab, the search button...)
+                cancelPending();
+            }
+            if (sectionId == mFocusOpenedId) {
+                mFocusOpenedId = NO_SECTION;
+            }
+            return;
         }
+
+        Utils.removeCallbacks(mOpenPending);
+        mPendingTab = null;
+
+        if (sectionId != getCurrentId()) {
+            mPendingTab = tab;
+            mPendingId = sectionId;
+            Utils.postDelayed(mOpenPending, FOCUS_OPEN_MS);
+        }
+
+        update();
+    }
+
+    /** Focus rested on the tab: open it, and keep the focus on it */
+    private void openPending() {
+        View tab = mPendingTab;
+        int sectionId = mPendingId;
+        mPendingTab = null;
+
+        // Gone, or already open (something else opened it meanwhile): nothing to load
+        if (tab == null || !tab.isFocused() || !hasWindowFocus() || sectionId == getCurrentId()) {
+            update();
+            return;
+        }
+
+        mFocusOpenedId = sectionId;
+        BrowsePresenter.instance(getContext()).selectSection(sectionId, false);
+    }
+
+    private void cancelPending() {
+        if (mPendingTab == null) {
+            return;
+        }
+
+        Utils.removeCallbacks(mOpenPending);
+        mPendingTab = null;
+        update();
+    }
+
+    /** OK opens the tab at once, or loads the open one again (as before), and keeps the focus on it */
+    private void onTabClicked(int sectionId) {
+        boolean pending = mPendingTab != null && mPendingId == sectionId;
+        Utils.removeCallbacks(mOpenPending);
+        mPendingTab = null;
+
+        if (!pending && sectionId == mFocusOpenedId && sectionId == getCurrentId()) {
+            // Focus opened it just now: OK only confirms it
+            return;
+        }
+
+        mFocusOpenedId = sectionId;
+        BrowsePresenter.instance(getContext()).selectSection(sectionId, false);
+    }
+
+    private boolean onTabKey(int keyCode, KeyEvent event) {
+        if (mPendingTab == null || event.getAction() != KeyEvent.ACTION_DOWN) {
+            return false;
+        }
+
+        if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
+            // Down before the tab opened: open it now and go down to its videos once they're in
+            int sectionId = mPendingId;
+            Utils.removeCallbacks(mOpenPending);
+            mPendingTab = null;
+            BrowsePresenter.instance(getContext()).selectSection(sectionId, true);
+            return true;
+        }
+
+        if (keyCode == KeyEvent.KEYCODE_BACK) {
+            // Back is about the open tab (BrowseActivity), not the one focus is passing over
+            cancelPending();
+        }
+
+        return false;
     }
 
     /**
@@ -227,7 +346,7 @@ public class HearthTabBar extends LinearLayout {
         }
     }
 
-    private TextView createTab(String title, OnClickListener onClick) {
+    private TextView createTab(String title, int sectionId) {
         TextView tab = new TextView(getContext());
         tab.setText(title);
         tab.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15); // same as the chips under it
@@ -238,7 +357,9 @@ public class HearthTabBar extends LinearLayout {
         tab.setPadding(dp(11), dp(6), dp(11), dp(6));
         tab.setFocusable(true);
         tab.setClickable(true);
-        tab.setOnClickListener(onClick);
+        tab.setOnClickListener(v -> onTabClicked(sectionId));
+        tab.setOnFocusChangeListener((v, hasFocus) -> onTabFocus(v, sectionId, hasFocus));
+        tab.setOnKeyListener((v, keyCode, event) -> onTabKey(keyCode, event));
 
         LayoutParams params = new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
         params.leftMargin = dp(1);
