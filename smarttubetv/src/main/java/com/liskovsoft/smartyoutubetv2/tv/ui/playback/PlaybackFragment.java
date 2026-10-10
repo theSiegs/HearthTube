@@ -882,7 +882,8 @@ public class PlaybackFragment extends SeekModePlaybackFragment implements Playba
             result = TextUtils.concat(result, " ", Video.TERTIARY_TEXT_DELIM, " ", video.subscriberCount.replace(" ", Helpers.NON_BREAKING_SPACE));
         }
 
-        return result;
+        // HearthTube: "Likely AI" in front, for an adult watching a video from a channel on AiSList
+        return com.liskovsoft.smartyoutubetv2.tv.util.HearthAiLabel.withPlayerLabel(getContext(), video, result);
     }
 
     private CharSequence createNextTitle(Video video) {
