@@ -99,7 +99,7 @@ public final class HearthScreenTime {
 
         PlaybackPresenter.instance(activity).forceFinish();
         MessageHelpers.showLongMessage(activity, message);
-        HearthProfile.goHome(activity);
+        HearthProfile.goHomeOrStepAside(activity);
         return false;
     }
 }

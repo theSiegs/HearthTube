@@ -460,18 +460,61 @@ public class HearthProfile {
     }
 
     /**
-     * Goes to the launcher, like the Home button, when it's Hearth. False when Hearth isn't installed.
+     * Goes to the launcher, like the Home button, when it's Hearth. False when Hearth isn't installed, or when this
+     * profile has no home screen to go to (see {@link #startHome}).
      */
     public static boolean goHome(Context context) {
-        if (!isInstalled(context)) {
+        return isInstalled(context) && startHome(context);
+    }
+
+    /**
+     * Like {@link #goHome}, but when this profile has no home screen to go to, HearthTube steps aside instead (to the
+     * back, still ready to come back to), so what's underneath shows: in a kids profile, the home screen in the TV
+     * owner's user. False when Hearth isn't installed, or neither worked.
+     */
+    public static boolean goHomeOrStepAside(android.app.Activity activity) {
+        if (activity == null || !isInstalled(activity)) {
             return false;
         }
 
+        if (startHome(activity)) {
+            return true;
+        }
+
         try {
-            context.startActivity(new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+            return activity.moveTaskToBack(true);
+        } catch (RuntimeException e) {
+            // Pinned stack isn't top stack (IllegalStateException) and the like, as in ViewManager
+            Log.e(TAG, "Can't step aside: %s", e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Starts the home screen, like the Home button. False in a Google TV profile's own user (a kids profile): the home
+     * screen lives in the TV owner's user, where the Home button goes, and the profile's user has none by design
+     * (Google TV's launcher and Hearth both turn theirs off there), so nothing there answers the Home intent and an
+     * app in it can't reach the owner's.
+     */
+    private static boolean startHome(Context context) {
+        if (!isOwnerUser(context)) {
+            return false;
+        }
+
+        Intent home = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+        try {
+            if (context.getPackageManager().resolveActivity(home, android.content.pm.PackageManager.MATCH_DEFAULT_ONLY) == null) {
+                Log.d(TAG, "No home screen in this profile");
+                return false;
+            }
+
+            // Through the app, not the activity: an activity (FragmentActivity's change) shows "No Activity found"
+            // on screen itself and doesn't throw, so a failed start would look like a successful one
+            context.getApplicationContext().startActivity(home);
             return true;
         } catch (Exception e) {
+            Log.e(TAG, "Can't go home: %s", e.getMessage());
             return false;
         }
     }

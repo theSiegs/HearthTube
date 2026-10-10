@@ -96,8 +96,9 @@ public abstract class LeanbackActivity extends MotherActivity {
     public void finish() {
         // user pressed back key
         if (!getViewManager().hasParentView(this)) {
-            // Works with Hearth: Back on Home goes to Hearth, like the Home button (the app stays ready to come back to)
-            if (HearthLinkData.instance(this).isBackToHearthEnabled() && HearthProfile.goHome(this)) {
+            // Works with Hearth: Back on Home goes to Hearth, like the Home button (the app stays ready to come back to).
+            // In a kids profile's own user there's no home screen to start: HearthTube steps aside to the one underneath.
+            if (HearthLinkData.instance(this).isBackToHearthEnabled() && HearthProfile.goHomeOrStepAside(this)) {
                 return;
             }
 
