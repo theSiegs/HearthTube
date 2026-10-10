@@ -2,7 +2,6 @@ package com.liskovsoft.smartyoutubetv2.common.app.presenters.settings;
 
 import android.content.Context;
 import com.liskovsoft.appupdatechecker2.AppUpdateChecker;
-import com.liskovsoft.sharedutils.helpers.AppInfoHelpers;
 import com.liskovsoft.sharedutils.helpers.MessageHelpers;
 import com.liskovsoft.smartyoutubetv2.common.R;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.OptionItem;
@@ -35,7 +34,7 @@ public class AboutSimpleSettingsPresenter extends BasePresenter<Void> {
         // HearthTube: titled like its menu entry, About, with the version after it
         String mainTitle = String.format("%s %s %s", getContext().getString(R.string.settings_about),
                 getContext().getString(R.string.app_name),
-                AppInfoHelpers.getAppVersionName(getContext()));
+                AboutSettingsPresenter.getVersionLine(getContext()));
 
         AppDialogPresenter settingsPresenter = AppDialogPresenter.instance(getContext());
 

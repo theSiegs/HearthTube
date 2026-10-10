@@ -40,7 +40,7 @@ public class AboutSettingsPresenter extends BasePresenter<Void> {
         // HearthTube: titled like its menu entry, About, with the version after it
         String mainTitle = String.format("%s %s %s", getContext().getString(R.string.settings_about),
                 getContext().getString(R.string.app_name),
-                AppInfoHelpers.getAppVersionName(getContext()));
+                getVersionLine(getContext()));
 
         AppDialogPresenter settingsPresenter = AppDialogPresenter.instance(getContext());
 
@@ -118,6 +118,18 @@ public class AboutSettingsPresenter extends BasePresenter<Void> {
 
     private void appendBackgroundCredit(AppDialogPresenter settingsPresenter) {
         appendBackgroundCredit(getContext(), settingsPresenter);
+    }
+
+    /**
+     * The version for About's title, shared with AboutSimpleSettingsPresenter: HearthTube's, a release date, and the
+     * SmartTube version it's built on (version_based_on_smarttube: 2026.10.10 and 32.63); just the version in builds
+     * without a base (SmartTube's own flavors).
+     */
+    static String getVersionLine(Context context) {
+        String version = AppInfoHelpers.getAppVersionName(context);
+        String base = context.getString(R.string.smarttube_base_version);
+
+        return base.isEmpty() ? version : context.getString(R.string.version_based_on_smarttube, version, base);
     }
 
     /**

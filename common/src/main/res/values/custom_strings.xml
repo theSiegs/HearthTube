@@ -163,4 +163,8 @@
     <string name="credit_aislist">AI channel list: AiSList, by its contributors</string>
     <string name="credit_aislist_license">AiSList\'s license: CC BY-NC 4.0</string>
     <string name="credit_aislist_ids">AiSList by channel ID</string>
+    <!-- About's version: HearthTube's (a release date) and the SmartTube version it's built on. The hearthtube flavor
+         sets smarttube_base_version (smarttubetv/build.gradle); SmartTube's own flavors leave it empty. -->
+    <string name="smarttube_base_version" translatable="false"></string>
+    <string name="version_based_on_smarttube">%1$s · based on SmartTube %2$s</string>
 </resources>

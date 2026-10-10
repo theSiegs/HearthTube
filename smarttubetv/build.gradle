@@ -228,10 +228,11 @@ android {
 
             // Versions are release dates (readHearthTubeVersion above), like Hearth's; the update feed
             // (src/hearthtube/res/values/update_urls.xml) and Hearth only offer a higher versionCode. SmartTube's own
-            // version (defaultConfig) stays the base it's built on.
+            // version (defaultConfig) stays the base it's built on, shown in About (common's smarttube_base_version).
             def hearthTubeVersion = readHearthTubeVersion(file('src/hearthtube/release_version.txt'))
             versionCode hearthTubeVersion.code
             versionName hearthTubeVersion.name
+            resValue 'string', 'smarttube_base_version', android.defaultConfig.versionName
         }
         stfdroid {
             applicationId "app.smarttube.fdroid"
