@@ -78,6 +78,19 @@ public final class ChannelPageCards {
         return new ChannelPageCards(channelId, handle, name);
     }
 
+    /**
+     * A channel's full uploads grid, by the card that opened it: the channel's own card, its circle in Subscriptions, a
+     * video of it with its uploads. Null when the grid is a playlist's (a playlist card, a channel's playlist, a channel
+     * that is a playlist, a mix) or the card has no channel ID ("UC..."): their videos are anybody's.
+     */
+    public static ChannelPageCards ofUploads(Video opener) {
+        if (opener == null || opener.playlistId != null || opener.isPlaylistAsChannel()) {
+            return null;
+        }
+
+        return of(opener.channelId, opener);
+    }
+
     public String getChannelId() {
         return mChannelId;
     }

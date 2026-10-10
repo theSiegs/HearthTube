@@ -26,6 +26,7 @@ import com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager;
 import com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager.OnComplete;
 import com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager.OnError;
 import com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager.OnMediaGroup;
+import com.liskovsoft.smartyoutubetv2.common.utils.ChannelPageCards;
 
 import io.reactivex.Observable;
 import io.reactivex.disposables.Disposable;
@@ -42,6 +43,9 @@ public class ChannelUploadsPresenter extends BasePresenter<ChannelUploadsView> i
     private Video mChannel;
     private MediaGroup mPendingGroup;
     private VideoGroup mBaseGroup;
+    private ChannelPageCards mPageCards;
+    /** The card {@link #mPageCards} is for */
+    private Video mPageCardsOpener;
 
     public ChannelUploadsPresenter(Context context) {
         super(context);
@@ -81,6 +85,8 @@ public class ChannelUploadsPresenter extends BasePresenter<ChannelUploadsView> i
         mChannel = null;
         mPendingGroup = null;
         mBaseGroup = null;
+        mPageCards = null;
+        mPageCardsOpener = null;
     }
 
     @Override
@@ -218,7 +224,7 @@ public class ChannelUploadsPresenter extends BasePresenter<ChannelUploadsView> i
         mScrollAction = continuation
                 .subscribe(
                         continueMediaGroup -> {
-                            VideoGroup newGroup = VideoGroup.from(group, continueMediaGroup);
+                            VideoGroup newGroup = VideoGroup.from(group, continueMediaGroup, learnPageCards(continueMediaGroup));
                             getView().update(newGroup);
                             mBrowseProcessor.process(newGroup);
                         },
@@ -268,7 +274,11 @@ public class ChannelUploadsPresenter extends BasePresenter<ChannelUploadsView> i
             return;
         }
 
-        mBaseGroup = mBaseGroup != null ? VideoGroup.from(mBaseGroup, mediaGroup) : VideoGroup.from(mediaGroup);
+        ChannelPageCards page = learnPageCards(mediaGroup);
+        mBaseGroup = mBaseGroup != null ? VideoGroup.from(mBaseGroup, mediaGroup, page) : VideoGroup.from(mediaGroup, page);
+        if (page != null) {
+            Log.d(TAG, "Channel uploads %s: %s cards have its ID", page.getChannelId(), page.getStamped());
+        }
         if (mChannel != null && TextUtils.isEmpty(mBaseGroup.getTitle())) {
             mBaseGroup.setTitle(mChannel.getTitle());
         }
@@ -289,6 +299,23 @@ public class ChannelUploadsPresenter extends BasePresenter<ChannelUploadsView> i
         if (!group.isEmpty()) {
             getView().showProgressBar(false);
         }
+    }
+
+    /**
+     * HearthTube: when this grid is a channel's uploads (not a playlist's), its cards get the channel's ID like a channel
+     * page's (see {@link ChannelPageCards}), learning who the channel is from this group's cards first. Null otherwise.
+     */
+    private ChannelPageCards learnPageCards(MediaGroup mediaGroup) {
+        if (mPageCardsOpener != mChannel) { // another grid: a playlist of the same channel is no channel's uploads
+            mPageCardsOpener = mChannel;
+            mPageCards = ChannelPageCards.ofUploads(mChannel);
+        }
+
+        if (mPageCards != null) {
+            mPageCards.learn(mediaGroup);
+        }
+
+        return mPageCards;
     }
 
     private void obtainGroup(MediaItem mediaItem, OnMediaGroup callback, OnError onError, OnComplete onComplete) {
@@ -340,6 +367,8 @@ public class ChannelUploadsPresenter extends BasePresenter<ChannelUploadsView> i
         mChannel = null;
         mPendingGroup = null;
         mBaseGroup = null;
+        mPageCards = null;
+        mPageCardsOpener = null;
     }
 
     public void refresh() {

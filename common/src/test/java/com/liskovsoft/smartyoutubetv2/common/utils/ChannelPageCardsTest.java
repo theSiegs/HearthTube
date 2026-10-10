@@ -248,4 +248,100 @@ public class ChannelPageCardsTest {
         assertFalse(page.stamp(noVideo));
         assertFalse(page.stamp(null));
     }
+
+    // The channel's full uploads grid (ChannelUploadsPresenter), which opens playlists too
+
+    private static Video channelCard() {
+        Video channel = card(null, null, "@cattales • 1.2M subscribers");
+        channel.channelId = PAGE;
+        channel.title = "Cat Tales";
+        return channel;
+    }
+
+    @Test
+    public void uploadsOfAChannelGetItsId() {
+        ChannelPageCards page = ChannelPageCards.ofUploads(channelCard());
+        Video[] cards = {own("a"), own("b"), ownCollab(), othersCollab(), others("x")};
+        learn(page, cards);
+
+        assertEquals(PAGE, page.getChannelId());
+        assertTrue(page.stamp(cards[0]));
+        assertTrue(page.stamp(cards[1]));
+        assertTrue(page.stamp(cards[2]));
+        assertFalse(page.stamp(cards[3])); // a collaboration another channel owns
+        assertFalse(page.stamp(cards[4]));
+        assertEquals(PAGE, cards[0].channelId);
+        assertNull(cards[3].channelId);
+        assertNull(cards[4].channelId);
+    }
+
+    @Test
+    public void uploadsOpenedFromTheChannelsCircleWithoutAHandle() {
+        // A Subscriptions circle: the channel's name and ID only; the grid's cards tell its handle
+        Video circle = card(null, null, null);
+        circle.channelId = PAGE;
+        circle.title = "Cat Tales";
+        ChannelPageCards page = ChannelPageCards.ofUploads(circle);
+
+        Video[] cards = {own("a"), others("x")};
+        learn(page, cards);
+
+        assertEquals("@CatTales", page.getHandle());
+        assertTrue(page.stamp(cards[0]));
+        assertFalse(page.stamp(cards[1]));
+    }
+
+    @Test
+    public void uploadsKeepIdsCardsHave() {
+        ChannelPageCards page = ChannelPageCards.ofUploads(channelCard());
+        Video withId = own("a");
+        withId.channelId = OTHER;
+        learn(page, withId, own("b"));
+
+        assertFalse(page.stamp(withId));
+        assertEquals(OTHER, withId.channelId);
+    }
+
+    @Test
+    public void playlistsAreNoChannelsUploads() {
+        // A playlist card, and a playlist on the channel's page: both have the channel's ID
+        Video playlist = card(null, "Cat Tales", "Cat Tales • 12 videos");
+        playlist.playlistId = "PLcccccccccccccccccccc";
+        playlist.channelId = PAGE;
+        assertNull(ChannelPageCards.ofUploads(playlist));
+
+        Video videoInAPlaylist = own("a");
+        videoInAPlaylist.playlistId = "PLcccccccccccccccccccc";
+        videoInAPlaylist.channelId = PAGE;
+        assertNull(ChannelPageCards.ofUploads(videoInAPlaylist));
+
+        // A channel that is a playlist (a mix, a topic): anybody's videos
+        Video playlistChannel = card(null, null, null);
+        playlistChannel.channelId = PAGE;
+        playlistChannel.itemType = com.liskovsoft.mediaserviceinterfaces.data.MediaItem.TYPE_PLAYLIST;
+        assertNull(ChannelPageCards.ofUploads(playlistChannel));
+
+        Video byPlaylistId = card(null, null, null);
+        byPlaylistId.channelId = PLAYLIST;
+        assertNull(ChannelPageCards.ofUploads(byPlaylistId));
+    }
+
+    @Test
+    public void uploadsWithoutAChannelId() {
+        assertNull(ChannelPageCards.ofUploads(null));
+        assertNull(ChannelPageCards.ofUploads(card("a", "Cat Tales • @CatTales", "Cat Tales • 3 days ago")));
+    }
+
+    @Test
+    public void uploadsOfAnotherNameStayUnstamped() {
+        // Opened by the channel's card, so who it is is known: a grid of someone else's videos gets nothing
+        ChannelPageCards page = ChannelPageCards.ofUploads(channelCard());
+        Video[] cards = {others("x"), others("y"), others("z"), card("w", null, "Cat Tales TV • 3 days ago")};
+        learn(page, cards);
+
+        for (Video card : cards) {
+            assertFalse(page.stamp(card));
+            assertNull(card.channelId);
+        }
+    }
 }
