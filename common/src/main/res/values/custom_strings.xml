@@ -10,7 +10,7 @@
     <string name="profile_welcome_hint">Sign in to YouTube for your subscriptions, playlists and history.</string>
     <string name="profile_welcome_hint_kids">A grown-up signs in to YouTube for this profile, with the parent PIN.</string>
     <string name="signed_in_as">Signed in as %s</string>
-    <string name="protect_account_with_pin">Lock this profile with a PIN</string>
+    <string name="protect_account_with_pin">Lock profile</string>
     <string name="enter_profile_pin">Enter profile PIN</string>
     <string name="set_profile_pin">Choose a 4-digit PIN</string>
     <string name="confirm_profile_pin">Enter the PIN again</string>
