@@ -125,7 +125,7 @@ public final class HearthSections {
 
                         for (MediaItem channel : newestFirst(group.getMediaItems(), feed.getMediaItems())) {
                             uploads.add(content.getGroupObserve(channel)
-                                    .map(uploaded -> (MediaGroup) new TitledGroup(uploaded, channel.getTitle(), channel.getCardImageUrl()))
+                                    .map(uploaded -> (MediaGroup) new TitledGroup(uploaded, channel))
                                     .onErrorResumeNext(Observable.empty()));
                         }
 
@@ -179,18 +179,25 @@ public final class HearthSections {
     }
 
     private static boolean isSameChannel(MediaItem channel, MediaItem video) {
-        if (channel.getChannelId() != null && video.getChannelId() != null) {
-            return channel.getChannelId().equals(video.getChannelId());
+        return isSameChannel(channel.getChannelId(), channel.getTitle(), video.getChannelId(), video.getAuthor());
+    }
+
+    /**
+     * The video is the channel's: by channel id when both have one, else by name. (The channel list has no ids; the
+     * feed's author reads "Jam In The Van • @JamintheVan".)
+     */
+    public static boolean isSameChannel(@Nullable String channelId, @Nullable String channelTitle,
+                                        @Nullable String videoChannelId, @Nullable String videoAuthor) {
+        if (channelId != null && videoChannelId != null) {
+            return channelId.equals(videoChannelId);
         }
 
-        // The channel list has no ids; the feed's author reads "Jam In The Van • @JamintheVan"
-        String author = video.getAuthor();
-        if (channel.getTitle() == null || author == null) {
+        if (channelTitle == null || videoAuthor == null) {
             return false;
         }
 
-        int dot = author.indexOf(" • ");
-        return channel.getTitle().trim().equalsIgnoreCase((dot != -1 ? author.substring(0, dot) : author).trim());
+        int dot = videoAuthor.indexOf(" • ");
+        return channelTitle.trim().equalsIgnoreCase((dot != -1 ? videoAuthor.substring(0, dot) : videoAuthor).trim());
     }
 
     /**
@@ -224,25 +231,49 @@ public final class HearthSections {
     }
 
     /**
-     * A search shelf under our title. No continuation: the first page (about 20 videos) is plenty for a row,
-     * and continuing needs YouTube's own group class.
+     * A search shelf (or a channel's uploads) under our title. No continuation: the first page (about 20 videos) is
+     * plenty for a row, and continuing needs YouTube's own group class.
      */
     public static class TitledGroup implements MediaGroup {
         private final MediaGroup mGroup;
         private final String mTitle;
         @Nullable
         private final String mIconUrl;
+        @Nullable
+        private final MediaItem mChannel;
 
         TitledGroup(MediaGroup group, String title, @Nullable String iconUrl) {
+            this(group, title, iconUrl, null);
+        }
+
+        /** A channel's uploads (Subscriptions), under its name, with its picture for its circle */
+        TitledGroup(MediaGroup group, MediaItem channel) {
+            this(group, channel.getTitle(), channel.getCardImageUrl(), channel);
+        }
+
+        private TitledGroup(MediaGroup group, String title, @Nullable String iconUrl, @Nullable MediaItem channel) {
             mGroup = group;
             mTitle = title;
             mIconUrl = iconUrl;
+            mChannel = channel;
         }
 
         /** A channel's picture, for its circle in the strip; null for a plain chip */
         @Nullable
         public String getIconUrl() {
             return mIconUrl;
+        }
+
+        /** The channel whose uploads these are (Subscriptions), for its circle's long-press menu; else null */
+        @Nullable
+        public MediaItem getChannel() {
+            return mChannel;
+        }
+
+        /** The channel id YouTube sent with the channel's uploads, if it did (the list of channels has none) */
+        @Nullable
+        public String getUploadsChannelId() {
+            return mChannel != null ? mGroup.getChannelId() : null;
         }
 
         @Override

@@ -208,15 +208,48 @@ public abstract class MultipleRowsFragment extends RowsSupportFragment implement
 
     /** A channel's picture (HearthTube's Subscriptions rows) */
     private static String getIconUrl(ListRow row) {
-        if (row.getAdapter() instanceof VideoGroupObjectAdapter) {
+        com.liskovsoft.smartyoutubetv2.common.app.presenters.HearthSections.TitledGroup group = getTitledGroup(row);
+        return group != null ? group.getIconUrl() : null;
+    }
+
+    /** HearthTube's own row (a channel's uploads in Subscriptions, a search under a title), else null */
+    @Nullable
+    protected static com.liskovsoft.smartyoutubetv2.common.app.presenters.HearthSections.TitledGroup getTitledGroup(@Nullable ListRow row) {
+        if (row != null && row.getAdapter() instanceof VideoGroupObjectAdapter) {
             List<VideoGroup> groups = ((VideoGroupObjectAdapter) row.getAdapter()).getAllGroups();
             if (groups != null && !groups.isEmpty()
                     && groups.get(0).getMediaGroup() instanceof com.liskovsoft.smartyoutubetv2.common.app.presenters.HearthSections.TitledGroup) {
-                return ((com.liskovsoft.smartyoutubetv2.common.app.presenters.HearthSections.TitledGroup) groups.get(0).getMediaGroup()).getIconUrl();
+                return (com.liskovsoft.smartyoutubetv2.common.app.presenters.HearthSections.TitledGroup) groups.get(0).getMediaGroup();
             }
         }
 
         return null;
+    }
+
+    /**
+     * Takes a row off the strip (HearthTube: a channel unsubscribed from its circle). The row after it shows in its
+     * place, else the one before.
+     */
+    protected void removeStripRow(ListRow row) {
+        int index = mStripRows.indexOf(row);
+
+        if (index == -1 || mRowsAdapter == null) {
+            return;
+        }
+
+        mStripRows.remove(index);
+        mVideoGroupAdapters.values().remove(row.getAdapter());
+
+        if (mStripIndex > index || mStripIndex >= mStripRows.size()) {
+            mStripIndex = Math.max(0, mStripIndex - 1);
+        }
+
+        if (mStripRows.isEmpty()) {
+            showRows(null);
+            notifyStripChanged();
+        } else {
+            selectStripRow(mStripIndex);
+        }
     }
 
     private void applyPendingUpdates() {

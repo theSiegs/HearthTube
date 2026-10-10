@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -24,8 +25,14 @@ import androidx.leanback.widget.ObjectAdapter;
 import androidx.leanback.widget.Presenter;
 import androidx.leanback.widget.PresenterSelector;
 
+import com.liskovsoft.sharedutils.helpers.KeyHelpers;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
+import com.liskovsoft.smartyoutubetv2.common.app.models.data.VideoGroup;
+import com.liskovsoft.smartyoutubetv2.common.app.presenters.HearthSections;
+import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.menu.HearthChannelMenu;
+import com.liskovsoft.smartyoutubetv2.common.prefs.GeneralData;
 import com.liskovsoft.smartyoutubetv2.tv.R;
+import com.liskovsoft.smartyoutubetv2.tv.adapter.VideoGroupObjectAdapter;
 import com.liskovsoft.smartyoutubetv2.tv.presenter.LargeVideoCardPresenter;
 import com.liskovsoft.smartyoutubetv2.tv.presenter.MoreTilePresenter;
 import com.liskovsoft.smartyoutubetv2.tv.presenter.VideoCardPresenter;
@@ -38,7 +45,8 @@ import java.util.Map;
 /**
  * HearthTube's browse rows (Home, Music, Ambiance...), the approved concept: a strip of choices under the tabs
  * (one per row: Fireplace, Rain, Ocean...), the focused video's details, and one row of big cards at the bottom,
- * with room for the wallpaper in between. Moving along the strip switches the row.
+ * with room for the wallpaper in between. Moving along the strip switches the row. In Subscriptions the strip is the
+ * channels' circles, and long press on one opens the channel's menu ({@link HearthChannelMenu}).
  */
 public class HearthRowsFragment extends VideoRowsFragment {
     private static final int ROW_PADDING_DP = 22;
@@ -361,6 +369,9 @@ public class HearthRowsFragment extends VideoRowsFragment {
         // chip that has the focus keeps it
         boolean appended = rebuild && mChips != null && mChips.getChildCount() == mTitles.size()
                 && startsWith(titles, mTitles) && startsWith(icons, mIcons) && hasIcons(icons) == hasIcons();
+        // A row went (a channel unsubscribed from its circle): only its chip goes, so the others keep the focus
+        int removed = rebuild && !appended && mChips != null && mChips.getChildCount() == mTitles.size()
+                ? removedIndex(mTitles, titles, mIcons, icons) : -1;
         int shown = mTitles.size();
         mTitles = new ArrayList<>(titles);
         mIcons = new ArrayList<>(icons);
@@ -374,6 +385,15 @@ public class HearthRowsFragment extends VideoRowsFragment {
             boolean circles = hasIcons();
             for (int i = shown; i < mTitles.size(); i++) {
                 addChip(mChips.getContext(), i, circles);
+            }
+            mChipScroll.setVisibility(mTitles.size() > 1 ? View.VISIBLE : View.GONE);
+            updateSelection();
+        } else if (removed != -1) {
+            boolean focused = mChips.hasFocus();
+            mChips.removeViewAt(removed);
+            if (mTitles.size() <= 1 && focused) {
+                // Only All is left, and it needs no choosing: the strip goes, the focus goes down to the videos
+                focusRow();
             }
             mChipScroll.setVisibility(mTitles.size() > 1 ? View.VISIBLE : View.GONE);
             updateSelection();
@@ -427,18 +447,107 @@ public class HearthRowsFragment extends VideoRowsFragment {
         View chip = circles ? createCircle(context, mTitles.get(index), mIcons.get(index)) : createChip(context, mTitles.get(index));
         chip.setFocusable(true);
         chip.setClickable(true);
-        // Moving along the strip switches the row; OK goes down to it
+        // Moving along the strip switches the row; OK goes down to it. (Its place in the strip, not the one it was
+        // added at: a channel's circle can go.)
         chip.setOnFocusChangeListener((v, hasFocus) -> {
-            if (hasFocus && index != mSelected) {
-                selectStripRow(index);
+            int place = mChips.indexOfChild(v);
+            if (hasFocus && place != -1 && place != mSelected) {
+                selectStripRow(place);
             }
         });
         chip.setOnClickListener(v -> focusRow());
+
+        if (circles && mIcons.get(index) != null) {
+            // A channel's circle: long press (or the remote's menu key) opens its menu, like a card's
+            boolean longPressDisabled = GeneralData.instance(context).isOkButtonLongPressDisabled();
+            chip.setOnLongClickListener(v -> !longPressDisabled && showChannelMenu(v));
+            chip.setOnKeyListener((v, keyCode, event) -> {
+                if (KeyHelpers.isMenuKey(keyCode) && event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) {
+                    showChannelMenu(v);
+                }
+                return false;
+            });
+        }
 
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT);
         params.rightMargin = dp(context, circles ? 20 : 10);
         mChips.addView(chip, params);
+    }
+
+    /** The channel's menu (Open channel, Unsubscribe, Block, Pin): true when there's one, so the press is used up */
+    private boolean showChannelMenu(View chip) {
+        ListRow row = getStripRow(mChips.indexOfChild(chip));
+        return HearthChannelMenu.show(getContext(), getTitledGroup(row), channel -> onChannelGone(row, channel));
+    }
+
+    /**
+     * Unsubscribed or blocked: the circle goes and the focus moves to the one after it (else the one before), whose
+     * videos show below; the channel's videos leave All too, as they would on the next load.
+     */
+    private void onChannelGone(ListRow row, Video channel) {
+        if (mChips == null || row == null) {
+            return;
+        }
+
+        int index = -1;
+        for (int i = 0; getStripRow(i) != null; i++) {
+            if (getStripRow(i) == row) {
+                index = i;
+            } else if (getStripRow(i).getAdapter() instanceof VideoGroupObjectAdapter) {
+                removeChannelVideos((VideoGroupObjectAdapter) getStripRow(i).getAdapter(), channel);
+            }
+        }
+
+        if (index == -1) {
+            return;
+        }
+
+        // Focus first, while the circles are still in place: no moment without focus, no jump to the top
+        View gone = index < mChips.getChildCount() ? mChips.getChildAt(index) : null;
+        if (gone != null && gone.hasFocus()) {
+            int next = index + 1 < mChips.getChildCount() ? index + 1 : index - 1;
+            if (next >= 0) {
+                mChips.getChildAt(next).requestFocus();
+            }
+        }
+
+        removeStripRow(row);
+        mPreviews.remove(row);
+    }
+
+    private static void removeChannelVideos(VideoGroupObjectAdapter adapter, Video channel) {
+        List<Video> videos = new ArrayList<>();
+
+        for (Video video : adapter.getAll()) {
+            if (HearthSections.isSameChannel(channel.channelId, channel.title, video.channelId, video.getAuthor())) {
+                videos.add(video);
+            }
+        }
+
+        if (!videos.isEmpty()) {
+            adapter.remove(VideoGroup.from(videos));
+        }
+    }
+
+    /** Where one item went from the lists (the old ones less one), else -1 */
+    private static int removedIndex(List<String> oldTitles, List<String> titles, List<String> oldIcons, List<String> icons) {
+        if (titles.size() != oldTitles.size() - 1 || icons.size() != oldIcons.size() - 1 || oldTitles.size() != oldIcons.size()) {
+            return -1;
+        }
+
+        for (int i = 0; i < oldTitles.size(); i++) {
+            List<String> lessTitles = new ArrayList<>(oldTitles);
+            List<String> lessIcons = new ArrayList<>(oldIcons);
+            lessTitles.remove(i);
+            lessIcons.remove(i);
+
+            if (lessTitles.equals(titles) && lessIcons.equals(icons)) {
+                return i;
+            }
+        }
+
+        return -1;
     }
 
     private boolean hasIcons() {
