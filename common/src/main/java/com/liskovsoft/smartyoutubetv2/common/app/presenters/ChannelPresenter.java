@@ -19,6 +19,7 @@ import com.liskovsoft.smartyoutubetv2.common.app.presenters.interfaces.VideoGrou
 import com.liskovsoft.smartyoutubetv2.common.app.views.ChannelView;
 import com.liskovsoft.smartyoutubetv2.common.misc.BrowseProcessorManager;
 import com.liskovsoft.sharedutils.rx.RxHelper;
+import com.liskovsoft.smartyoutubetv2.common.utils.ChannelPageCards;
 import com.liskovsoft.smartyoutubetv2.common.utils.LoadingManager;
 import io.reactivex.Observable;
 import io.reactivex.disposables.Disposable;
@@ -37,6 +38,8 @@ public class ChannelPresenter extends BasePresenter<ChannelView> implements Vide
     private Disposable mScrollAction;
     private int mSortIdx;
     private Video mChannel;
+    /** HearthTube: whose page this is, for its cards (see {@link #getPageCards()}) */
+    private ChannelPageCards mPageCards;
 
     private interface OnChannelId {
         void onChannelId(String channelId);
@@ -90,6 +93,7 @@ public class ChannelPresenter extends BasePresenter<ChannelView> implements Vide
         // Destroy the cache only (!) when user pressed back (e.g. wants to explicitly kill the activity)
         // Otherwise keep the cache to easily restore in case activity is killed by the system.
         mChannelId = null;
+        mPageCards = null;
         mPendingGroups.clear();
         disposeActions();
     }
@@ -220,18 +224,56 @@ public class ChannelPresenter extends BasePresenter<ChannelView> implements Vide
         // The view could be running in the background
         getViewManager().startView(ChannelView.class);
 
+        // HearthTube: who the page's channel is, from all of these rows, before their cards are made
+        ChannelPageCards page = getPageCards();
+        if (page != null) {
+            for (MediaGroup mediaGroup : mediaGroups) {
+                page.learn(mediaGroup);
+            }
+        }
+
         for (MediaGroup mediaGroup : mediaGroups) {
             if (mediaGroup.getMediaItems() == null) {
                 Log.e(TAG, "updateRowsHeader: MediaGroup is empty. Group Name: " + mediaGroup.getTitle());
                 continue;
             }
 
-            VideoGroup group = VideoGroup.from(mediaGroup);
+            VideoGroup group = VideoGroup.from(mediaGroup, page);
             getView().update(group);
             mBrowseProcessor.process(group);
         }
 
+        if (page != null) {
+            Log.d(TAG, "Channel page %s: %s cards have its ID", page.getChannelId(), page.getStamped());
+        }
+
         getView().showProgressBar(false);
+    }
+
+    /**
+     * HearthTube: the page's channel, which its own cards get the ID of (YouTube's TV channel pages leave it off them).
+     * By the ID the rows were asked for: the one given to {@link #openChannel(String)}, or the channel card's.
+     */
+    private ChannelPageCards getPageCards() {
+        String channelId = mChannelId != null ? mChannelId : mChannel != null ? mChannel.channelId : null;
+
+        if (mPageCards == null || !Helpers.equals(mPageCards.getChannelId(), channelId)) {
+            mPageCards = ChannelPageCards.of(channelId, mChannel);
+        }
+
+        return mPageCards;
+    }
+
+    /** HearthTube: the channel's search results and sorted uploads, when they're this page's channel's */
+    private ChannelPageCards getPageCards(MediaGroup results) {
+        ChannelPageCards page = getPageCards();
+
+        if (page == null || !page.getChannelId().equals(getChannelId())) {
+            return null;
+        }
+
+        page.learn(results);
+        return page;
     }
 
     private void continueGroup(VideoGroup group) {
@@ -260,7 +302,11 @@ public class ChannelPresenter extends BasePresenter<ChannelView> implements Vide
         mScrollAction = getContentService().continueGroupObserve(mediaGroup)
                 .subscribe(
                         continueMediaGroup -> {
-                            VideoGroup newGroup = VideoGroup.from(group, continueMediaGroup);
+                            ChannelPageCards page = getPageCards();
+                            if (page != null) {
+                                page.learn(continueMediaGroup);
+                            }
+                            VideoGroup newGroup = VideoGroup.from(group, continueMediaGroup, page);
                             getView().update(newGroup);
                             mBrowseProcessor.process(newGroup);
                         },
@@ -304,6 +350,7 @@ public class ChannelPresenter extends BasePresenter<ChannelView> implements Vide
         }
         mChannel = null;
         mChannelId = null;
+        mPageCards = null;
     }
 
     private void extractChannelId(Video item, OnChannelId callback) {
@@ -370,7 +417,7 @@ public class ChannelPresenter extends BasePresenter<ChannelView> implements Vide
                                     return;
                                 }
 
-                                VideoGroup replace = VideoGroup.from(mediaGroup);
+                                VideoGroup replace = VideoGroup.from(mediaGroup, getPageCards(mediaGroup));
                                 replace.setId(144);
                                 replace.setPosition(0);
                                 replace.setAction(VideoGroup.ACTION_REPLACE);
@@ -396,7 +443,7 @@ public class ChannelPresenter extends BasePresenter<ChannelView> implements Vide
                         return;
                     }
 
-                    VideoGroup update = VideoGroup.from(items);
+                    VideoGroup update = VideoGroup.from(items, getPageCards(items));
 
                     if (update.isEmpty()) {
                         MessageHelpers.showMessage(getContext(), R.string.nothing_found);

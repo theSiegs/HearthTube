@@ -97,6 +97,16 @@ public class VideoGroup {
     }
 
     public static VideoGroup from(MediaGroup mediaGroup, BrowseSection section, int groupPosition) {
+        return from(mediaGroup, section, groupPosition, null);
+    }
+
+    /** HearthTube: a channel page's row, its channel's own cards given its channel ID before they're added */
+    public static VideoGroup from(MediaGroup mediaGroup, com.liskovsoft.smartyoutubetv2.common.utils.ChannelPageCards page) {
+        return from(mediaGroup, null, -1, page);
+    }
+
+    private static VideoGroup from(MediaGroup mediaGroup, BrowseSection section, int groupPosition,
+                                   com.liskovsoft.smartyoutubetv2.common.utils.ChannelPageCards page) {
         VideoGroup videoGroup = new VideoGroup();
         videoGroup.mSection = section;
         videoGroup.mPosition = groupPosition;
@@ -124,6 +134,10 @@ public class VideoGroup {
 
             Video video = Video.from(item);
 
+            if (page != null) { // HearthTube: so blocked and AI channels match here too
+                page.stamp(video);
+            }
+
             videoGroup.add(video);
         }
 
@@ -131,6 +145,12 @@ public class VideoGroup {
     }
 
     public static VideoGroup from(VideoGroup baseGroup, MediaGroup mediaGroup) {
+        return from(baseGroup, mediaGroup, null);
+    }
+
+    /** HearthTube: more of a channel page's row (see {@link #from(MediaGroup, com.liskovsoft.smartyoutubetv2.common.utils.ChannelPageCards)}) */
+    public static VideoGroup from(VideoGroup baseGroup, MediaGroup mediaGroup,
+                                  com.liskovsoft.smartyoutubetv2.common.utils.ChannelPageCards page) {
         baseGroup.mMediaGroup = mediaGroup;
 
         if (mediaGroup == null) {
@@ -148,6 +168,10 @@ public class VideoGroup {
             }
 
             Video video = Video.from(item);
+
+            if (page != null) {
+                page.stamp(video);
+            }
 
             baseGroup.add(video);
         }
