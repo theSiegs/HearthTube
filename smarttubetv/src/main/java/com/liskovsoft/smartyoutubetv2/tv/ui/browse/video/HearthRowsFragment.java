@@ -64,6 +64,14 @@ public class HearthRowsFragment extends VideoRowsFragment {
     private final Map<ListRow, ListRow> mPreviews = new IdentityHashMap<>();
     private View mDetails;
     private View mScrim;
+    /** Hearth changed something, maybe its wallpaper: the shade follows how bright the new one is */
+    private final android.database.ContentObserver mHearthObserver =
+            new android.database.ContentObserver(new android.os.Handler(android.os.Looper.getMainLooper())) {
+        @Override
+        public void onChange(boolean selfChange) {
+            updateScrim();
+        }
+    };
     private int mRowHeight;
     private int mRowBottomMargin;
     /** The full row shown as a grid (More), or null */
@@ -218,6 +226,47 @@ public class HearthRowsFragment extends VideoRowsFragment {
     }
 
     @Override
+    public void onStart() {
+        super.onStart();
+
+        // The wallpaper may have changed while away (another profile's, Hearth's night picture): so may its brightness
+        updateScrim();
+
+        Context context = getContext();
+        for (android.net.Uri hearth : com.liskovsoft.smartyoutubetv2.common.utils.HearthProfile.ACTIVE_URIS) {
+            try {
+                context.getContentResolver().registerContentObserver(hearth, false, mHearthObserver);
+            } catch (Exception e) {
+                // No Hearth
+            }
+        }
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+
+        if (getContext() != null) {
+            getContext().getContentResolver().unregisterContentObserver(mHearthObserver);
+        }
+    }
+
+    /**
+     * In Hearth: the shade lighter on a dark wallpaper, full on a bright one (Hearth's own scrim does the same), and
+     * full when the brightness isn't known
+     */
+    private void updateScrim() {
+        Context context = getContext();
+
+        if (mScrim == null || context == null) {
+            return;
+        }
+
+        Double brightness = com.liskovsoft.smartyoutubetv2.common.utils.HearthWallpaper.getBrightness(context);
+        mScrim.setAlpha(brightness != null ? (float) (0.55 + 0.45 * Math.max(0, Math.min(1, brightness))) : 1f);
+    }
+
+    @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         mRows = super.onCreateView(inflater, container, savedInstanceState);
         Context context = inflater.getContext();
@@ -230,11 +279,7 @@ public class HearthRowsFragment extends VideoRowsFragment {
         root.addView(scrim, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                 Math.round(context.getResources().getDisplayMetrics().heightPixels * 0.78f), Gravity.BOTTOM));
         mScrim = scrim;
-        // In Hearth: lighter on a dark wallpaper, full on a bright one (Hearth's own scrim does the same)
-        Double brightness = com.liskovsoft.smartyoutubetv2.common.utils.HearthWallpaper.getBrightness(context);
-        if (brightness != null) {
-            scrim.setAlpha((float) (0.55 + 0.45 * Math.max(0, Math.min(1, brightness))));
-        }
+        updateScrim();
 
         // The row of big cards, at the bottom
         int cardHeight = LargeVideoCardPresenter.getLargeCardDimensPx(context).second;
