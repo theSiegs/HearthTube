@@ -227,7 +227,10 @@ public abstract class SearchTagsFragmentBase extends SearchSupportFragment
         String query = adapter.getAdapterOptions().get(PaginationAdapter.KEY_TAG);
         mSearchTagsProvider.search(query, results -> {
             adapter.addAllItems(results);
-            attachAdapter(0, adapter);
+            // HearthTube: no empty row when there are no pills (none, or all left out): it took the focus to nothing
+            if (adapter.size() > 0) {
+                attachAdapter(0, adapter);
+            }
             // Same suggestions in the keyboard
             //displayCompletions(toCompletions(results));
         });

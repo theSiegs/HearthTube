@@ -7,6 +7,7 @@ import com.liskovsoft.mediaserviceinterfaces.ServiceManager;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.smartyoutubetv2.common.app.models.search.vineyard.Tag;
 import com.liskovsoft.sharedutils.rx.RxHelper;
+import com.liskovsoft.smartyoutubetv2.common.utils.SearchPills;
 import com.liskovsoft.youtubeapi.service.YouTubeServiceManager;
 import io.reactivex.disposables.Disposable;
 
@@ -26,14 +27,16 @@ public class MediaServiceSearchTagProvider implements SearchTagsProvider {
     public void search(String query, ResultsCallback callback) {
         RxHelper.disposeActions(mTagsAction);
 
-        if (mIgnoreEmptyQuery && TextUtils.isEmpty(query)) {
+        // HearthTube: no pills for a search for what the results leave out ("tiktok" while Shorts are hidden)
+        if ((mIgnoreEmptyQuery && TextUtils.isEmpty(query)) || SearchPills.isHidden(query)) {
             callback.onResults(null);
             return;
         }
 
         mTagsAction = mContentService.getSearchTagsObserve(query)
                 .subscribe(
-                        tags -> callback.onResults(Tag.from(tags)),
+                        // HearthTube: nor pills that lead there
+                        tags -> callback.onResults(SearchPills.filter(query, Tag.from(tags))),
                         error -> Log.e(TAG, "Result is empty. Just ignore it. Error msg: %s", error.getMessage())
                 );
     }

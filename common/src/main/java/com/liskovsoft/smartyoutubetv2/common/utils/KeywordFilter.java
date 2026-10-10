@@ -95,6 +95,11 @@ public final class KeywordFilter {
         return true;
     }
 
+    /** The blocked words, folded: also for the search suggestions ({@link SearchPills}) */
+    static KeywordMatcher getMatcher() {
+        return matcher();
+    }
+
     /** Videos left out so far; compare two counts to see if any were */
     public static int getHiddenCount() {
         return sHiddenCount.get();

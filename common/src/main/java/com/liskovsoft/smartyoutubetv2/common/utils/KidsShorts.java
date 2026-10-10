@@ -43,12 +43,27 @@ public final class KidsShorts {
             "tik\\s*-?\\s*toks?|instagram|\\binsta\\s+reels?|#reels?\\b|\\breels compilation|#fyp\\b|\\bfyp\\b",
             java.util.regex.Pattern.CASE_INSENSITIVE);
 
+    /**
+     * Shorts by name, in a search: "#shorts", or "shorts" as a word ("minecraft shorts", "yt shorts"). "Basketball
+     * shorts" goes too, a small price for a search suggestion.
+     */
+    private static final java.util.regex.Pattern SHORTS_TERMS = java.util.regex.Pattern.compile(
+            "#shorts?\\b|\\bshorts\\b", java.util.regex.Pattern.CASE_INSENSITIVE);
+
     private KidsShorts() {
     }
 
     /** Shorts (and TikTok-style clips) are being left out right now */
     public static boolean isHidingShorts() {
         return sHidden;
+    }
+
+    /**
+     * A search (a suggestion pill, or what was typed) for what's left out while Shorts are hidden: TikTok or Instagram
+     * clips, reels, Shorts. Whether or not they're hidden right now ({@link SearchPills} asks).
+     */
+    static boolean isClipsSearch(String text) {
+        return text != null && (CLIPS.matcher(text).find() || SHORTS_TERMS.matcher(text).find());
     }
 
     /**
