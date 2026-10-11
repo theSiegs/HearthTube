@@ -254,6 +254,32 @@ public class NavigateTitleView extends TitleView implements OnDataChange, Accoun
         orb.setOrbColors(new Colors(colors.color, com.liskovsoft.smartyoutubetv2.common.utils.HearthAccent.resolve(getContext()), colors.iconColor));
     }
 
+    /**
+     * A profile photo covers the whole circle, so the accent fill can't show: like Hearth's top bar, focus shrinks the
+     * photo inside an accent ring instead, and the name next to it turns bolder.
+     */
+    private static void ringPhotoOnFocus(SearchOrbView orb, TextView name) {
+        if (orb == null) {
+            return;
+        }
+
+        View icon = orb.findViewById(androidx.leanback.R.id.icon);
+        android.graphics.Typeface regular = android.graphics.Typeface.create("sans-serif", android.graphics.Typeface.NORMAL);
+        android.graphics.Typeface bolder = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL);
+
+        orb.setOnFocusChangeListener((v, hasFocus) -> {
+            // Hearth's ring: 3 of the circle's 44 on each side
+            float scale = hasFocus && orb.getOrbColors().iconColor == Color.TRANSPARENT ? 38f / 44f : 1f;
+            if (icon != null) {
+                icon.setScaleX(scale);
+                icon.setScaleY(scale);
+            }
+            if (name != null) {
+                name.setTypeface(hasFocus ? bolder : regular);
+            }
+        });
+    }
+
     private static void describe(View orb, String label) {
         if (orb == null) {
             return;
@@ -369,6 +395,7 @@ public class NavigateTitleView extends TitleView implements OnDataChange, Accoun
         fillOnFocus(mAccountView);
         fillOnFocus(mSettingsView);
         fillOnFocus(mSearchOrbView);
+        ringPhotoOnFocus(mAccountView, mAccountName);
 
         mLanguageView = findViewById(R.id.language_orb);
         mLanguageView.setOnOrbClickedListener(v -> LanguageSettingsPresenter.instance(getContext()).show());
