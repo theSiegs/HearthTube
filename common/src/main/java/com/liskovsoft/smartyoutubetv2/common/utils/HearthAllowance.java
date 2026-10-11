@@ -127,6 +127,11 @@ public final class HearthAllowance {
             return YouTubeAllowance.Decision.NO_LIMIT;
         }
 
+        // Time limits and bedtimes are for kids: a grown-up's profile plays, whatever Hearth's row says
+        if (!ParentGate.isKidsProfile(context)) {
+            return YouTubeAllowance.Decision.NO_LIMIT;
+        }
+
         YouTubeAllowance.Row row = hearth == null ? null : new YouTubeAllowance.Row(hearth.contractVersion, hearth.key(),
                 hearth.youtubeMinutesLeft, hearth.scheduleLocked, hearth.allowanceMessage, hearth.allowanceSource,
                 hearth.allowanceCheckedAt);
