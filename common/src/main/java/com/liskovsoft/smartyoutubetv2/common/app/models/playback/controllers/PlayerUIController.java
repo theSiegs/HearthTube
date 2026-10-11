@@ -1008,6 +1008,12 @@ public class PlayerUIController extends BasePlayerController {
             return;
         }
 
+        // HearthTube: in a kids profile, unsubscribing takes the parent PIN, as in the long-press menu
+        if (buttonState != PlayerUI.BUTTON_OFF && com.liskovsoft.smartyoutubetv2.common.utils.ParentGate.isLocked(getContext())) {
+            com.liskovsoft.smartyoutubetv2.common.utils.ParentGate.run(getContext(), () -> onSubscribe(buttonState));
+            return;
+        }
+
         if (buttonState == PlayerUI.BUTTON_OFF) {
             callMediaItemObservable(mMediaItemService::subscribeObserve);
         } else {
