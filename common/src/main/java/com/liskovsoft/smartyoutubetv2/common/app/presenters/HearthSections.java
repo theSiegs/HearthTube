@@ -82,9 +82,7 @@ public final class HearthSections {
         rows.put(MediaGroup.TYPE_SUBSCRIPTIONS, subscriptionRows(context, content));
         rows.put(TYPE_AMBIANCE, searchRows(context, content, AMBIANCE));
         rows.put(TYPE_PODCASTS, searchRows(context, content, PODCASTS));
-        rows.put(TYPE_LIBRARY, Observable.concat(
-                content.getHistoryObserve().map(Collections::singletonList).onErrorReturnItem(Collections.emptyList()),
-                content.getPlaylistRowsObserve()));
+        rows.put(TYPE_LIBRARY, libraryRows(context, content));
 
         Video watchLater = new Video();
         watchLater.playlistId = "WL";
@@ -107,6 +105,42 @@ public final class HearthSections {
         }
 
         return queued;
+    }
+
+    /**
+     * History, then Watch later, Liked videos and the other playlists, as in YouTube's library: a pill each. The
+     * playlists load side by side and show in order, each as soon as it's in (one after another took long enough
+     * that the pills weren't there yet when Down left the tabs). History is named: YouTube's row has no title, and
+     * the pill took the tab's name.
+     */
+    private static Observable<List<MediaGroup>> libraryRows(Context context, ContentService content) {
+        String history = context.getString(R.string.header_history);
+
+        Observable<MediaGroup> historyRow = content.getHistoryObserve()
+                .map(group -> (MediaGroup) TitledGroup.continuable(group, history))
+                .onErrorResumeNext(Observable.empty());
+
+        Observable<MediaGroup> playlists = content.getPlaylistsObserve()
+                .flatMap(group -> {
+                    List<Observable<MediaGroup>> rows = new ArrayList<>();
+
+                    if (group.getMediaItems() != null) {
+                        for (MediaItem playlist : group.getMediaItems()) {
+                            if (playlist == null) {
+                                continue;
+                            }
+
+                            rows.add(content.getGroupObserve(playlist)
+                                    .map(videos -> (MediaGroup) TitledGroup.continuable(videos, playlist.getTitle()))
+                                    .onErrorResumeNext(Observable.empty()));
+                        }
+                    }
+
+                    return Observable.concatEager(rows);
+                })
+                .onErrorResumeNext(Observable.empty());
+
+        return Observable.concat(historyRow, playlists).map(Collections::singletonList);
     }
 
     /**
@@ -250,10 +284,12 @@ public final class HearthSections {
 
     /**
      * A search shelf (or a channel's uploads) under our title. No continuation: the first page (about 20 videos) is
-     * plenty for a row, and continuing needs YouTube's own group class.
+     * plenty for a row, and continuing needs YouTube's own group class. Library's rows do continue
+     * ({@link #continuable}): BrowsePresenter continues the group inside ({@link #getContinuable}).
      */
     public static class TitledGroup implements MediaGroup {
         private final MediaGroup mGroup;
+        private boolean mContinuable;
         private final String mTitle;
         @Nullable
         private final String mIconUrl;
@@ -274,6 +310,19 @@ public final class HearthSections {
             mTitle = title;
             mIconUrl = iconUrl;
             mChannel = channel;
+        }
+
+        /** YouTube's group under our title, continued as YouTube's (History, a playlist) */
+        static TitledGroup continuable(MediaGroup group, String title) {
+            TitledGroup titled = new TitledGroup(group, title, null);
+            titled.mContinuable = true;
+            return titled;
+        }
+
+        /** The group to continue in its place, or null when it doesn't continue */
+        @Nullable
+        public MediaGroup getContinuable() {
+            return mContinuable ? mGroup : null;
         }
 
         /** A channel's picture, for its circle in the strip; null for a plain chip */
@@ -327,7 +376,7 @@ public final class HearthSections {
 
         @Override
         public String getNextPageKey() {
-            return null;
+            return mContinuable ? mGroup.getNextPageKey() : null;
         }
 
         @Override

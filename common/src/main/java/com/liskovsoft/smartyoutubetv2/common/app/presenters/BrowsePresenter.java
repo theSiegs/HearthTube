@@ -870,6 +870,11 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
 
         MediaGroup mediaGroup = group.getMediaGroup();
 
+        // HearthTube: a row under our title (Library's) continues as YouTube's group inside
+        if (mediaGroup instanceof HearthSections.TitledGroup && ((HearthSections.TitledGroup) mediaGroup).getContinuable() != null) {
+            mediaGroup = ((HearthSections.TitledGroup) mediaGroup).getContinuable();
+        }
+
         Observable<MediaGroup> continuation;
 
         //if (mediaGroup.getType() == MediaGroup.TYPE_SUGGESTIONS) { // Pinned playlist
