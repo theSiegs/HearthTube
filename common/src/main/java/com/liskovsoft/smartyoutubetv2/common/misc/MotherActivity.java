@@ -229,6 +229,10 @@ public class MotherActivity extends FragmentActivity {
 
         sFront = new java.lang.ref.WeakReference<>(this);
 
+        // HearthTube: grown-ups share one HearthTube; someone else watching now starts over (only as a screen comes up,
+        // never mid-video)
+        com.liskovsoft.smartyoutubetv2.common.utils.HearthViewer.onResume(this);
+
         // HearthTube: kids screen time (Google TV's time-up screen, through Hearth)
         com.liskovsoft.smartyoutubetv2.common.utils.HearthScreenTime.onResume(this);
     }

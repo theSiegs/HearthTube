@@ -305,6 +305,16 @@ public class ViewManager {
         mMoveToBackOnce = true;
     }
 
+    /**
+     * HearthTube: someone else is watching now ({@link com.liskovsoft.smartyoutubetv2.common.utils.HearthViewer}):
+     * forget the screens the last one had open, so the next launch goes to the browse screen, as a fresh one does.
+     */
+    public void forgetScreens() {
+        mActivityStack.clear();
+        mDefaultTop = null;
+        mIsPlayerOnlyModeEnabled = false;
+    }
+
     public void enablePlayerOnlyMode(boolean enable) {
         // Ensure that we're not opening tube link from description dialog
         if (enable && AppDialogPresenter.instance(mContext).isDialogShown()) {

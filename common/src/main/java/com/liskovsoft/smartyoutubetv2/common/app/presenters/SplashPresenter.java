@@ -114,6 +114,9 @@ public class SplashPresenter extends BasePresenter<SplashView> {
         // Read before checkMasterPassword(): it may finish the view, leaving getView() null
         Intent newIntent = getView().getNewIntent();
 
+        // HearthTube: another grown-up's profile since the last launch? Not into the last one's video then
+        com.liskovsoft.smartyoutubetv2.common.utils.HearthViewer.onLaunch(getContext());
+
         checkMasterPassword(() -> applyNewIntent(getView().getNewIntent()));
 
         // HearthTube: no Shorts in kids profiles; an adult's own Shorts settings come back in their profile
