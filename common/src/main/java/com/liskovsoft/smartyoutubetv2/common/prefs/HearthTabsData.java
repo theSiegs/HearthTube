@@ -17,9 +17,15 @@ import java.util.List;
 public class HearthTabsData {
     private static final String PREFS_NAME = "hearth_tabs";
     private static final String TABS = "tabs";
-    /** Kinds of video. Library, Watch later and the like are places, so they go in the side menu */
+    /** Library became a tab after tabs could be saved: added once to a saved list, which may then drop it again */
+    private static final String LIBRARY_ADDED = "library_added";
+    /**
+     * Kinds of video, and Library (history, Watch later, Liked videos, playlists: a pill each, like YouTube's own).
+     * Watch later and the like are places, so they go in the side menu.
+     */
     private static final int[] DEFAULT_TABS = {
-            MediaGroup.TYPE_HOME, MediaGroup.TYPE_SUBSCRIPTIONS, MediaGroup.TYPE_MUSIC, HearthSections.TYPE_AMBIANCE
+            MediaGroup.TYPE_HOME, MediaGroup.TYPE_SUBSCRIPTIONS, MediaGroup.TYPE_MUSIC, HearthSections.TYPE_AMBIANCE,
+            HearthSections.TYPE_LIBRARY
     };
     /** Switched on in a new profile; everything else starts off (and can be switched on in Edit menu and tabs) */
     private static final int[] DEFAULT_ON = {
@@ -81,6 +87,14 @@ public class HearthTabsData {
             }
         }
 
+        // A list saved since then has Library or left it out on purpose (save() marks it)
+        if (!mPrefs.getBoolean(LIBRARY_ADDED, false)) {
+            if (!tabs.contains(HearthSections.TYPE_LIBRARY)) {
+                tabs.add(HearthSections.TYPE_LIBRARY);
+            }
+            save(tabs);
+        }
+
         return tabs;
     }
 
@@ -96,6 +110,10 @@ public class HearthTabsData {
             tabs.add(sectionId);
         }
 
+        save(tabs);
+    }
+
+    private void save(List<Integer> tabs) {
         StringBuilder saved = new StringBuilder();
         for (int id : tabs) {
             if (saved.length() > 0) {
@@ -104,6 +122,6 @@ public class HearthTabsData {
             saved.append(id);
         }
 
-        mPrefs.edit().putString(TABS, saved.toString()).apply();
+        mPrefs.edit().putString(TABS, saved.toString()).putBoolean(LIBRARY_ADDED, true).apply();
     }
 }
