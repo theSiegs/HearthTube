@@ -423,6 +423,10 @@ public abstract class MultipleRowsFragment extends RowsSupportFragment implement
                 adapter.remove(group);
             }
             return;
+        } else if (action == VideoGroup.ACTION_REMOVE_AUTHOR) {
+            // HearthTube: a channel left (unsubscribed from a video's menu): its videos go, none come back as new ones
+            removeAuthor(group);
+            return;
         } else if (action == VideoGroup.ACTION_SYNC) {
             VideoGroupObjectAdapter adapter = mVideoGroupAdapters.get(group.getId());
             if (adapter != null) {
@@ -467,6 +471,28 @@ public abstract class MultipleRowsFragment extends RowsSupportFragment implement
         }
 
         restorePosition();
+    }
+
+    /** HearthTube: the videos of this group's (first video's) channel leave every row, by its author line */
+    protected void removeAuthor(VideoGroup group) {
+        if (group.isEmpty()) {
+            return;
+        }
+
+        String author = group.getVideos().get(0).getAuthor();
+
+        for (VideoGroupObjectAdapter adapter : new ArrayList<>(mVideoGroupAdapters.values())) {
+            List<Video> same = new ArrayList<>();
+            for (Video video : adapter.getAll()) {
+                if (Helpers.equals(author, video.getAuthor())) {
+                    same.add(video);
+                }
+            }
+
+            if (!same.isEmpty()) {
+                adapter.remove(VideoGroup.from(same));
+            }
+        }
     }
 
     private void restorePosition() {

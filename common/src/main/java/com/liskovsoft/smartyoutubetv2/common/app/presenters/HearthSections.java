@@ -231,6 +231,24 @@ public final class HearthSections {
     }
 
     /**
+     * Which of the rows (Subscriptions' circles: each row's channel id, if known, and name; nulls for All and the like)
+     * is the video's channel's, else -1.
+     */
+    public static int indexOfChannel(List<String> channelIds, List<String> channelTitles,
+                                     @Nullable String videoChannelId, @Nullable String videoAuthor) {
+        for (int i = 0; i < channelTitles.size(); i++) {
+            String id = i < channelIds.size() ? channelIds.get(i) : null;
+            String title = channelTitles.get(i);
+
+            if ((id != null || title != null) && isSameChannel(id, title, videoChannelId, videoAuthor)) {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    /**
      * A search shelf (or a channel's uploads) under our title. No continuation: the first page (about 20 videos) is
      * plenty for a row, and continuing needs YouTube's own group class.
      */

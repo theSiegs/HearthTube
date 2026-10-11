@@ -516,6 +516,44 @@ public class HearthRowsFragment extends VideoRowsFragment {
         mPreviews.remove(row);
     }
 
+    /**
+     * Unsubscribed from a video's menu (not the circle's): when the video's channel has a circle, the same as from the
+     * circle ({@link #onChannelGone}): the circle goes, the focus stays sensible, its videos leave All.
+     */
+    @Override
+    protected void removeAuthor(VideoGroup group) {
+        Video video = group.isEmpty() ? null : group.getVideos().get(0);
+        List<String> ids = new ArrayList<>();
+        List<String> titles = new ArrayList<>();
+
+        for (int i = 0; video != null && getStripRow(i) != null; i++) {
+            HearthSections.TitledGroup titled = getTitledGroup(getStripRow(i));
+            boolean circle = titled != null && titled.getChannel() != null;
+            ids.add(circle ? titled.getUploadsChannelId() : null);
+            titles.add(circle ? titled.getChannel().getTitle() : null);
+        }
+
+        int index = video != null ? HearthSections.indexOfChannel(ids, titles, video.channelId, video.getAuthor()) : -1;
+
+        if (index == -1) {
+            super.removeAuthor(group);
+            return;
+        }
+
+        ListRow row = getStripRow(index);
+        boolean inRow = mRows != null && mRows.hasFocus();
+
+        Video channel = new Video();
+        channel.channelId = ids.get(index) != null ? ids.get(index) : video.channelId;
+        channel.title = titles.get(index);
+        onChannelGone(row, channel);
+
+        // The card that had the focus went with its row: the focus goes to the row now on show
+        if (inRow && (mRows == null || !mRows.hasFocus())) {
+            focusRow();
+        }
+    }
+
     private static void removeChannelVideos(VideoGroupObjectAdapter adapter, Video channel) {
         List<Video> videos = new ArrayList<>();
 

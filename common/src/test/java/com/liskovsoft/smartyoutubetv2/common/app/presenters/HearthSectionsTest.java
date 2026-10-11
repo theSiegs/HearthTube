@@ -1,5 +1,6 @@
 package com.liskovsoft.smartyoutubetv2.common.app.presenters;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -46,5 +47,32 @@ public class HearthSectionsTest {
         assertFalse(HearthSections.isSameChannel(null, null, null, "Cat Tales"));
         assertFalse(HearthSections.isSameChannel(null, "Cat Tales", null, null));
         assertFalse(HearthSections.isSameChannel(null, null, null, null));
+    }
+
+    // Unsubscribed from a video card's menu: which circle is the video's channel's (All and topics have none)
+
+    @Test
+    public void findsTheVideosCircle() {
+        java.util.List<String> ids = java.util.Arrays.asList(null, null, CHANNEL, null);
+        java.util.List<String> titles = java.util.Arrays.asList(null, "Dog Days", "Cat Tales", "Fox Facts");
+
+        assertEquals(2, HearthSections.indexOfChannel(ids, titles, CHANNEL, "Someone Else"));
+        assertEquals(2, HearthSections.indexOfChannel(ids, titles, null, "Cat Tales • @CatTales"));
+        assertEquals(3, HearthSections.indexOfChannel(ids, titles, OTHER, "Fox Facts • @foxfacts"));
+        assertEquals(1, HearthSections.indexOfChannel(ids, titles, null, "dog days"));
+    }
+
+    @Test
+    public void noCircleNoIndex() {
+        java.util.List<String> ids = java.util.Arrays.asList(null, CHANNEL);
+        java.util.List<String> titles = java.util.Arrays.asList(null, "Cat Tales");
+
+        // Another channel, a collaboration another channel posted, a circle's id that isn't the video's
+        assertEquals(-1, HearthSections.indexOfChannel(ids, titles, null, "Owl Hour • @owlhour"));
+        assertEquals(-1, HearthSections.indexOfChannel(ids, titles, null, "Dog Days and Cat Tales • @dogdays"));
+        assertEquals(-1, HearthSections.indexOfChannel(ids, titles, OTHER, "Cat Tales"));
+        assertEquals(-1, HearthSections.indexOfChannel(ids, titles, null, null));
+        assertEquals(-1, HearthSections.indexOfChannel(java.util.Collections.<String>emptyList(),
+                java.util.Collections.<String>emptyList(), CHANNEL, "Cat Tales"));
     }
 }
