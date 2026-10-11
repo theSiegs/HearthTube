@@ -167,6 +167,10 @@ public class ProfilePickerPresenter extends BasePresenter<ProfilePickerView> {
         }
 
         if (link == null) {
+            // One login per Google TV profile: nobody else's account meanwhile. The picker shows this profile no
+            // accounts, so it's the welcome, and signing in links the new account to the profile (YTSignInPresenter)
+            mSignInService.selectAccount(null);
+
             if (isDeepLink(intent)) {
                 return FOLLOW_NONE;
             }
@@ -226,9 +230,65 @@ public class ProfilePickerPresenter extends BasePresenter<ProfilePickerView> {
     }
 
     public void show() {
+        List<Account> accounts = getVisibleAccounts();
         GlideIconFetcher.fetchDrawables(getContext(),
-                Helpers.map(mSignInService.getAccounts(), Account::getAvatarImageUrl),
-                icons -> createAndShowView(mSignInService.getAccounts(), icons));
+                Helpers.map(accounts, Account::getAvatarImageUrl),
+                icons -> createAndShowView(accounts, icons));
+    }
+
+    /**
+     * One login per Google TV profile: while HearthTube follows Hearth's profile, the picker offers only the
+     * profile's own account and that account's channels (YouTube lists each channel as an account with the same
+     * email), and none when it has no account yet (the picker is then the welcome, which signs it in). Without
+     * Hearth, or when it can't tell who's watching, every account.
+     */
+    private List<Account> getVisibleAccounts() {
+        List<Account> accounts = mSignInService.getAccounts();
+        String profile = getFollowedProfile();
+
+        if (accounts == null || profile == null) {
+            return accounts;
+        }
+
+        ProfileLinkData.Link link = ProfileLinkData.instance(getContext()).getLink(profile, accounts);
+        List<Account> own = new ArrayList<>();
+
+        for (Account account : accounts) {
+            if (link != null && isSamePerson(account, link.account)) {
+                own.add(account);
+            }
+        }
+
+        return own;
+    }
+
+    /** "Add account" in the picker: not while it follows a Google TV profile, which has its one login */
+    public boolean canAddAccount() {
+        return getFollowedProfile() == null;
+    }
+
+    /** The Google TV profile HearthTube follows (its key), or null when it doesn't follow one right now */
+    @androidx.annotation.Nullable
+    private String getFollowedProfile() {
+        if (!ProfileLinkData.instance(getContext()).isFollowEnabled()) {
+            return null;
+        }
+
+        HearthProfile profile = HearthProfile.query(getContext());
+        return profile != null ? profile.key() : null;
+    }
+
+    /** The same Google account: by email when both have one, else by name */
+    static boolean isSamePerson(Account account, Account other) {
+        if (account == null || other == null) {
+            return false;
+        }
+
+        if (account.getEmail() != null && other.getEmail() != null) {
+            return account.getEmail().equalsIgnoreCase(other.getEmail());
+        }
+
+        return Helpers.equals(account.getName(), other.getName());
     }
 
     private void createAndShowView(List<Account> accounts, List<Drawable> icons) {
@@ -275,10 +335,13 @@ public class ProfilePickerPresenter extends BasePresenter<ProfilePickerView> {
     }
 
     private void switchTo(Account account, boolean hasPin) {
-        if (mLinkingProfile != null) {
-            ProfileLinkData.instance(getContext()).setLink(mLinkingProfile, account);
-            mLinkingProfile = null;
+        String profile = mLinkingProfile != null ? mLinkingProfile : getFollowedProfile();
+
+        // The pick is the profile's account from now on (only its own channels are offered, getVisibleAccounts)
+        if (profile != null && account != null) {
+            ProfileLinkData.instance(getContext()).setLink(profile, account);
         }
+        mLinkingProfile = null;
 
         AccountSelectionPresenter.instance(getContext()).selectAccount(account);
 

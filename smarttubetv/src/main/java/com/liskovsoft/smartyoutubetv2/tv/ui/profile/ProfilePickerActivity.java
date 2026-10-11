@@ -98,13 +98,15 @@ public class ProfilePickerActivity extends LeanbackActivity implements ProfilePi
             }
         }
 
-        View addTile = addTile(new ProfileItem(mWelcome ? ProfileItem.TYPE_SIGN_IN : ProfileItem.TYPE_ADD, null, null, false));
+        // Following a Google TV profile (through Hearth), it has its one login: no Add
+        View addTile = mWelcome || ProfilePickerPresenter.instance(this).canAddAccount() ?
+                addTile(new ProfileItem(mWelcome ? ProfileItem.TYPE_SIGN_IN : ProfileItem.TYPE_ADD, null, null, false)) : null;
 
         // A welcome starts on "Sign in"; with no account selected, the first one
         if (mWelcome) {
             focusTile = addTile;
         } else if (focusTile == null) {
-            focusTile = mRow.getChildCount() > 1 ? mRow.getChildAt(0) : addTile;
+            focusTile = mRow.getChildCount() > 0 && mRow.getChildAt(0) != addTile ? mRow.getChildAt(0) : addTile;
         }
 
         if (focusTile != null) {
