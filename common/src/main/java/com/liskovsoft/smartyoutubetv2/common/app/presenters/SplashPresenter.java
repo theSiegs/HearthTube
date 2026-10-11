@@ -263,6 +263,16 @@ public class SplashPresenter extends BasePresenter<SplashView> {
             return false;
         });
 
+        // HearthTube: settings, opened by Hearth's page for a kid
+        mIntentChain.add(intent -> {
+            if (com.liskovsoft.smartyoutubetv2.common.app.presenters.settings.SettingsDeepLink.isOpenSettings(intent)) {
+                com.liskovsoft.smartyoutubetv2.common.app.presenters.settings.SettingsDeepLink.open(getContext(), intent);
+                return true;
+            }
+
+            return false;
+        });
+
         mIntentChain.add(intent -> {
             String searchText = IntentExtractor.extractSearchText(intent);
 

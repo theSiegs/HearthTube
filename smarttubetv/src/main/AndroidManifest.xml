@@ -79,6 +79,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
                 <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
             </intent-filter>
+            <!-- HearthTube: settings, opened by Hearth (extra "section": general, player, accounts, blocked_words, about) -->
+            <intent-filter>
+                <action android:name="com.thesiegs.hearthtube.action.OPEN_SETTINGS"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+            </intent-filter>
             <!-- Process intents from other apps -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW"/>

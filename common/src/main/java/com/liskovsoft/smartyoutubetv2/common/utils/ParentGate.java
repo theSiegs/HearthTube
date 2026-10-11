@@ -33,6 +33,14 @@ public final class ParentGate {
      * Runs the action now, or after a parent's PIN in a kids profile.
      */
     public static void run(Context context, Runnable action) {
+        run(context, action, null);
+    }
+
+    /**
+     * Like {@link #run(Context, Runnable)}; {@code onCancel}, when given, runs if the PIN screen is left without the
+     * PIN (Back), or can't be checked.
+     */
+    public static void run(Context context, Runnable action, Runnable onCancel) {
         if (!isLocked(context)) {
             action.run();
             return;
@@ -44,12 +52,15 @@ public final class ParentGate {
 
         if (hearth != null && hearth.hasParentPin) {
             links.setUsingHearthPin(true);
-            ask = () -> askPin(context, hearthPinChecker(context), action);
+            ask = () -> askPin(context, hearthPinChecker(context), action, onCancel);
         } else if (links.isUsingHearthPin()) {
             if (isHearthSilent(context, hearth)) {
                 // Hearth is there but not answering (busy, restarting): its PIN can't be checked, and a new one
                 // can't be chosen either, or a kid could wait for this moment
                 MessageHelpers.showLongMessage(context, R.string.parent_pin_hearth_silent);
+                if (onCancel != null) {
+                    onCancel.run();
+                }
                 return;
             }
 
@@ -57,12 +68,12 @@ public final class ParentGate {
             // HearthTube's own PIN from before is likely forgotten, so the parent chooses a new one right away
             links.setUsingHearthPin(false);
             links.setParentPin(null);
-            ask = () -> createPin(context, action, context.getString(R.string.parent_pin_hearth_gone));
+            ask = () -> createPin(context, action, context.getString(R.string.parent_pin_hearth_gone), onCancel);
         } else if (!links.hasParentPin()) {
             // No PIN yet (a kid's own copy starts empty): the parent setting it up chooses one
-            ask = () -> createPin(context, action, null);
+            ask = () -> createPin(context, action, null, onCancel);
         } else {
-            ask = () -> askPin(context, links::checkParentPin, action);
+            ask = () -> askPin(context, links::checkParentPin, action, onCancel);
         }
 
         // The PIN screen belongs to the screen below an open settings panel and would show under it
@@ -75,27 +86,43 @@ public final class ParentGate {
         }
     }
 
-    private static void createPin(Context context, Runnable action, String message) {
+    private static void createPin(Context context, Runnable action, String message, Runnable onCancel) {
+        boolean[] chosen = {false};
         PinDialog.show(
                 context,
                 context.getString(R.string.set_parent_pin),
                 message != null ? message : context.getString(R.string.first_parent_pin_hint),
                 newPin -> {
+                    chosen[0] = true;
+                    boolean[] confirmed = {false};
                     Utils.post(() -> PinDialog.show(
                             context,
                             context.getString(R.string.confirm_profile_pin),
-                            confirmed -> {
-                                if (newPin.equals(confirmed)) {
+                            null,
+                            again -> {
+                                confirmed[0] = true;
+                                if (newPin.equals(again)) {
                                     ProfileLinkData.instance(context).setParentPin(newPin);
                                     sUnlockedUntilMs = System.currentTimeMillis() + UNLOCK_MS;
                                     Utils.post(action);
                                 } else {
-                                    Utils.post(() -> createPin(context, action, context.getString(R.string.pin_mismatch)));
+                                    Utils.post(() -> createPin(context, action, context.getString(R.string.pin_mismatch), onCancel));
                                 }
                                 return true;
-                            }));
+                            },
+                            cancelIf(confirmed, onCancel)));
                     return true;
-                });
+                },
+                cancelIf(chosen, onCancel));
+    }
+
+    /** A PIN screen's dismiss listener: {@code onCancel} when it closed without its PIN */
+    private static Runnable cancelIf(boolean[] done, Runnable onCancel) {
+        return onCancel == null ? null : () -> {
+            if (!done[0]) {
+                onCancel.run();
+            }
+        };
     }
 
     private interface PinChecker {
@@ -123,19 +150,22 @@ public final class ParentGate {
         return hearth == null && HearthProfile.isGenuine(context) == Boolean.TRUE;
     }
 
-    private static void askPin(Context context, PinChecker checker, Runnable action) {
+    private static void askPin(Context context, PinChecker checker, Runnable action, Runnable onCancel) {
+        boolean[] passed = {false};
         PinDialog.show(
                 context,
                 context.getString(R.string.parent_pin_title),
                 context.getString(R.string.parent_pin_message),
                 pin -> {
                     if (checker.check(pin)) {
+                        passed[0] = true;
                         sUnlockedUntilMs = System.currentTimeMillis() + UNLOCK_MS;
                         Utils.post(action); // after the PIN screen closes
                         return true;
                     }
                     return false;
-                });
+                },
+                cancelIf(passed, onCancel));
     }
 
     /** Hearth has a parent PIN, which then stands in for HearthTube's own */
@@ -161,7 +191,7 @@ public final class ParentGate {
             return;
         }
 
-        askPin(context, links::checkParentPin, action);
+        askPin(context, links::checkParentPin, action, null);
     }
 
     /** A parent entered the PIN in the last few minutes */

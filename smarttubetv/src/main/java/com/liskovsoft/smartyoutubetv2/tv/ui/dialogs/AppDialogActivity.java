@@ -113,6 +113,11 @@ public class AppDialogActivity extends MotherActivity {
                 return;
             }
 
+            // HearthTube: the last panel of settings opened from outside (Hearth) goes back there
+            if (isBackPressed()) {
+                com.liskovsoft.smartyoutubetv2.common.app.presenters.settings.SettingsDeepLink.onPanelsClosedByBack(this);
+            }
+
             mFragment.onFinish();
         }
 

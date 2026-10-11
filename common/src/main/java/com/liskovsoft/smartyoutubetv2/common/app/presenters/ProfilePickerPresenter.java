@@ -93,6 +93,11 @@ public class ProfilePickerPresenter extends BasePresenter<ProfilePickerView> {
             return true;
         }
 
+        // HearthTube: settings opened by Hearth go straight there, as the profile already is
+        if (com.liskovsoft.smartyoutubetv2.common.app.presenters.settings.SettingsDeepLink.isOpenSettings(intent)) {
+            return true;
+        }
+
         // NFC taps, cast-and-play, shared YouTube URLs, voice search etc. all carry a data Uri.
         // A plain launcher tap (or the ATV root icon) doesn't, so this tells the two apart.
         return IntentExtractor.hasData(intent) && !IntentExtractor.isRootUrl(intent);

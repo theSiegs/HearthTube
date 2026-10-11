@@ -48,6 +48,8 @@ public class ViewManager {
     private boolean mIsMoveToBackEnabled;
     private boolean mIsFinished;
     private boolean mIsPlayerOnlyModeEnabled;
+    /** HearthTube: see {@link #moveToBackOnResume()} */
+    private boolean mMoveToBackOnce;
     private long mPendingActivityMs;
     private Class<?> mPendingActivityClass;
     private WeakHashSet<Runnable> mOnFinish;
@@ -114,6 +116,7 @@ public class ViewManager {
         }
 
         mIsMoveToBackEnabled = false; // Essential part or new view will be pause immediately
+        mMoveToBackOnce = false;
 
         //if (!forceStart && doThrottle()) {
         //    Log.d(TAG, "Too many events. Skipping startView...");
@@ -167,6 +170,7 @@ public class ViewManager {
 
     public void startDefaultView() {
         mIsMoveToBackEnabled = false;
+        mMoveToBackOnce = false;
         mIsPlayerOnlyModeEnabled = false;
 
         Class<?> lastActivity;
@@ -276,6 +280,13 @@ public class ViewManager {
     }
 
     private boolean checkMoveViewsToBack(Activity activity) {
+        if (mMoveToBackOnce) {
+            mMoveToBackOnce = false;
+            safeMoveTaskToBack(activity);
+
+            return true;
+        }
+
         if (mIsMoveToBackEnabled) {
             safeMoveTaskToBack(activity);
 
@@ -283,6 +294,15 @@ public class ViewManager {
         }
 
         return false;
+    }
+
+    /**
+     * HearthTube: the next of our screens to come to the front moves aside instead (to the back, still ready to come
+     * back to), as when Back leaves the last one. Once: coming back to it later (recents) brings it back. Starting a
+     * view undoes it.
+     */
+    public void moveToBackOnResume() {
+        mMoveToBackOnce = true;
     }
 
     public void enablePlayerOnlyMode(boolean enable) {
