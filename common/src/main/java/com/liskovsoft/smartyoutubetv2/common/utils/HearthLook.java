@@ -35,6 +35,12 @@ public final class HearthLook {
         HearthProfile hearth = HearthLinkData.instance(context).isMatchClockAndLanguageEnabled() ?
                 HearthProfile.queryHearth(context) : null;
 
+        // Hearth's Home Assistant setup may have answered "share what's playing" (contract 7)
+        HearthProfile live = HearthProfile.live(context, hearth != null ? hearth : HearthProfile.queryHearth(context));
+        if (live != null) {
+            HearthLinkData.instance(context).applyHearthAnswer(live.shareNowPlaying);
+        }
+
         sTimeFormat = hearth != null ? hearth.timeFormat : null;
         sDateFormat = hearth != null ? hearth.dateFormat : null;
 

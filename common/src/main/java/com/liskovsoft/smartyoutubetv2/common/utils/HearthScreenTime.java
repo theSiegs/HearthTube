@@ -86,6 +86,11 @@ public final class HearthScreenTime {
                 : HearthProfile.live(activity, HearthProfile.queryHearth(activity));
         int message;
 
+        if (hearth != null) {
+            // Hearth changed its "share what's playing" answer (its Settings → Home Assistant switch)
+            com.liskovsoft.smartyoutubetv2.common.prefs.HearthLinkData.instance(activity).applyHearthAnswer(hearth.shareNowPlaying);
+        }
+
         if (hearth != null && hearth.hasParentPin) {
             // Remembered, so if Hearth's PIN goes away later the parent gets to choose a new one (ParentGate)
             ProfileLinkData.instance(activity).setUsingHearthPin(true);

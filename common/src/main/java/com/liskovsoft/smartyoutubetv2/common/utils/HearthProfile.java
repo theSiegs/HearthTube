@@ -130,8 +130,14 @@ public class HearthProfile {
     /** When Hearth last read Home Assistant's allowance today (epoch ms); null when it hasn't today */
     @Nullable
     public final Long allowanceCheckedAt;
+    /**
+     * Hearth's Home Assistant setup asked whether HearthTube may share what's playing (contract 7): 1 yes, 0 no; null
+     * when it never asked, or Hearth is older
+     */
+    @Nullable
+    public final Integer shareNowPlaying;
     /** The newest contract this code was written against: a newer Hearth may mean columns changed meaning. */
-    private static final int KNOWN_CONTRACT = 6;
+    private static final int KNOWN_CONTRACT = 7;
     /** Hearth takes at most this much playing time in one {@link #reportPlaying} */
     public static final long MAX_REPORT_MS = 10 * 60_000;
     /** HearthTube was last opened by Hearth (Android 14+, Hearth's share-identity launch); null when unknown */
@@ -169,6 +175,8 @@ public class HearthProfile {
         this.allowanceMessage = getString(cursor, "allowance_message");
         this.allowanceSource = getString(cursor, "allowance_source");
         this.allowanceCheckedAt = getLongOrNull(cursor, "allowance_checked_at");
+        Long share = contractVersion >= 7 ? getLongOrNull(cursor, "ha_share_now_playing") : null;
+        this.shareNowPlaying = share != null ? share.intValue() : null;
 
         if (contractVersion > KNOWN_CONTRACT && !sWarnedNewerContract) {
             sWarnedNewerContract = true;

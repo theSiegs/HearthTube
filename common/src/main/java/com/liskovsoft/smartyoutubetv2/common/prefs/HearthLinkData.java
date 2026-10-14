@@ -15,6 +15,8 @@ public class HearthLinkData {
     private static final String SCREENSAVER_WHEN_PAUSED = "screensaver_when_paused";
     private static final String BACK_TO_HEARTH = "back_to_hearth";
     private static final String HOME_ASSISTANT = "home_assistant";
+    /** Hearth's last answer to "share what's playing" that was applied (applyHearthAnswer) */
+    private static final String HOME_ASSISTANT_HEARTH_ANSWER = "home_assistant_hearth_answer";
     private static final String ACCENT = "accent_color";
     private static final String WALLPAPER = "wallpaper";
     @SuppressLint("StaticFieldLeak")
@@ -76,6 +78,28 @@ public class HearthLinkData {
 
     public void setHomeAssistantEnabled(boolean enabled) {
         put(HOME_ASSISTANT, enabled);
+    }
+
+    /**
+     * Hearth asks during its Home Assistant setup whether HearthTube may share what's playing (and has a switch for it).
+     * Its answer sets this one whenever it changes; a change made here stands until then. Never asked: on.
+     */
+    public void applyHearthAnswer(@androidx.annotation.Nullable Integer answer) {
+        Integer applied = mPrefs.contains(HOME_ASSISTANT_HEARTH_ANSWER) ? mPrefs.getInt(HOME_ASSISTANT_HEARTH_ANSWER, -1) : null;
+        Boolean enable = hearthAnswerToApply(answer, applied);
+
+        if (enable != null) {
+            mPrefs.edit().putBoolean(HOME_ASSISTANT, enable).putInt(HOME_ASSISTANT_HEARTH_ANSWER, answer).apply();
+        }
+    }
+
+    /** The switch's new state for Hearth's answer, or null to leave it: no answer, or the one already applied */
+    static Boolean hearthAnswerToApply(@androidx.annotation.Nullable Integer answer, @androidx.annotation.Nullable Integer applied) {
+        if (answer == null || answer.equals(applied)) {
+            return null;
+        }
+
+        return answer != 0;
     }
 
     /** Look and layout > Accent color: a color, or null to match Hearth (the default) */
