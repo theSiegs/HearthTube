@@ -18,9 +18,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * HearthTube: blocked words. A video with one in its title or channel name is left out wherever blocked channels
- * are (every row and grid, search, the player's suggestions), and doesn't play next on its own either. In a Google TV
- * kids profile the player also refuses it, however it got there (a link, a cast), the way it refuses Shorts. An adult
- * who opens one directly still gets it.
+ * are (every row and grid, search, the player's suggestions), and doesn't play next on its own either. The player also
+ * refuses it, however it got there (a link, a cast), in every profile.
  * <p>
  * One list per Google TV profile: each is its own Android user, with its own copy of HearthTube's data. Empty at first.
  * How words are found is {@link KeywordMatcher}.
@@ -172,13 +171,14 @@ public final class KeywordFilter {
     }
 
     /**
-     * Kids profiles: the player refuses a video with a blocked word. Checked as the video loads (the tile's title, or
-     * the player data's) and again once its details are in: a link or a cast has no title before that.
+     * The player refuses a video with a blocked word, in every profile: a word someone blocked stays blocked, however
+     * the video got here. Checked as the video loads (the tile's title, or the player data's) and again once its
+     * details are in: a link or a cast has no title before that.
      */
     public static boolean isBlockedInPlayer(Context context, MediaItemFormatInfo formatInfo, Video video) {
         KeywordMatcher matcher = matcher(context);
 
-        if (matcher.isEmpty() || video == null || !ParentGate.isKidsProfile(context)) {
+        if (matcher.isEmpty() || video == null) {
             return false;
         }
 
