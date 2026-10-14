@@ -983,7 +983,13 @@ public class VideoMenuPresenter extends BaseMenuPresenter {
         Observable<Void> observable = video.isSubscribed ?
                 mMediaItemService.unsubscribeObserve(video.channelId) : mMediaItemService.subscribeObserve(video.channelId);
 
-        mSubscribeAction = RxHelper.execute(observable);
+        boolean subscribing = !video.isSubscribed;
+        // HearthTube: when YouTube doesn't accept it (a supervised account may not be allowed), say so
+        mSubscribeAction = RxHelper.execute(observable, error -> {
+            video.isSubscribed = !subscribing;
+            com.liskovsoft.smartyoutubetv2.common.utils.Utils.post(() -> MessageHelpers.showMessage(getContext(),
+                    getContext().getString(subscribing ? R.string.subscribe_failed : R.string.unsubscribe_failed)));
+        });
 
         video.isSubscribed = !video.isSubscribed;
 

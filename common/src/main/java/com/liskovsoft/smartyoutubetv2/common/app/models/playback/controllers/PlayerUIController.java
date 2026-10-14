@@ -671,7 +671,22 @@ public class PlayerUIController extends BasePlayerController {
         disableSuggestionsResetTimeout();
     }
 
+    /** YouTube didn't accept a subscribe or an unsubscribe: show the button as it was, and say so */
+    private void undoSubscribe(boolean wasSubscribing) {
+        if (getPlayer() == null || getVideo() == null) {
+            return;
+        }
+
+        getVideo().isSubscribed = !wasSubscribing;
+        getPlayer().setButtonState(R.id.action_subscribe, wasSubscribing ? PlayerUI.BUTTON_OFF : PlayerUI.BUTTON_ON);
+        MessageHelpers.showMessage(getContext(), wasSubscribing ? R.string.subscribe_failed : R.string.unsubscribe_failed);
+    }
+
     private void callMediaItemObservable(MediaItemObservable callable) {
+        callMediaItemObservable(callable, null);
+    }
+
+    private void callMediaItemObservable(MediaItemObservable callable, com.liskovsoft.sharedutils.rx.OnError onError) {
         Video video = getVideo();
 
         if (video == null) {
@@ -681,7 +696,11 @@ public class PlayerUIController extends BasePlayerController {
 
         Observable<Void> observable = callable.call(video.mediaItem != null ? video.mediaItem : video.toMediaItem());
 
-        RxHelper.execute(observable);
+        if (onError != null) {
+            RxHelper.execute(observable, onError);
+        } else {
+            RxHelper.execute(observable);
+        }
     }
 
     private boolean handleBackKey(int keyCode) {
@@ -1008,10 +1027,14 @@ public class PlayerUIController extends BasePlayerController {
             return;
         }
 
-        if (buttonState == PlayerUI.BUTTON_OFF) {
-            callMediaItemObservable(mMediaItemService::subscribeObserve);
+        boolean subscribing = buttonState == PlayerUI.BUTTON_OFF;
+        // HearthTube: when YouTube doesn't accept it (a supervised account may not be allowed), the button goes back
+        com.liskovsoft.sharedutils.rx.OnError undo = error -> Utils.post(() -> undoSubscribe(subscribing));
+
+        if (subscribing) {
+            callMediaItemObservable(mMediaItemService::subscribeObserve, undo);
         } else {
-            callMediaItemObservable(mMediaItemService::unsubscribeObserve);
+            callMediaItemObservable(mMediaItemService::unsubscribeObserve, undo);
         }
 
         getVideo().isSubscribed = buttonState == PlayerUI.BUTTON_OFF;

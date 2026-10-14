@@ -161,6 +161,8 @@
     <string name="ai_labels">Label videos from AI channels</string>
     <string name="ai_labels_desc">“Likely AI” on videos from channels on AiSList, a list of channels that mainly post AI-made videos. Kids profiles don\'t show those videos at all.</string>
     <string name="kids_ai_channel">This channel is on a list of AI-made channels</string>
+    <string name="subscribe_failed">Couldn\'t subscribe to this channel</string>
+    <string name="unsubscribe_failed">Couldn\'t unsubscribe from this channel</string>
     <string name="kids_not_allowed">This video isn\'t available on this account</string>
     <string name="search_only_ai">Nothing to show: every result was a Short or came from a channel on a list of AI-made channels</string>
     <string name="search_only_ai_or_blocked">Nothing to show: every result was a Short, had a blocked word or came from a channel on a list of AI-made channels</string>
