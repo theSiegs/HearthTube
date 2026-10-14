@@ -242,7 +242,7 @@ public class ProfilePickerPresenter extends BasePresenter<ProfilePickerView> {
      * email), and none when it has no account yet (the picker is then the welcome, which signs it in). Without
      * Hearth, or when it can't tell who's watching, every account.
      */
-    private List<Account> getVisibleAccounts() {
+    public List<Account> getVisibleAccounts() {
         List<Account> accounts = mSignInService.getAccounts();
         String profile = getFollowedProfile();
 

@@ -14,6 +14,7 @@ import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.UiOptionItem
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.AppDialogPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.BrowsePresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.YTSignInPresenter;
+import com.liskovsoft.smartyoutubetv2.common.app.presenters.ProfilePickerPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.base.BasePresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.AccountSelectionPresenter;
 import com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager;
@@ -86,9 +87,20 @@ public class AccountSettingsPresenter extends BasePresenter<Void> {
     private void createAndShowDialog(List<Account> accounts, List<Drawable> icons) {
         AppDialogPresenter settingsPresenter = AppDialogPresenter.instance(getContext());
 
-        appendSelectAccountSection(accounts, icons, settingsPresenter);
+        // One login per Google TV profile: switching to, or signing out, another profile's account isn't offered here
+        List<Account> ownAccounts = new java.util.ArrayList<>();
+        List<Drawable> ownIcons = new java.util.ArrayList<>();
+        List<Account> visible = accounts != null ? ProfilePickerPresenter.instance(getContext()).getVisibleAccounts() : null;
+        for (int i = 0; accounts != null && i < accounts.size(); i++) {
+            if (visible == null || visible.contains(accounts.get(i))) {
+                ownAccounts.add(accounts.get(i));
+                ownIcons.add(icons != null && i < icons.size() ? icons.get(i) : null);
+            }
+        }
+
+        appendSelectAccountSection(ownAccounts, ownIcons, settingsPresenter);
         appendSignInButton(settingsPresenter);
-        appendSignOutSection(accounts, icons, settingsPresenter);
+        appendSignOutSection(ownAccounts, ownIcons, settingsPresenter);
         appendProtectAccountWithPassword(settingsPresenter);
         appendParentPin(settingsPresenter);
         appendSeparateSettings(settingsPresenter);
