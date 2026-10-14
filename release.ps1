@@ -251,4 +251,4 @@ if ($Stable) {
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 Write-Host ""
-Write-Host "Published. Downloader link (most TVs): $base/hearthtube_arm64-v8a.apk"
+Write-Host "Published. Downloader link (any TV; most Google TV sticks are 32-bit): $base/hearthtube_universal.apk"
