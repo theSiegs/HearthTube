@@ -21,7 +21,8 @@ import java.util.List;
  * HearthTube: the long-press menu of a channel's circle in Subscriptions. It's SmartTube's own long-press menu
  * ({@link VideoMenuPresenter}) with the channel as its card, the way a channel found by search has it: Open channel,
  * Unsubscribe, Block channel, Pin channel to the menu, each as switched on under Settings › General › Context menu,
- * with Hearth's icons. In a kids profile, unsubscribing and blocking take the parent PIN (VideoMenuPresenter asks).
+ * with Hearth's icons. In a kids profile, blocking takes the parent PIN (VideoMenuPresenter asks);
+ * kids subscribe and unsubscribe on their own, as their account allows.
  */
 public final class HearthChannelMenu {
     /** The channel left Subscriptions (unsubscribed, or blocked): its circle goes */

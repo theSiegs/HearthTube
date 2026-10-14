@@ -978,12 +978,6 @@ public class VideoMenuPresenter extends BaseMenuPresenter {
             return;
         }
 
-        // HearthTube: in a kids profile, unsubscribing takes the parent PIN
-        if (video.isSubscribed && com.liskovsoft.smartyoutubetv2.common.utils.ParentGate.isLocked(getContext())) {
-            com.liskovsoft.smartyoutubetv2.common.utils.ParentGate.run(getContext(), () -> toggleSubscribe(video));
-            return;
-        }
-
         RxHelper.disposeActions(mSubscribeAction);
 
         Observable<Void> observable = video.isSubscribed ?

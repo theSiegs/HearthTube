@@ -84,7 +84,7 @@ public final class KidsShorts {
             return false;
         }
 
-        String title = item.getTitle() != null ? item.getTitle().toLowerCase() : "";
+        String title = item.getTitle() != null ? item.getTitle().toLowerCase(java.util.Locale.ROOT) : "";
 
         if (CLIPS.matcher(title).find() || (item.getAuthor() != null && CLIPS.matcher(item.getAuthor()).find())) {
             return true;

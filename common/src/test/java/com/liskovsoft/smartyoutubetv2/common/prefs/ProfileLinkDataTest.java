@@ -62,35 +62,35 @@ public class ProfileLinkDataTest {
     }
 
     @Test
-    public void grownUpAccountIsOneLinkedFromAGrownUpsProfile() {
+    public void parentAccountIsOneLinkedFromAParentsProfile() {
         Map<String, Object> saved = new HashMap<>();
         saved.put("link:Alex", "Alex Rivera");
         saved.put("kids:Alex", false);
         saved.put("link:Sam", "Sam Rivera");
         saved.put("kids:Sam", true);
 
-        assertTrue(ProfileLinkData.isGrownUp(saved, "Alex Rivera"));
-        assertFalse(ProfileLinkData.isGrownUp(saved, "Sam Rivera"));
+        assertTrue(ProfileLinkData.isParent(saved, "Alex Rivera"));
+        assertFalse(ProfileLinkData.isParent(saved, "Sam Rivera"));
     }
 
     @Test
-    public void unknownAccountsAreNotGrownUpsButTheGuestIs() {
+    public void unknownAccountsAreNotParentsButTheGuestIs() {
         Map<String, Object> saved = new HashMap<>();
         saved.put("link:Alex", "Alex Rivera"); // kids flag never seen
 
-        assertFalse(ProfileLinkData.isGrownUp(saved, "Alex Rivera"));
-        assertFalse(ProfileLinkData.isGrownUp(saved, "Jordan Rivera"));
-        assertTrue(ProfileLinkData.isGrownUp(saved, null));
+        assertFalse(ProfileLinkData.isParent(saved, "Alex Rivera"));
+        assertFalse(ProfileLinkData.isParent(saved, "Jordan Rivera"));
+        assertTrue(ProfileLinkData.isParent(saved, null));
     }
 
     @Test
-    public void anAccountSharedWithAGrownUpsProfileIsAGrownUps() {
+    public void anAccountSharedWithAParentsProfileIsAParents() {
         Map<String, Object> saved = new HashMap<>();
         saved.put("link:Sam", "Alex Rivera");
         saved.put("kids:Sam", true);
         saved.put("link:Living room", "Alex Rivera");
         saved.put("kids:Living room", false);
 
-        assertTrue(ProfileLinkData.isGrownUp(saved, "Alex Rivera"));
+        assertTrue(ProfileLinkData.isParent(saved, "Alex Rivera"));
     }
 }

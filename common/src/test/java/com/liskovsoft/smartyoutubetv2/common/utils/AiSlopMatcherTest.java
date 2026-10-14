@@ -130,7 +130,7 @@ public class AiSlopMatcherTest {
 
         assertEquals(AiSlopMatcher.HIDE, matcher.decide(BLOCKED, true, true));
         assertEquals(AiSlopMatcher.HIDE, matcher.decide(WARNED, true, true));
-        // Labels off is a grown-up's choice; kids still don't get these
+        // Labels off is a parent's choice; kids still don't get these
         assertEquals(AiSlopMatcher.HIDE, matcher.decide(BLOCKED, true, false));
         assertEquals(AiSlopMatcher.HIDE, matcher.decide(WARNED, true, false));
         assertEquals(AiSlopMatcher.SHOW, matcher.decide(OTHER, true, true));
@@ -138,7 +138,7 @@ public class AiSlopMatcherTest {
     }
 
     @Test
-    public void grownUpsGetALabel() {
+    public void parentsGetALabel() {
         AiSlopMatcher matcher = lists();
 
         assertEquals(AiSlopMatcher.LABEL, matcher.decide(BLOCKED, false, true));
@@ -285,7 +285,7 @@ public class AiSlopMatcherTest {
     }
 
     @Test
-    public void grownUpsAreNeverLabeledByName() throws IOException {
+    public void parentsAreNeverLabeledByName() throws IOException {
         AiSlopMatcher matcher = listsWithNames();
 
         assertEquals(AiSlopMatcher.SHOW, matcher.decide(null, "Kitty Tales AI", false, true));

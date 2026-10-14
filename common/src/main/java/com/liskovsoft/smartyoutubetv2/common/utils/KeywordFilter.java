@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * HearthTube: blocked words. A video with one in its title or channel name is left out wherever blocked channels
  * are (every row and grid, search, the player's suggestions), and doesn't play next on its own either. In a Google TV
- * kids profile the player also refuses it, however it got there (a link, a cast), the way it refuses Shorts. A grown-up
+ * kids profile the player also refuses it, however it got there (a link, a cast), the way it refuses Shorts. A parent
  * who opens one directly still gets it.
  * <p>
  * One list per Google TV profile: each is its own Android user, with its own copy of HearthTube's data. Empty at first.

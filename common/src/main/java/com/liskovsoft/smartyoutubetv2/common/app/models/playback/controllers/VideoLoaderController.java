@@ -291,7 +291,7 @@ public class VideoLoaderController extends BasePlayerController {
             return;
         }
 
-        // HearthTube: nor a video with a blocked word (grown-ups only have those left out of rows and suggestions), nor
+        // HearthTube: nor a video with a blocked word (parents only have those left out of rows and suggestions), nor
         // one from an AI channel
         if (refuseBlockedWord(formatInfo) || refuseAiChannel(formatInfo.getChannelId())) {
             return;

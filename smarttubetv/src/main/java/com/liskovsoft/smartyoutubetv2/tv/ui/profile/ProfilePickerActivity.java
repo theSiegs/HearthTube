@@ -114,7 +114,7 @@ public class ProfilePickerActivity extends LeanbackActivity implements ProfilePi
         }
     }
 
-    /** "Hi, Sam" (the Google TV profile, through Hearth) and what signing in is for; kids: a grown-up does it */
+    /** "Hi, Sam" (the Google TV profile, through Hearth) and what signing in is for; kids: a parent does it */
     private void showWelcome(TextView title, TextView hint) {
         com.liskovsoft.smartyoutubetv2.common.utils.HearthProfile profile =
                 com.liskovsoft.smartyoutubetv2.common.utils.HearthProfile.query(this);

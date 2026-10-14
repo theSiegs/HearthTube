@@ -107,8 +107,7 @@ public class ChannelUploadsMenuPresenter extends BaseMenuPresenter {
         }
 
         mDialogPresenter.appendSingleButton(
-                // HearthTube: in a kids profile, unsubscribing takes the parent PIN
-                UiOptionItem.from(getContext().getString(R.string.unsubscribe_from_channel), optionItem -> com.liskovsoft.smartyoutubetv2.common.utils.ParentGate.run(getContext(), () -> {
+                UiOptionItem.from(getContext().getString(R.string.unsubscribe_from_channel), optionItem -> {
                     // Maybe this is subscribed items view
                     ChannelUploadsPresenter.instance(getContext())
                             .obtainGroup(mVideo, group -> {
@@ -137,7 +136,7 @@ public class ChannelUploadsMenuPresenter extends BaseMenuPresenter {
                                 unsubscribe(group.getChannelId());
                                 mVideo.channelId = group.getChannelId();
                             });
-                })));
+                }));
     }
 
     private void appendMarkAsWatched() {
