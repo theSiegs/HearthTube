@@ -23,6 +23,17 @@ public final class HearthViewer {
     private HearthViewer() {
     }
 
+    /** The profile HearthTube's screens were last shown to (Hearth's key, "user:0:slug"), or null when not known yet */
+    @Nullable
+    public static String currentKey() {
+        return sLastKey;
+    }
+
+    /** The profile changed (or became known): what is kept per profile in memory starts over */
+    private static void profileChanged() {
+        KeywordFilter.onProfileChanged();
+        KidsRefused.clear();
+    }
     /**
      * HearthTube is being launched: when someone else is watching now, forget what the last one had open, so the
      * launch goes to the browse screen.
@@ -49,14 +60,16 @@ public final class HearthViewer {
         String key = hearth != null && !Boolean.FALSE.equals(hearth.profileReady) ? hearth.key() : null;
 
         if (!isNewViewer(sLastKey, key)) {
-            if (key != null) {
+            if (key != null && !key.equals(sLastKey)) {
                 sLastKey = key;
+                profileChanged();
             }
             return false;
         }
 
         Log.d(TAG, "Another profile is watching now: starting over");
         sLastKey = key;
+        profileChanged();
         PlaybackPresenter.instance(context).forceFinish();
         ViewManager.instance(context).forgetScreens();
 

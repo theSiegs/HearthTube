@@ -69,6 +69,11 @@ public final class KidsRefused {
         return unplayable || alreadyRetried ? Recovery.REFUSE : Recovery.RESET_AND_RETRY;
     }
 
+    /** Another profile is watching: what was refused to the last one isn't refused to this one */
+    public static void clear() {
+        sRefused.clear();
+    }
+
     /** The video was refused to a kid: its card leaves the open screens' rows, and it stays out of new ones */
     public static void hide(Context context, @Nullable Video video) {
         if (context == null || video == null || video.videoId == null) {

@@ -27,6 +27,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 public final class KeywordFilter {
     private static final String PREFS = "hearthtube_blocked_words";
     private static final String WORDS = "words";
+    /** The first adult in the TV owner's Android user keeps the plain list; each other adult there has a list of their own */
+    private static final String ADULT_PREFIX = "user:0:";
     /** As added (shown in Settings); null until read */
     private static volatile List<String> sWords;
     private static volatile KeywordMatcher sMatcher = KeywordMatcher.EMPTY;
@@ -34,6 +36,21 @@ public final class KeywordFilter {
     private static final AtomicInteger sHiddenCount = new AtomicInteger();
 
     private KeywordFilter() {
+    }
+
+    /**
+     * Which saved list is this profile's. Adults' Google TV profiles share the TV owner's Android user, so each other
+     * adult there gets their own ("words:user:0:slug"); the first one, and every kids profile (an Android user of its own),
+     * keeps "words". Hearth's profile key tells.
+     */
+    static String wordsKey(String profileKey) {
+        return profileKey != null && profileKey.startsWith(ADULT_PREFIX) ? WORDS + ":" + profileKey : WORDS;
+    }
+
+    /** Another profile is watching (or the first is known): read its list when next needed */
+    public static synchronized void onProfileChanged() {
+        sWords = null;
+        sMatcher = KeywordMatcher.EMPTY;
     }
 
     public static List<String> getWords(Context context) {
@@ -229,7 +246,7 @@ public final class KeywordFilter {
             return;
         }
 
-        String saved = prefs(context).getString(WORDS, "");
+        String saved = prefs(context).getString(wordsKey(HearthViewer.currentKey()), "");
         List<String> words = new ArrayList<>();
 
         for (String word : saved.split("\n")) {
@@ -255,7 +272,7 @@ public final class KeywordFilter {
             joined.append(word);
         }
 
-        prefs(context).edit().putString(WORDS, joined.toString()).apply();
+        prefs(context).edit().putString(wordsKey(HearthViewer.currentKey()), joined.toString()).apply();
         apply(words);
     }
 
