@@ -247,6 +247,11 @@ public final class ParentGate {
             return true;
         }
 
+        // Hearth, when it can be relied on, says it isn't a kids profile: apps an adult paused don't make it one
+        if (hearth != null && Boolean.FALSE.equals(hearth.kidsProfile) && HearthProfile.live(context, hearth) != null) {
+            return false;
+        }
+
         PackageManager packageManager = context.getPackageManager();
         // A kids profile suspends every app a parent hasn't approved, usually many. An adult pausing an app or two
         // with Digital Wellbeing suspends them too, so one or two don't make a kids profile.
@@ -274,6 +279,10 @@ public final class ParentGate {
             "no_config_credentials", "no_grant_admin", "no_add_managed_profile"};
 
     private static boolean isSupervisedUser(Context context) {
+        if (VERSION.SDK_INT < 21) { // UserManager.getUserRestrictions needs API 18; HearthTube runs on 21+
+            return false;
+        }
+
         try {
             android.os.UserManager users = (android.os.UserManager) context.getSystemService(Context.USER_SERVICE);
             android.os.Bundle restrictions = users != null ? users.getUserRestrictions() : null;
