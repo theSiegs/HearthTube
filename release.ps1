@@ -233,18 +233,23 @@ if ($DryRun) {
 }
 
 # Record the version in git first, so the release points at the exact code it was built from
+# git and gh print progress to stderr; a caller that redirects output (*>&1) would make PowerShell stop at the first
+# line, half way through a release. Their exit codes decide instead.
+$ErrorActionPreference = 'Continue'
 git add $versionFile
 if ($Trailer) {
     git commit -m $title -m $Trailer
 } else {
     git commit -m $title
 }
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 git push
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+$ErrorActionPreference = 'Stop'
 
 # Replace the previous release on this tag (tools print to stderr when there's none yet; that's fine)
 $ErrorActionPreference = 'Continue'
 gh release delete $tag --repo $repo --yes --cleanup-tag 2>&1 | Out-Null
-$ErrorActionPreference = 'Stop'
 
 if ($Stable) {
     gh release create $tag (Get-ChildItem $dist).FullName --repo $repo --target $branch `
@@ -254,6 +259,7 @@ if ($Stable) {
         --title $title --notes $releaseNotes --prerelease
 }
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+$ErrorActionPreference = 'Stop'
 
 Write-Host ""
 Write-Host "Published. Downloader link (any TV; most Google TV sticks are 32-bit): $base/hearthtube_universal.apk"
