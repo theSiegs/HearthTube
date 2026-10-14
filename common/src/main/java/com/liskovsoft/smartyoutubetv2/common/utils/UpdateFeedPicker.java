@@ -81,13 +81,18 @@ public final class UpdateFeedPicker {
         return true;
     }
 
+    public static final String CHANNEL_PRERELEASE = "prerelease";
+    public static final String CHANNEL_STABLE = "stable";
+
     /**
-     * Where "Include pre-releases" starts, until someone changes it. On in debug builds. In release builds, on for a
-     * copy that was installed before and updated to this one (every copy from before the setting existed took
-     * pre-releases), off for a new install, where Android gives both times the same value. Worked out once, at the
-     * first start of a version with the setting, and kept: a later update mustn't turn it on.
+     * "Include pre-releases" follows the kind of build that's running: on in a pre-release, off in a release. It's set
+     * when a build of the other kind (or the first one) starts; until then a choice made in About is kept.
+     *
+     * @param settledFor the channel the switch was last set for, or null
+     * @return the channel to set it for now, or null to keep it as it is
      */
-    public static boolean defaultIncludePreReleases(boolean debugBuild, long firstInstallTime, long lastUpdateTime) {
-        return debugBuild || firstInstallTime != lastUpdateTime;
+    public static String settleFor(String settledFor, boolean preReleaseBuild) {
+        String channel = preReleaseBuild ? CHANNEL_PRERELEASE : CHANNEL_STABLE;
+        return channel.equals(settledFor) ? null : channel;
     }
 }

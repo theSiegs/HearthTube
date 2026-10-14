@@ -233,6 +233,8 @@ android {
             versionCode hearthTubeVersion.code
             versionName hearthTubeVersion.name
             resValue 'string', 'smarttube_base_version', android.defaultConfig.versionName
+            // release.ps1 -Stable builds a release (-PhearthtubeStable=true); everything else is a pre-release
+            resValue 'bool', 'hearthtube_prerelease_build', project.findProperty('hearthtubeStable') == 'true' ? 'false' : 'true'
         }
         stfdroid {
             applicationId "app.smarttube.fdroid"

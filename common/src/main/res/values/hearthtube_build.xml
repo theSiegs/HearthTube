@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- HearthTube: a pre-release build unless release.ps1 -Stable says otherwise (smarttubetv/build.gradle overrides it) -->
+    <bool name="hearthtube_prerelease_build">true</bool>
+</resources>

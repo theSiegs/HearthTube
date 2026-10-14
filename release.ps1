@@ -148,7 +148,7 @@ $versionPath = Join-Path $PSScriptRoot $versionFile
 $lastText = [System.IO.File]::ReadAllText($versionPath)
 Set-Content $versionFile "$today.$number" -Encoding ascii
 
-& .\gradlew.bat :smarttubetv:assembleHearthtubeRelease
+& .\gradlew.bat :smarttubetv:assembleHearthtubeRelease "-PhearthtubeStable=$(if ($Stable) { 'true' } else { 'false' })"
 $buildExit = $LASTEXITCODE
 if ($DryRun -or $buildExit -ne 0) { [System.IO.File]::WriteAllText($versionPath, $lastText) }
 if ($buildExit -ne 0) { exit $buildExit }

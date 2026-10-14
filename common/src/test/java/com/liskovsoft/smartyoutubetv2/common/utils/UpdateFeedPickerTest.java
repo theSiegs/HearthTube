@@ -2,6 +2,7 @@ package com.liskovsoft.smartyoutubetv2.common.utils;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
@@ -120,18 +121,20 @@ public class UpdateFeedPickerTest {
     }
 
     @Test
-    public void preReleasesStartOnInDebugBuilds() {
-        assertTrue(UpdateFeedPicker.defaultIncludePreReleases(true, 1000L, 1000L));
-        assertTrue(UpdateFeedPicker.defaultIncludePreReleases(true, 1000L, 2000L));
+    public void firstStartSetsTheSwitchForTheBuild() {
+        assertEquals(UpdateFeedPicker.CHANNEL_PRERELEASE, UpdateFeedPicker.settleFor(null, true));
+        assertEquals(UpdateFeedPicker.CHANNEL_STABLE, UpdateFeedPicker.settleFor(null, false));
     }
 
     @Test
-    public void preReleasesStartOnForAnUpdatedReleaseInstall() {
-        assertTrue(UpdateFeedPicker.defaultIncludePreReleases(false, 1000L, 2000L));
+    public void sameKindOfBuildKeepsTheChoice() {
+        assertNull(UpdateFeedPicker.settleFor(UpdateFeedPicker.CHANNEL_PRERELEASE, true));
+        assertNull(UpdateFeedPicker.settleFor(UpdateFeedPicker.CHANNEL_STABLE, false));
     }
 
     @Test
-    public void preReleasesStartOffForANewReleaseInstall() {
-        assertFalse(UpdateFeedPicker.defaultIncludePreReleases(false, 1000L, 1000L));
+    public void otherKindOfBuildSetsItAgain() {
+        assertEquals(UpdateFeedPicker.CHANNEL_STABLE, UpdateFeedPicker.settleFor(UpdateFeedPicker.CHANNEL_PRERELEASE, false));
+        assertEquals(UpdateFeedPicker.CHANNEL_PRERELEASE, UpdateFeedPicker.settleFor(UpdateFeedPicker.CHANNEL_STABLE, true));
     }
 }

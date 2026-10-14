@@ -2,8 +2,6 @@ package com.liskovsoft.smartyoutubetv2.common.utils;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.content.pm.ApplicationInfo;
-import android.content.pm.PackageInfo;
 
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.sharedutils.okhttp.OkHttpManager;
@@ -29,6 +27,8 @@ public final class UpdateChannels {
     private static final String TAG = UpdateChannels.class.getSimpleName();
     private static final String PREFS_NAME = "update_channel";
     private static final String INCLUDE_PRERELEASES = "include_prereleases";
+    /** The kind of build "Include pre-releases" was last set for (UpdateFeedPicker.settleFor) */
+    private static final String SETTLED_FOR = "include_prereleases_settled_for";
     private static final int MAX_FEED_CHARS = 256 * 1024;
 
     public interface Callback {
@@ -39,7 +39,7 @@ public final class UpdateChannels {
     private UpdateChannels() {
     }
 
-    /** At each start: settles where "Include pre-releases" starts, once (see UpdateFeedPicker) */
+    /** At each start: "Include pre-releases" follows the kind of build running, when that changed (UpdateFeedPicker) */
     public static void init(Context context) {
         if (context != null && hasPreReleases(context)) {
             isIncludePreReleases(context);
@@ -53,14 +53,15 @@ public final class UpdateChannels {
 
     public static boolean isIncludePreReleases(Context context) {
         SharedPreferences prefs = prefs(context);
+        boolean preReleaseBuild = context.getResources().getBoolean(R.bool.hearthtube_prerelease_build);
+        String channel = UpdateFeedPicker.settleFor(prefs.getString(SETTLED_FOR, null), preReleaseBuild);
 
-        if (!prefs.contains(INCLUDE_PRERELEASES)) {
-            boolean include = startingValue(context);
-            prefs.edit().putBoolean(INCLUDE_PRERELEASES, include).apply();
-            return include;
+        if (channel != null) {
+            prefs.edit().putBoolean(INCLUDE_PRERELEASES, preReleaseBuild).putString(SETTLED_FOR, channel).apply();
+            return preReleaseBuild;
         }
 
-        return prefs.getBoolean(INCLUDE_PRERELEASES, false);
+        return prefs.getBoolean(INCLUDE_PRERELEASES, preReleaseBuild);
     }
 
     public static void setIncludePreReleases(Context context, boolean include) {
@@ -121,17 +122,6 @@ public final class UpdateChannels {
         } catch (Exception e) { // offline, timeout
             Log.e(TAG, "Can't read %s: %s", url, e.getMessage());
             return UpdateFeedPicker.FAILED;
-        }
-    }
-
-    private static boolean startingValue(Context context) {
-        boolean debugBuild = (context.getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0;
-
-        try {
-            PackageInfo info = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
-            return UpdateFeedPicker.defaultIncludePreReleases(debugBuild, info.firstInstallTime, info.lastUpdateTime);
-        } catch (Exception e) {
-            return debugBuild;
         }
     }
 
