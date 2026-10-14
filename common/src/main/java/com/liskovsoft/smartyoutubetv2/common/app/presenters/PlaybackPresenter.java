@@ -110,6 +110,7 @@ public class PlaybackPresenter extends BasePresenter<PlaybackView> implements Pl
         video.finishOnEnded = finishOnEnded || com.liskovsoft.smartyoutubetv2.common.utils.ParentGate.isKidsProfile(getContext());
         video.pendingPosMs = timeMs;
         video.incognito = incognito;
+        video.fromLink = true;
         openVideo(video);
     }
 
@@ -120,7 +121,10 @@ public class PlaybackPresenter extends BasePresenter<PlaybackView> implements Pl
 
         // HearthTube: no Shorts in Google TV kids profiles, even from a link or a cast
         if (com.liskovsoft.smartyoutubetv2.common.utils.KidsShorts.isBlocked(getContext(), video.isShorts)) {
-            com.liskovsoft.sharedutils.helpers.MessageHelpers.showMessage(getContext(), com.liskovsoft.smartyoutubetv2.common.R.string.kids_no_shorts);
+            // Said only for a link or a cast: kids aren't reminded of what's left out
+            if (com.liskovsoft.smartyoutubetv2.common.utils.KidsRefused.isDirect(video)) {
+                com.liskovsoft.sharedutils.helpers.MessageHelpers.showMessage(getContext(), com.liskovsoft.smartyoutubetv2.common.R.string.kids_no_shorts);
+            }
             return;
         }
 

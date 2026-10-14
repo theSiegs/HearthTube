@@ -90,6 +90,8 @@ public final class Video {
     public boolean fromCrashRestorer;
     public boolean isPending;
     public boolean finishOnEnded;
+    /** HearthTube: opened by a link from outside (shared, Hearth, an intent), not picked from HearthTube's rows */
+    public boolean fromLink;
     public boolean incognito;
     public String likeCount;
     public String dislikeCount;

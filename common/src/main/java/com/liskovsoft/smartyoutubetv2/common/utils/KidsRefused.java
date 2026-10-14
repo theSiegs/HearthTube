@@ -1,0 +1,65 @@
+package com.liskovsoft.smartyoutubetv2.common.utils;
+
+import android.content.Context;
+
+import androidx.annotation.Nullable;
+
+import com.liskovsoft.mediaserviceinterfaces.data.MediaItemFormatInfo;
+import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
+import com.liskovsoft.smartyoutubetv2.common.app.presenters.BrowsePresenter;
+import com.liskovsoft.smartyoutubetv2.common.app.presenters.ChannelPresenter;
+import com.liskovsoft.smartyoutubetv2.common.app.presenters.ChannelUploadsPresenter;
+import com.liskovsoft.smartyoutubetv2.common.app.presenters.SearchPresenter;
+import com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager;
+
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+
+/**
+ * HearthTube: videos refused to a kid. What's left out should just not be there, without reminders that the profile is
+ * restricted: a refused video's card goes from the rows it's in (and stays out for the rest of the session), and the
+ * kid is told why only when they opened it themselves by a link or a cast, where silence would look broken.
+ * <p>
+ * Also YouTube's own say: a kid signed in to their supervised account gets YouTube's refusal (their content level,
+ * channels a parent blocked) from the signed-in client, and the player must not then fetch the video signed out.
+ */
+public final class KidsRefused {
+    private static final Set<String> sRefused = Collections.synchronizedSet(new HashSet<>());
+
+    private KidsRefused() {
+    }
+
+    /** The kid opened it by a link from outside or a cast, not from HearthTube's rows */
+    public static boolean isDirect(@Nullable Video video) {
+        return video != null && (video.fromLink || video.isRemote);
+    }
+
+    /** Refused to a kid earlier this session: leave it out of rows */
+    public static boolean isHidden(@Nullable Video video) {
+        return video != null && video.videoId != null && sRefused.contains(video.videoId);
+    }
+
+    /**
+     * YouTube refused the video to the kid's signed-in account: the player only got it signed out (another client), or
+     * not at all (18+, private, removed). A kids profile signed in to an account plays only what that account may, and
+     * a video that can't play goes quietly too, rather than with YouTube's reason on the screen.
+     */
+    public static boolean isNotAllowed(Context context, @Nullable MediaItemFormatInfo formatInfo) {
+        return formatInfo != null && (!formatInfo.isAuth() || formatInfo.isUnplayable()) && ParentGate.isKidsProfile(context)
+                && MediaServiceManager.instance().getSelectedAccount() != null;
+    }
+
+    /** The video was refused to a kid: its card leaves the open screens' rows, and it stays out of new ones */
+    public static void hide(Context context, @Nullable Video video) {
+        if (context == null || video == null || video.videoId == null) {
+            return;
+        }
+
+        sRefused.add(video.videoId);
+        BrowsePresenter.instance(context).hideVideo(video);
+        SearchPresenter.instance(context).hideVideo(video);
+        ChannelPresenter.instance(context).hideVideo(video);
+        ChannelUploadsPresenter.instance(context).hideVideo(video);
+    }
+}

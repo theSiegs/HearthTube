@@ -278,11 +278,16 @@ public class VideoLoaderController extends BasePlayerController {
 
         getVideo().sync(formatInfo);
 
+        // HearthTube: a kid signed in to their supervised account plays only what YouTube lets that account play. When it
+        // refused (their content level, a channel a parent blocked), the video came from a client without the sign-in
+        if (com.liskovsoft.smartyoutubetv2.common.utils.KidsRefused.isNotAllowed(getContext(), formatInfo)) {
+            refuseForKids(R.string.kids_not_allowed);
+            return;
+        }
+
         // HearthTube: a Short doesn't play in a kids profile, however it got here (search, link, cast, autoplay)
         if (com.liskovsoft.smartyoutubetv2.common.utils.KidsShorts.isBlockedFormat(formatInfo, getVideo().title, getVideo().author)) {
-            MessageHelpers.showMessage(getContext(), R.string.kids_no_shorts);
-            player.showProgressBar(false);
-            player.finishReally();
+            refuseForKids(R.string.kids_no_shorts);
             return;
         }
 
@@ -575,15 +580,13 @@ public class VideoLoaderController extends BasePlayerController {
             return false;
         }
 
-        MessageHelpers.showMessage(getContext(), R.string.kids_no_shorts);
-        player.showProgressBar(false);
-        player.finishReally();
+        refuseForKids(R.string.kids_no_shorts);
         return true;
     }
 
     /**
-     * HearthTube: in a kids profile a video with a blocked word doesn't play, however it got here; the player closes
-     * with a message, like for a Short.
+     * HearthTube: in a kids profile a video with a blocked word doesn't play, however it got here; the player closes,
+     * like for a Short.
      */
     private boolean refuseBlockedWord(MediaItemFormatInfo formatInfo) {
         PlaybackView player = getPlayer();
@@ -592,9 +595,7 @@ public class VideoLoaderController extends BasePlayerController {
             return false;
         }
 
-        MessageHelpers.showMessage(getContext(), R.string.kids_blocked_word);
-        player.showProgressBar(false);
-        player.finishReally();
+        refuseForKids(R.string.kids_blocked_word);
         return true;
     }
 
@@ -606,10 +607,29 @@ public class VideoLoaderController extends BasePlayerController {
             return false;
         }
 
-        MessageHelpers.showMessage(getContext(), R.string.kids_ai_channel);
-        player.showProgressBar(false);
-        player.finishReally();
+        refuseForKids(R.string.kids_ai_channel);
         return true;
+    }
+
+    /**
+     * HearthTube: a kids check refused the video. Said only when the kid opened it by a link or a cast, where silence
+     * would look broken; otherwise the player just closes and the card leaves the rows, so kids aren't reminded of
+     * what's left out.
+     */
+    private void refuseForKids(int message) {
+        PlaybackView player = getPlayer();
+        Video video = getVideo();
+
+        if (com.liskovsoft.smartyoutubetv2.common.utils.KidsRefused.isDirect(video)) {
+            MessageHelpers.showMessage(getContext(), message);
+        } else {
+            com.liskovsoft.smartyoutubetv2.common.utils.KidsRefused.hide(getContext(), video);
+        }
+
+        if (player != null) {
+            player.showProgressBar(false);
+            player.finishReally();
+        }
     }
 
     private void initRandomNext() {

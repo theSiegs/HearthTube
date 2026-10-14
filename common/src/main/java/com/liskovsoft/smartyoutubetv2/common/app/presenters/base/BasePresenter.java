@@ -140,6 +140,11 @@ public abstract class BasePresenter<T> implements Presenter<T> {
         }
     }
 
+    /** HearthTube: takes a video's card out of this screen's rows (a kids refusal), if the screen is open */
+    public void hideVideo(Video item) {
+        removeItem(item);
+    }
+
     protected void removeItem(Video item) {
         removeItem(Collections.singletonList(item), VideoGroup.ACTION_REMOVE);
     }

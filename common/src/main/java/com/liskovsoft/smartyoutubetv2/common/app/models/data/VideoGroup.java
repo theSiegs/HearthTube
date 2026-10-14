@@ -498,6 +498,10 @@ public class VideoGroup {
             return;
         }
 
+        if (com.liskovsoft.smartyoutubetv2.common.utils.KidsRefused.isHidden(video)) { // HearthTube: refused to a kid already
+            return;
+        }
+
         if (mVideos == null) {
             mVideos = new ArrayList<>();
         }
