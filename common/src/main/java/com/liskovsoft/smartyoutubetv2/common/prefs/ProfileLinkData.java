@@ -27,7 +27,7 @@ public class ProfileLinkData {
     private static final String USING_HEARTH_PIN_KEY = "using_hearth_pin";
     /** Gone: HearthTube has no guest. Removed from older installs. */
     private static final String GUEST_ENABLED_KEY = "guest_enabled";
-    /** "kids:<profile>" = true for a Google TV kids profile, false for a parent's (as last seen) */
+    /** "kids:<profile>" = true for a Google TV kids profile, false for an adult's (as last seen) */
     private static final String KIDS_PREFIX = "kids:";
     /** "name:<key>" = the profile's name when last seen (links are saved under Hearth's lasting profile key) */
     private static final String NAME_PREFIX = "name:";
@@ -169,15 +169,15 @@ public class ProfileLinkData {
     }
 
     /**
-     * The account is a parent's: some profile seen as not a kids profile watches with it. Signed out (no account)
+     * The account is an adult's: some profile seen as not a kids profile watches with it. Signed out (no account)
      * counts too: nothing is filtered.
      */
-    public boolean isParentAccount(@Nullable Account account) {
-        return isParent(mPrefs.getAll(), account != null ? account.getName() : null);
+    public boolean isAdultAccount(@Nullable Account account) {
+        return isAdult(mPrefs.getAll(), account != null ? account.getName() : null);
     }
 
-    /** {@link #isParentAccount} over the saved links ("link:<profile>" = account, "kids:<profile>" = kids flag) */
-    static boolean isParent(java.util.Map<String, ?> saved, @Nullable String accountName) {
+    /** {@link #isAdultAccount} over the saved links ("link:<profile>" = account, "kids:<profile>" = kids flag) */
+    static boolean isAdult(java.util.Map<String, ?> saved, @Nullable String accountName) {
         if (accountName == null) {
             return true;
         }

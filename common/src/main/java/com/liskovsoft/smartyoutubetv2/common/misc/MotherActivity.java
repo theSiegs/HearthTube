@@ -229,7 +229,7 @@ public class MotherActivity extends FragmentActivity {
 
         sFront = new java.lang.ref.WeakReference<>(this);
 
-        // HearthTube: parents share one HearthTube; someone else watching now starts over (only as a screen comes up,
+        // HearthTube: adults share one HearthTube; someone else watching now starts over (only as a screen comes up,
         // never mid-video)
         com.liskovsoft.smartyoutubetv2.common.utils.HearthViewer.onResume(this);
 

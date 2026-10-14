@@ -252,7 +252,7 @@ public class YouTubeAllowanceTest {
         long readAt = NOW - 30 * MINUTE;
         mAllowance.decide(haRow(10, null, readAt), readAt);
         play(readAt, 3);
-        // A parent's profile (same Android user) watches for a while
+        // An adult's profile (same Android user) watches for a while
         mAllowance.decide(new Row(6, "user:0:sam", null, false, null, null, readAt), readAt + 3 * MINUTE);
         play(readAt + 3 * MINUTE, 20);
 

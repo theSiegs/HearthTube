@@ -9,7 +9,7 @@ import java.util.List;
 
 /**
  * HearthTube: the search suggestions (the pills under the search bar: YouTube's as you type, the search history before
- * you do) don't lead to what the results leave out anyway. While Shorts are hidden (kids profiles always, parents with
+ * you do) don't lead to what the results leave out anyway. While Shorts are hidden (kids profiles always, adults with
  * Show Shorts off) that's TikTok and Instagram clips, reels and Shorts ({@link KidsShorts}); in every profile, blocked
  * words ({@link KeywordFilter}). The same rules as for the videos, so they stay in one place.
  * <p>

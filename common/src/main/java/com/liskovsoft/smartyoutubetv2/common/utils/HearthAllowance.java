@@ -127,7 +127,7 @@ public final class HearthAllowance {
             return YouTubeAllowance.Decision.NO_LIMIT;
         }
 
-        // Time limits and bedtimes are for kids: a parent's profile plays, whatever Hearth's row says
+        // Time limits and bedtimes are for kids: an adult's profile plays, whatever Hearth's row says
         if (!ParentGate.isKidsProfile(context)) {
             return YouTubeAllowance.Decision.NO_LIMIT;
         }

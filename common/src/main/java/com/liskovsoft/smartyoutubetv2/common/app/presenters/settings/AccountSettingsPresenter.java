@@ -171,7 +171,7 @@ public class AccountSettingsPresenter extends BasePresenter<Void> {
 
     /**
      * The PIN that unlocks account changes in Google TV kids profiles (ParentGate). Turning it off takes the PIN
-     * itself, in any profile: a kid could otherwise do it from a parent's profile.
+     * itself, in any profile: a kid could otherwise do it from an adult's profile.
      */
     private void appendParentPin(AppDialogPresenter settingsPresenter) {
         // One PIN for both apps: with Hearth's set, HearthTube's own isn't used (or offered)

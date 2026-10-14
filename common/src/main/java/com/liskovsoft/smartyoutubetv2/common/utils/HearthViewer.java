@@ -10,8 +10,8 @@ import com.liskovsoft.smartyoutubetv2.common.app.views.SplashView;
 import com.liskovsoft.smartyoutubetv2.common.app.views.ViewManager;
 
 /**
- * Parents' Google TV profiles share the TV owner's Android user, so they share one running HearthTube: without this,
- * the next parent to open it would land in the last one's video. When Hearth's active profile has changed since a
+ * Adults' Google TV profiles share the TV owner's Android user, so they share one running HearthTube: without this,
+ * the next adult to open it would land in the last one's video. When Hearth's active profile has changed since a
  * HearthTube screen last looked, the player closes and HearthTube starts over from its launch screen, which picks the
  * new profile's account. Kids profiles are users of their own, each with its own HearthTube: nothing to do there.
  */

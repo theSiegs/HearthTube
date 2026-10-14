@@ -48,7 +48,7 @@ public class SearchPillsTest {
 
     @Test
     public void clipPillsStayWhileShortsAreShown() {
-        // A parent with Show Shorts on sees TikTok clips and Shorts in rows too
+        // An adult with Show Shorts on sees TikTok clips and Shorts in rows too
         assertEquals(Arrays.asList("minecraft", "minecraft tiktok", "minecraft shorts"),
                 shown("min", false, NO_WORDS, "minecraft", "minecraft tiktok", "minecraft shorts"));
     }

@@ -129,9 +129,9 @@ public class ProfilePickerPresenter extends BasePresenter<ProfilePickerView> {
         boolean kids = ParentGate.isKidsProfile(getContext());
 
         if (profile == null) {
-            // Can't tell who's watching. In a kids profile, a parent's account isn't kept:
+            // Can't tell who's watching. In a kids profile, an adult's account isn't kept:
             // the picker asks, and only a kid's account goes through without the parent PIN.
-            if (kids && links.isParentAccount(mSignInService.getSelectedAccount()) && !ParentGate.isUnlocked()) {
+            if (kids && links.isAdultAccount(mSignInService.getSelectedAccount()) && !ParentGate.isUnlocked()) {
                 if (isDeepLink(intent)) {
                     return FOLLOW_NONE;
                 }
@@ -307,9 +307,9 @@ public class ProfilePickerPresenter extends BasePresenter<ProfilePickerView> {
     }
 
     public void onAccountPicked(Account account) {
-        // In a kids profile, a parent's account is a parent's call; so is pairing the profile
-        boolean parentAccount = ProfileLinkData.instance(getContext()).isParentAccount(account);
-        if ((mLinkingProfile != null || parentAccount) && ParentGate.isLocked(getContext())) {
+        // In a kids profile, an adult's account is a parent's call; so is pairing the profile
+        boolean adultAccount = ProfileLinkData.instance(getContext()).isAdultAccount(account);
+        if ((mLinkingProfile != null || adultAccount) && ParentGate.isLocked(getContext())) {
             ParentGate.run(getContext(), () -> switchTo(account, true));
             return;
         }

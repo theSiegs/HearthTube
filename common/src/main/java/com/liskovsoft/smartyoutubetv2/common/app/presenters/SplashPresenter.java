@@ -114,14 +114,14 @@ public class SplashPresenter extends BasePresenter<SplashView> {
         // Read before checkMasterPassword(): it may finish the view, leaving getView() null
         Intent newIntent = getView().getNewIntent();
 
-        // HearthTube: another parent's profile since the last launch? Not into the last one's video then
+        // HearthTube: another adult's profile since the last launch? Not into the last one's video then
         com.liskovsoft.smartyoutubetv2.common.utils.HearthViewer.onLaunch(getContext());
 
         checkMasterPassword(() -> applyNewIntent(getView().getNewIntent()));
 
         // HearthTube: no Shorts in kids profiles; an adult's own Shorts settings come back in their profile
         com.liskovsoft.smartyoutubetv2.common.utils.KidsShorts.apply(getContext());
-        // and no videos from AI channels there (AiSList); parents get a label
+        // and no videos from AI channels there (AiSList); adults get a label
         com.liskovsoft.smartyoutubetv2.common.utils.AiSlopList.init(getContext());
 
         // Works with Hearth: its clock format and language may have changed while we were away

@@ -248,7 +248,7 @@ public final class ParentGate {
         }
 
         PackageManager packageManager = context.getPackageManager();
-        // A kids profile suspends every app a parent hasn't approved, usually many. A parent pausing an app or two
+        // A kids profile suspends every app a parent hasn't approved, usually many. An adult pausing an app or two
         // with Digital Wellbeing suspends them too, so one or two don't make a kids profile.
         java.util.Set<String> suspended = new java.util.HashSet<>();
 
