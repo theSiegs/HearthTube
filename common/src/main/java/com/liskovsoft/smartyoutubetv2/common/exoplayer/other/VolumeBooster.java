@@ -141,8 +141,8 @@ public class VolumeBooster implements AudioListener, TickleListener {
 
         mVolume = volume;
 
-        if (mBooster == null || !mIsSupported) {
-            return; // onAudioSessionId() applies it
+        if (mBooster == null || !mIsSupported || VERSION.SDK_INT < 19) {
+            return; // onAudioSessionId() applies it (the booster only exists from API 19)
         }
 
         try {

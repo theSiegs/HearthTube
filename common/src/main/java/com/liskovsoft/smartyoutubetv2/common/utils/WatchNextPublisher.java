@@ -25,6 +25,8 @@ import java.util.concurrent.Executors;
  * position moves and removed once the video is finished. Selecting it reopens the video in this app,
  * which resumes from its own saved position.
  */
+// The tvprovider library marks its public Builder methods and columns as restricted (fixed in its later versions)
+@android.annotation.SuppressLint("RestrictedApi")
 public class WatchNextPublisher {
     private static final String TAG = WatchNextPublisher.class.getSimpleName();
     /** Opened and closed again right away: not worth a Continue Watching entry. */
