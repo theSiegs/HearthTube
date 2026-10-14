@@ -50,6 +50,25 @@ public final class KidsRefused {
                 && MediaServiceManager.instance().getSelectedAccount() != null;
     }
 
+    /** What to do with a video a kid's signed-in account didn't get from the signed-in client */
+    public enum Recovery {
+        /** YouTube refused it to the account: final */
+        REFUSE,
+        /** The library may have been left on a signed-out client by earlier errors: reset it and ask again, once */
+        RESET_AND_RETRY
+    }
+
+    /**
+     * A refusal because the answer wasn't signed in (not because YouTube said no) may only mean the library is stuck on
+     * a signed-out client after some errors. Ask again from the start once; a second refusal for the same video is final.
+     *
+     * @param unplayable YouTube itself said the video can't play (an answer from the signed-in client, or none)
+     * @param alreadyRetried this video already had its one retry
+     */
+    public static Recovery recoveryFor(boolean unplayable, boolean alreadyRetried) {
+        return unplayable || alreadyRetried ? Recovery.REFUSE : Recovery.RESET_AND_RETRY;
+    }
+
     /** The video was refused to a kid: its card leaves the open screens' rows, and it stays out of new ones */
     public static void hide(Context context, @Nullable Video video) {
         if (context == null || video == null || video.videoId == null) {

@@ -40,6 +40,8 @@ public class VideoLoaderController extends BasePlayerController {
         getMainController().onNewVideo(getVideo());
     };
     private final Runnable mLoadNext = this::loadNext;
+    /** The video a kids profile already asked again for (retryKidsFromTheStart) */
+    private String mKidsRetriedVideoId;
     private final Runnable mMetadataSync = () -> {
         if (getPlayer() != null) {
             waitMetadataSync(getVideo(), false);
@@ -247,6 +249,33 @@ public class VideoLoaderController extends BasePlayerController {
         }
     }
 
+    /**
+     * HearthTube: a video that came signed out (not refused by YouTube) may only mean earlier errors moved the library
+     * onto a signed-out client. Resets it to the signed-in one and asks again, once per video.
+     *
+     * @return true when it asked again
+     */
+    private boolean retryKidsFromTheStart(MediaItemFormatInfo formatInfo) {
+        Video video = getVideo();
+
+        if (video == null || formatInfo.isUnplayable()
+                || com.liskovsoft.smartyoutubetv2.common.utils.KidsRefused.recoveryFor(false, Helpers.equals(video.videoId, mKidsRetriedVideoId))
+                != com.liskovsoft.smartyoutubetv2.common.utils.KidsRefused.Recovery.RESET_AND_RETRY) {
+            return false;
+        }
+
+        mKidsRetriedVideoId = video.videoId;
+        Log.e(TAG, "Kids profile: %s came signed out (client %s). Resetting to the signed-in client and asking again",
+                video.videoId, formatInfo.getClientInfo() != null ? formatInfo.getClientInfo().getClientName() : null);
+        YouTubeServiceManager.instance().invalidateCache(); // back to the signed-in client first
+        // The other video path (innertube) is signed out too: it's left after one client switch
+        if ("MediaItemFormatInfoImpl".equals(formatInfo.getClass().getSimpleName())) {
+            YouTubeServiceManager.instance().switchNextClientNow();
+        }
+        loadFormatInfo(video);
+        return true;
+    }
+
     private void loadFormatInfo(Video video) {
         if (getPlayer() == null) {
             return;
@@ -281,6 +310,10 @@ public class VideoLoaderController extends BasePlayerController {
         // HearthTube: a kid signed in to their supervised account plays only what YouTube lets that account play. When it
         // refused (their content level, a channel a parent blocked), the video came from a client without the sign-in
         if (com.liskovsoft.smartyoutubetv2.common.utils.KidsRefused.isNotAllowed(getContext(), formatInfo)) {
+            if (retryKidsFromTheStart(formatInfo)) {
+                return;
+            }
+
             refuseQuietly(R.string.kids_not_allowed);
             return;
         }
