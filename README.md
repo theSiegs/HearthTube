@@ -1,81 +1,73 @@
-# HearthTube
+<p align="center">
+  <img src="docs/images/icon.png" width="112" alt="HearthTube logo">
+</p>
 
-> **Draft documentation.** This README is a first draft and will change.
->
-> **Early development.** HearthTube is young and changes often. It's built and tested on one Google TV setup
-> (Android 14), so expect rough edges elsewhere.
+<h1 align="center">HearthTube</h1>
 
-HearthTube is a YouTube client for Google TV and Android TV, made for families. It's a fork of
-[SmartTube](https://github.com/yuliskov/SmartTube) that adds safety features for Google TV **kids profiles** and works
-hand in hand with the [Hearth](https://github.com/theSiegs/Hearth) launcher.
+<p align="center">YouTube for the family TV, without ads, Shorts or AI-made channels for your kids.</p>
 
-It installs as its own app (`com.thesiegs.hearthtube`), next to SmartTube if you have it.
+> [!NOTE]
+> HearthTube is new and still changing. It's tested on Google TV.
 
-## What it adds
+## What it does for your family
 
-### Kids profiles
-HearthTube recognises a Google TV kids profile (supervised by Family Link) and, in one:
-- **No Shorts, anywhere.** YouTube's Shorts rows are emptied, Shorts that YouTube doesn't label are recognised too,
-  and the player refuses one however it was opened (search, link, cast or autoplay).
-- **No TikTok or Instagram clips,** including compilations of them, matched by title and channel.
-- **Settings and accounts locked** behind a parent PIN, entered on a shuffled pad so a PIN can be typed in front of
-  the kids. With Hearth installed, Hearth's own parent PIN is used.
-- **A kids profile never lands on a grown-up's YouTube account.**
-- **Screen time:** when Google TV's daily limit or bedtime is up, HearthTube stops and steps aside (with Hearth).
+**In your kids' profiles**
+- **Only what their account allows.** The content level and the channels you block in Family Link always apply.
+- **No Shorts**, and no TikTok or Instagram clip compilations either.
+- **No AI-made channels**, using a list kept by volunteers.
+- **Words you choose are blocked.** Videos with them in the title or channel name don't show up or play.
+- **No nagging.** Anything left out simply isn't there. Kids don't get "you can't watch this" messages.
+- **Settings stay with you.** A parent PIN protects settings, accounts and blocking. Kids can still subscribe to the channels they like.
 
-### Coming next
-- **Blocked words** (in the next release): hide videos whose title or channel name contains a word or phrase you
-  choose, per profile. Add words in Settings, or pick them off a video's title with the remote. In kids profiles the
-  player refuses such a video, and changing the list needs the parent PIN.
-- **AI-made channels** (in development): channels on the community [AiSList](https://github.com/Override92/AiSList)
-  are hidden in kids profiles and labelled "Likely AI" elsewhere.
+**For everyone**
+- No ads.
+- Shorts are off unless you turn them on.
+- A "Likely AI" label on videos from AI-made channels.
+- Your own blocked words, if you want them. A kid's list never applies to you.
+- A Library with your history, Watch later and playlists, and subscriptions shown as channel circles.
+- Videos play at an even volume.
 
-### For everyone
-- **Shorts are off by default** (Settings → Look and layout → Show Shorts turns them on).
-- **No signed-out mode:** every profile watches with a YouTube account.
-- **A look that matches Hearth:** Roboto, accent-coloured focus, Hearth's search box, a calmer player, and icons in
-  the long-press menu.
+**With the Hearth launcher**
+- Each person's own YouTube account. Switch profiles on the TV and HearthTube switches account.
+- A daily YouTube time limit for each kid, and an optional bedtime lock with Home Assistant.
+- Family Link's screen time still applies.
+- Hearth installs HearthTube on every profile and keeps it up to date.
 
-### With the Hearth launcher
-- Each Google TV profile gets its own YouTube account, following Hearth's active profile.
-- HearthTube shows Hearth's wallpaper and uses its accent colour and clock format.
-- Hearth can keep HearthTube up to date and install it in kids profiles.
+## What it doesn't do
 
-Everything SmartTube offers is still there: SponsorBlock, adjustable speed, high resolutions and HDR, live chat and
-more.
+- It doesn't replace Family Link. Set content levels and screen time there; HearthTube makes sure they apply.
+- It doesn't watch the videos for you. It filters by Shorts, words and a list of AI channels, not by what's said.
+- The kids features need Google TV with Family Link.
 
-## Install
+## Get HearthTube
 
-Download the APK for your TV from the
-[latest release](https://github.com/theSiegs/HearthTube/releases/latest):
+**With Hearth:** open Hearth's settings, go to **Updates**, and install HearthTube. That's it: Hearth keeps it up to date.
 
-| TV | File |
-|---|---|
-| Most current Google TV and Android TV devices | `hearthtube_arm64-v8a.apk` |
-| TVs with a 32-bit system | `hearthtube_armeabi-v7a.apk` |
-| Not sure | `hearthtube_universal.apk` (works everywhere, larger) |
+**Without Hearth:** install the free **Downloader** app on your TV and enter this address:
 
-With the Downloader app, enter
-`https://github.com/theSiegs/HearthTube/releases/download/latest/hearthtube_arm64-v8a.apk`
-(or the file for your TV). HearthTube checks this release for updates.
+```
+https://github.com/theSiegs/HearthTube/releases/download/latest/hearthtube_universal.apk
+```
 
-## Status and security
+HearthTube updates itself after that. Other ways to install are in the [technical notes](docs/technical.md).
 
-- **Early development:** features and settings may change between releases.
-- **Built from source.** HearthTube is built from SmartTube's public source code and signed with its own key, so it
-  isn't affected by the 2025 SmartTube signing-key incident described in SmartTube's README.
-- **Release signing** uses a development key for now; this will be finalised before a stable release.
+## Privacy
 
-## Issues and contributions
+No ads, no tracking, no HearthTube account. HearthTube talks to YouTube like any YouTube app. Besides that, it only
+checks GitHub for updates and the AI-channel list, looks up sponsor segments (SponsorBlock) and dislike counts
+(Return YouTube Dislike), both of which you can turn off,
+and, with Hearth, shares play time for the daily limit and, if you agree, what's playing with Home Assistant.
+The full policy: [PRIVACY.md](PRIVACY.md).
 
-Bug reports and ideas are welcome in [Issues](https://github.com/theSiegs/HearthTube/issues). Problems that also
-happen in SmartTube are best reported [there](https://github.com/yuliskov/SmartTube/issues).
+## Help and feedback
 
-## Credits and license
+Something not working, or an idea? Open an [issue](https://github.com/theSiegs/HearthTube/issues). HearthTube is
+built on [SmartTube](https://github.com/yuliskov/SmartTube) but isn't part of it, so please report HearthTube problems
+here, not there.
 
-- [SmartTube](https://github.com/yuliskov/SmartTube) by Yuriy Liskov and contributors, which HearthTube is built on.
-- [Hearth](https://github.com/theSiegs/Hearth), the launcher HearthTube is designed alongside.
-- [AiSList](https://github.com/Override92/AiSList) by its contributors (CC BY-NC 4.0), for the list of AI-made
-  channels.
+## Thanks
 
-HearthTube is released under the MIT license, like SmartTube. See [LICENSE](LICENSE).
+HearthTube is [SmartTube](https://github.com/yuliskov/SmartTube) by Yuriy Liskov and its contributors, with family
+features added. It works with the [Hearth](https://github.com/theSiegs/Hearth) launcher, uses the
+[AiSList](https://github.com/Override92/AiSList) AI-channel list (CC BY-NC 4.0), and SponsorBlock and DeArrow by Ajay
+Ramachandran. Released under the [MIT license](LICENSE). Developed with AI assistance.

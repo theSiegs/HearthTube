@@ -1,42 +1,89 @@
-# Privacy Policy for SmartTube (F-Droid Build)
+# HearthTube privacy policy
 
-**Last Updated:** March 21, 2026
+**Last updated:** 2026-10-14. Applies to HearthTube (`com.thesiegs.hearthtube`), from version 2026.10.14.
 
-This Privacy Policy applies specifically to the **F-Droid flavor** of SmartTube (Package ID: `app.smarttube.fdroid`). This version is specifically hardened for user privacy and compliance with F-Droid’s inclusion policy.
+HearthTube is new, and this policy will change as its features do. Each change is listed at the end.
 
-## 1. Scope of this Policy
-This document covers the **F-Droid build** only. Other versions or "flavors" of the application (e.g., Stable, Beta) may contain additional features such as self-update mechanisms or crash reporting that are removed in this specific F-Droid release.
+## In short
 
-## 2. Data Collection and Processing
-* **No Backend:** The F-Droid build of SmartTube operates entirely as a client-side application. It does not communicate with any developer-controlled servers.
-* **No Telemetry or Analytics:** This version contains no tracking code, telemetry, or analytics frameworks (e.g., no Firebase, no Crashlytics). We do not monitor how you use the app.
-* **No Update Tracking:** The self-update mechanism is disabled in this flavor. Updates are handled exclusively through the F-Droid client.
+- HearthTube has **no ads, no analytics, no crash reporting, no HearthTube account and no HearthTube server.** Nobody
+  working on HearthTube receives anything about you or your family.
+- It talks to **YouTube**, as any YouTube app does, with the YouTube account signed in on that profile.
+- Otherwise it connects only for the features below, and you can turn off each one that isn't essential.
+- Your settings, PIN, blocked words and sign-in tokens stay on the TV.
 
-## 3. Third-Party Services (YouTube/Google)
-* **Authentication:** When you sign in, the application uses the official Google OAuth 2.0 flow. This is a secure method that allows you to authorize the app without sharing your password with the developer.
-* **Local Storage:** Authentication tokens are stored exclusively on your device's secure local storage. They are never transmitted to, or stored by, the developer.
-* **Data Flow:** Video data and account information are fetched directly from YouTube/Google servers to your device.
+## What HearthTube connects to
 
-## 4. Community-Driven Services & Third-Party APIs
-To provide core functionality and enhanced features, the application communicates with the following community-driven services:
-* **SponsorBlock:** The app sends the ID of the video being viewed to the SponsorBlock API to retrieve crowd-sourced skip segments.
-* **DeArrow:** The app sends the ID of the video being viewed to the DeArrow API to retrieve crowd-sourced titles.
-* **Return YouTube Dislike (RYD):** The app sends the Video ID to the RYD API to retrieve estimated dislike counts.
-* **Anonymous Metadata Requests:** These requests are "read-only" and do not include personal identifiers, Google account tokens, or user-specific profile data. 
-* **General API Communication:** The application may communicate with other third-party infrastructure (such as official YouTube/Google endpoints) solely to fetch media content and metadata required for the application to function. These functional requests do not involve the collection or storage of personal user data by the developer.
+| Feature | Connects to | Sends | When |
+|---|---|---|---|
+| YouTube | YouTube and Google (`youtube.com`, `googleapis.com`, `ytimg.com`) | What any YouTube app sends: your sign-in, what you browse, search and watch. YouTube's own privacy policy and your account's settings (for kids, Family Link's) apply | Always |
+| Sign-in | Google (`oauth2.googleapis.com`) | Google's standard TV sign-in: you approve on a phone or computer, and HearthTube gets a token. Your password never reaches HearthTube | When you sign in |
+| Updates | GitHub (`github.com/theSiegs/HearthTube` releases) | A request for the update list, then the new version | At start and when you check. Only in the TV owner's profile, and not while Hearth updates HearthTube |
+| AI-channel list | GitHub (`raw.githubusercontent.com/theSiegs/aislist-channel-ids`) | A request for the list | Once a day at most. A copy ships with the app |
+| SponsorBlock | `sponsor.ajay.app` | The ID of the video playing | On by default; Settings → SponsorBlock |
+| DeArrow | `sponsor.ajay.app`, `dearrow-thumb.ajay.app` | The IDs of the videos shown | Off by default |
+| Return YouTube Dislike | `returnyoutubedislikeapi.com` | The ID of the video playing | While the like and dislike counter is on (on by default) |
+| Bing photo of the day | `www.bing.com` | A request for the photo | Only if you choose it as the background (without Hearth) |
+| Backup to Google Drive | Your own Google Drive | HearthTube's settings | Only if you set it up |
+| Links in About | `api.qrserver.com` | The link being shown, to draw it as a QR code | When you open a link there |
+| Country flags | `flagcdn.com` | A country code | When a list of countries is shown |
+| Secure DNS | The provider you pick | DNS lookups | Only if you turn it on |
 
-## 5. Automated Decision-Making and Profiling
-In accordance with **GDPR Article 15**, we confirm for this build:
-* **No Profiling:** We do not track user behavior to build profiles.
-* **No Automated Decisions:** The app does not use algorithms or AI to make decisions about users or to manipulate content ranking. Content is served as-is from the YouTube API.
+These services see the TV's IP address, like any website you visit. None of them gets your Google account, your
+sign-in token or your profile's name from HearthTube.
 
-## 6. External Links & Donations
-The application contains static links and addresses for project documentation (GitHub) and donations (e.g., PayPal, Patreon, Bitcoin, Ethereum, and other cryptocurrencies).
-* **Manual Action Only:** These links do not trigger automatically. No data is transmitted until the user manually clicks a link or copies an address.
-* **Third-Party Policies:** Once you leave the application to a donation platform or use a third-party wallet, your data is governed by the privacy policy of those respective services.
+## On the TV, with Hearth
 
-## 7. Your Rights (GDPR / CCPA)
-Because this specific build flavor does not store or transmit personal data to the developer, we hold no identifiable records (names, emails, IPs) associated with your identity. Therefore, we have no data to provide or delete upon request.
+If the [Hearth](https://github.com/theSiegs/Hearth) launcher is installed, HearthTube and Hearth talk to each other
+on the TV only:
 
-## 8. Contact
-For technical inquiries regarding the privacy architecture of the F-Droid build, please open an issue on the official GitHub repository.
+- **HearthTube reads from Hearth:**
+  - which Google TV profile is watching, and whether it's a kids profile;
+  - whether Family Link's screen time is up;
+  - the minutes of YouTube left today;
+  - Hearth's wallpaper, accent color and clock.
+- **HearthTube tells Hearth how long videos played** (just the time, no titles) so Hearth can count each kid's YouTube
+  time per day. It does this in every profile.
+- **Parent PIN checks:** when Hearth has a parent PIN, HearthTube asks Hearth to check the PIN you type. Neither app
+  shows or sends the PIN anywhere else.
+- Hearth only shares this with a HearthTube signed with Hearth's own key.
+
+**What's playing, to Home Assistant.** Like most video apps, HearthTube tells Android what's playing (title, channel
+and video ID). Android shows that to apps you've given notification access, such as Hearth, which can pass it on to
+**your own** Home Assistant if you set that up. Hearth asks during its Home Assistant setup whether to share this; if it
+never asked, sharing is on. To share only "HearthTube" instead of the title, turn off **Settings → Works with Hearth →
+Tell Home Assistant what's playing**, or the matching switch in Hearth's Home Assistant settings.
+
+**Continue Watching.** The video you're watching goes on the TV's Continue Watching list (Android TV's Watch Next),
+on the TV, so the home screen can show it. Live streams and Shorts aren't added.
+
+## Kids profiles
+
+HearthTube doesn't collect anything about children. In a kids profile it:
+- plays only what the kid's own supervised YouTube account allows;
+- hides Shorts, videos with blocked words, and channels on the AI-channel list, using the title, the channel name and
+  the channel ID, all on the TV;
+- keeps no log of what was hidden or watched. YouTube keeps the kid's watch history in their Google account, under
+  Family Link's settings.
+
+## What HearthTube does with content
+
+HearthTube changes what you see: it removes Shorts (by default), videos with your blocked words, and (in kids
+profiles) channels on the AI-channel list. It adds a "Likely AI" label for adults. All of this runs on the TV, from
+fixed rules and published lists. It uses no AI model and builds no profile of anyone.
+
+## Your choices
+
+- Turn off SponsorBlock, DeArrow, the "Likely AI" label, Home Assistant titles and automatic update checks in
+  Settings.
+- Clearing HearthTube's data, or uninstalling it, removes everything it kept on the TV, including sign-in tokens.
+  Your YouTube history and subscriptions stay in your Google account.
+- There is no HearthTube account. We hold no data about you, so there is nothing to request or delete from us.
+
+## Contact
+
+Open an issue at [github.com/theSiegs/HearthTube/issues](https://github.com/theSiegs/HearthTube/issues).
+
+## Changes
+
+- 2026-10-14: first HearthTube policy, replacing SmartTube's F-Droid policy.

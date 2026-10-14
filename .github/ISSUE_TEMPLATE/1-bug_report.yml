@@ -7,7 +7,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thank you for helping to make SmartTube better by reporting a bug.
+        Thank you for helping to make HearthTube better by reporting a bug.
 
         Please fill in as much information as possible about your bug.
 
@@ -16,9 +16,9 @@ body:
     attributes:
       label: "Checklist"
       options:
-        - label: "I made sure that there are *no existing issues* - [open](https://github.com/yuliskov/SmartTube/issues) or [closed](https://github.com/yuliskov/SmartTube/issues?q=is%3Aissue+is%3Aclosed) - which I could contribute my information to."
+        - label: "I made sure that there are *no existing issues* - [open](https://github.com/theSiegs/HearthTube/issues) or [closed](https://github.com/theSiegs/HearthTube/issues?q=is%3Aissue+is%3Aclosed) - which I could contribute my information to."
           required: true
-        - label: "I have read the [FAQ](https://github.com/yuliskov/SmartTube#faq) and my problem isn't listed."
+        - label: "I have read the [README](https://github.com/theSiegs/HearthTube#readme) and my problem isn't covered there."
           required: true
         - label: "I have taken the time to fill in all the required details. I understand that the bug report will be dismissed otherwise."
           required: true
@@ -29,7 +29,7 @@ body:
     id: app-version
     attributes:
      label: Affected version
-     description: "In which SmartTube version did you encounter the bug?"
+     description: "Which HearthTube version (Settings → About)?"
      placeholder: "x.xx.x - Can be seen in the app from the 'About' section in Settings"
     validations:
       required: true
