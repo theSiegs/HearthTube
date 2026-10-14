@@ -46,7 +46,7 @@
     <string name="wallpaper_follows_hearth_hint">HearthTube shows Hearth\'s wallpaper while it runs in Hearth. Change it in Hearth\'s settings.</string>
     <string name="works_with_hearth_missing">Hearth isn\'t on this TV (or is out of date), so these do nothing yet.</string>
     <string name="hearth_follow_profile">Follow the Google TV profile</string>
-    <string name="parent_pin_from_hearth">Parent PIN: Hearth\'s (change it in Hearth Settings → Parent PIN)</string>
+    <string name="parent_pin_from_hearth">Parent PIN: Hearth\'s (change it in Hearth: Settings → Profiles → Parent PIN)</string>
     <string name="hearth_continue_watching">Show in Hearth\'s Continue Watching</string>
     <string name="hearth_match_clock_language">Match Hearth\'s clock and language</string>
     <string name="hearth_screensaver_paused">Hearth\'s screensaver when paused</string>
