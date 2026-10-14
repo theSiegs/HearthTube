@@ -148,8 +148,13 @@ $versionPath = Join-Path $PSScriptRoot $versionFile
 $lastText = [System.IO.File]::ReadAllText($versionPath)
 Set-Content $versionFile "$today.$number" -Encoding ascii
 
+# Gradle writes warnings to stderr; with output redirected by the caller (*>&1) PowerShell would turn those into errors
+# and stop the script here, leaving the version file changed. So errors don't stop it while Gradle runs: its exit code
+# decides.
+$ErrorActionPreference = 'Continue'
 & .\gradlew.bat :smarttubetv:assembleHearthtubeRelease "-PhearthtubeStable=$(if ($Stable) { 'true' } else { 'false' })"
 $buildExit = $LASTEXITCODE
+$ErrorActionPreference = 'Stop'
 if ($DryRun -or $buildExit -ne 0) { [System.IO.File]::WriteAllText($versionPath, $lastText) }
 if ($buildExit -ne 0) { exit $buildExit }
 
