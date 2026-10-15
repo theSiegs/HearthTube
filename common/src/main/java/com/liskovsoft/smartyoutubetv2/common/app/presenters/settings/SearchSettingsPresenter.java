@@ -30,7 +30,9 @@ public class SearchSettingsPresenter extends BasePresenter<Void> {
     public void show() {
         AppDialogPresenter settingsPresenter = AppDialogPresenter.instance(getContext());
 
-        appendSpeechRecognizerCategory(settingsPresenter);
+        if (!mSearchData.isIntentRecognizerOnly()) {
+            appendSpeechRecognizerCategory(settingsPresenter);
+        }
         appendMiscCategory(settingsPresenter);
 
         settingsPresenter.showDialog(getContext().getString(R.string.dialog_search), () -> {

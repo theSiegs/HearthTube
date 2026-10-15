@@ -335,6 +335,8 @@ public abstract class SearchTagsFragmentBase extends SearchSupportFragment
                 startActivityForResult(getRecognizerIntent(), REQUEST_SPEECH);
             } catch (ActivityNotFoundException e) {
                 Log.e(TAG, "Cannot find activity for speech recognizer", e);
+                // HearthTube: voice search is the TV's own, so say when it has none
+                MessageHelpers.showMessage(getContext(), com.liskovsoft.smartyoutubetv2.common.R.string.not_supported_by_device);
             } catch (NullPointerException e) {
                 Log.e(TAG, "Speech recognizer can't obtain applicationInfo", e);
             }

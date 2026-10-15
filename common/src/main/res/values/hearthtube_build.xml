@@ -2,4 +2,6 @@
 <resources>
     <!-- HearthTube: a pre-release build unless release.ps1 -Stable says otherwise (smarttubetv/build.gradle overrides it) -->
     <bool name="hearthtube_prerelease_build">true</bool>
+    <!-- HearthTube has no microphone permission, so voice search always goes to the TV's own voice search -->
+    <bool name="speech_recognizer_intent_only">false</bool>
 </resources>

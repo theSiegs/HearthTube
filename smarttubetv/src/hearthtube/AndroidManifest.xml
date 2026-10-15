@@ -14,6 +14,16 @@
         </intent>
     </queries>
 
+    <!-- Permissions SmartTube's modules declare that HearthTube doesn't use:
+         - ACTION_MANAGE_OVERLAY_PERMISSION is a settings screen's name, not a permission;
+         - REQUEST_DELETE_PACKAGES only uninstalls SmartTube's "bridge" helper apps, which HearthTube never installs;
+         - BLUETOOTH only read the device's Bluetooth name for a label (other names are tried, and it's refused from Android 12);
+         - RECORD_AUDIO was for the in-app voice search; it goes to the TV's own voice search now (SearchData) -->
+    <uses-permission android:name="android.permission.ACTION_MANAGE_OVERLAY_PERMISSION" tools:node="remove"/>
+    <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" tools:node="remove"/>
+    <uses-permission android:name="android.permission.BLUETOOTH" tools:node="remove"/>
+    <uses-permission android:name="android.permission.RECORD_AUDIO" tools:node="remove"/>
+
     <application
         android:icon="@drawable/hearthtube_icon"
         android:banner="@drawable/hearthtube_banner"

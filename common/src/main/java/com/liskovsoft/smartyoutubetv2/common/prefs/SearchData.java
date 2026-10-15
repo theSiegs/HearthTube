@@ -25,7 +25,11 @@ public class SearchData {
     private boolean mIsKeyboardFixEnabled;
     private boolean mIsTypingCorrectionDisabled;
 
+    /** HearthTube has no microphone permission: voice search goes to the TV's own voice search (the intent recognizer) */
+    private final boolean mIntentRecognizerOnly;
+
     private SearchData(Context context) {
+        mIntentRecognizerOnly = context.getResources().getBoolean(com.liskovsoft.smartyoutubetv2.common.R.bool.speech_recognizer_intent_only);
         mAppPrefs = AppPrefs.instance(context);
         restoreData();
     }
@@ -119,7 +123,12 @@ public class SearchData {
     }
 
     public int getSpeechRecognizerType() {
-        return mSpeechRecognizerType;
+        return mIntentRecognizerOnly ? SPEECH_RECOGNIZER_INTENT : mSpeechRecognizerType;
+    }
+
+    /** The other recognizers listen to the microphone themselves, which needs the microphone permission */
+    public boolean isIntentRecognizerOnly() {
+        return mIntentRecognizerOnly;
     }
 
     public void setSpeechRecognizerType(int type) {
