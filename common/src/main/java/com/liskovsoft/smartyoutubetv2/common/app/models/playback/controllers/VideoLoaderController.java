@@ -258,7 +258,8 @@ public class VideoLoaderController extends BasePlayerController {
     private boolean retryKidsFromTheStart(MediaItemFormatInfo formatInfo) {
         Video video = getVideo();
 
-        if (video == null || formatInfo.isUnplayable()
+        // Nobody signed in (the phone build): there is no signed-in client to ask again
+        if (video == null || formatInfo.isUnplayable() || !com.liskovsoft.smartyoutubetv2.common.utils.KidsRefused.isSignedIn()
                 || com.liskovsoft.smartyoutubetv2.common.utils.KidsRefused.recoveryFor(false, Helpers.equals(video.videoId, mKidsRetriedVideoId))
                 != com.liskovsoft.smartyoutubetv2.common.utils.KidsRefused.Recovery.RESET_AND_RETRY) {
             return false;

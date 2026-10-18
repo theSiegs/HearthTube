@@ -284,7 +284,8 @@ public class MotherActivity extends FragmentActivity {
         }
     }
 
-    private void initDpi() {
+    /** HearthTube: protected, because the TV's fixed-width scaling is wrong on a phone or tablet (HearthTube Mobile skips it) */
+    protected void initDpi() {
         getResources().getDisplayMetrics().setTo(getDisplayMetrics(this));
     }
 

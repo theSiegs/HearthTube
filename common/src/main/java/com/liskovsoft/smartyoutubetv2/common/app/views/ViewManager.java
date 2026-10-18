@@ -27,6 +27,7 @@ import com.liskovsoft.smartyoutubetv2.common.app.presenters.SplashPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.base.BasePresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.AppUpdatePresenter;
 import com.liskovsoft.smartyoutubetv2.common.misc.MotherActivity;
+import com.liskovsoft.smartyoutubetv2.common.utils.KidsMode;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 import com.liskovsoft.youtubeapi.service.YouTubeServiceManager;
 
@@ -468,6 +469,16 @@ public class ViewManager {
     }
 
     public boolean isVisible(Object view) {
+        // HearthTube Mobile: its screens are activities themselves, not fragments in one (the TV's views that are
+        // activities, like the splash, stay as they were)
+        if (view instanceof Activity && KidsMode.isMobileBuild(mContext)) {
+            Activity activity = (Activity) view;
+
+            return !activity.isFinishing() && !activity.isDestroyed()
+                    && (!(activity instanceof androidx.lifecycle.LifecycleOwner)
+                    || ((androidx.lifecycle.LifecycleOwner) activity).getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.STARTED));
+        }
+
         if (view instanceof Fragment) {
             return ((Fragment) view).isVisible();
         }

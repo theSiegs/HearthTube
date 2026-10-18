@@ -234,27 +234,33 @@ public final class ParentGate {
     private static volatile long sKidsCheckedUntilMs;
 
     private static boolean isKidsProfileNow(Context context) {
+        KidsDecision.Signals signals = new KidsDecision.Signals();
+        signals.explicit = KidsMode.getExplicit(context);
 
         // Hearth's word first, when it has one (it can tell even when every app is approved)
         HearthProfile hearth = HearthProfile.isHearthSuspended(context) ? null : HearthProfile.queryHearth(context);
-        if (hearth != null && Boolean.TRUE.equals(hearth.kidsProfile)) {
-            return true;
-        }
+        signals.hearthKids = hearth != null ? hearth.kidsProfile : null;
+        signals.hearthLive = hearth != null && Boolean.FALSE.equals(hearth.kidsProfile) && HearthProfile.live(context, hearth) != null;
 
         // Family Link supervision, read for our own user (Hearth does the same): true even when a kid's apps are all
         // approved, and in a kid's own profile user, where Google TV runs HearthTube apart from user 0 and Hearth
-        if (isSupervisedUser(context)) {
+        signals.supervised = isSupervisedUser(context);
+
+        if (KidsDecision.isKids(signals)) {
             return true;
         }
 
-        // Hearth, when it can be relied on, says it isn't a kids profile: apps an adult paused don't make it one
-        if (hearth != null && Boolean.FALSE.equals(hearth.kidsProfile) && HearthProfile.live(context, hearth) != null) {
-            return false;
-        }
+        // A kids profile suspends every app a parent hasn't approved. Only a TV has profiles like that: on a phone,
+        // apps an adult paused with Digital Wellbeing would look the same. The scan is the costly signal, so it runs last.
+        signals.suspendedGuessAllowed = !KidsMode.isMobileBuild(context);
+        signals.manySuspended = signals.suspendedGuessAllowed && manySuspendedApps(context);
 
+        return KidsDecision.isKids(signals);
+    }
+
+    /** An adult pausing an app or two with Digital Wellbeing suspends them too, so one or two don't make a kids profile */
+    private static boolean manySuspendedApps(Context context) {
         PackageManager packageManager = context.getPackageManager();
-        // A kids profile suspends every app a parent hasn't approved, usually many. An adult pausing an app or two
-        // with Digital Wellbeing suspends them too, so one or two don't make a kids profile.
         java.util.Set<String> suspended = new java.util.HashSet<>();
 
         for (String category : new String[] {Intent.CATEGORY_LEANBACK_LAUNCHER, Intent.CATEGORY_LAUNCHER}) {
@@ -274,10 +280,7 @@ public final class ParentGate {
         return false;
     }
 
-    /** Restrictions Family Link puts on a supervised (kids) profile's user, whatever the parent allows */
-    private static final String[] SUPERVISION_RESTRICTIONS = {
-            "no_config_credentials", "no_grant_admin", "no_add_managed_profile"};
-
+    /** Restrictions Family Link puts on a supervised user, whatever the parent allows (see {@link SupervisionRestrictions}) */
     private static boolean isSupervisedUser(Context context) {
         if (VERSION.SDK_INT < 21) { // UserManager.getUserRestrictions needs API 18; HearthTube runs on 21+
             return false;
@@ -288,11 +291,7 @@ public final class ParentGate {
             android.os.Bundle restrictions = users != null ? users.getUserRestrictions() : null;
 
             if (restrictions != null) {
-                for (String restriction : SUPERVISION_RESTRICTIONS) {
-                    if (restrictions.getBoolean(restriction, false)) {
-                        return true;
-                    }
-                }
+                return SupervisionRestrictions.isSupervised(key -> restrictions.getBoolean(key, false), KidsMode.isMobileBuild(context));
             }
         } catch (Exception e) {
             // Can't tell: the suspended apps check decides

@@ -27,10 +27,12 @@ public final class HearthAllowance {
     private static final long MIN_REPORT_MS = 1_000;
     private static final String PREFS = "hearth_allowance";
     private static final String PREF_HA_READ = "home_assistant_read";
+    private static final String PREF_LOCAL = "local_allowance";
     private static final Object sLock = new Object();
     /** Reports go to Hearth one at a time, off the main thread (a kids profile's Hearth agent passes them on) */
     private static final ExecutorService sReporter = Executors.newSingleThreadExecutor();
     private static YouTubeAllowance sAllowance;
+    private static LocalAllowance sLocal;
     private static String sSaved;
     private static YouTubeAllowance.Verdict sLastVerdict;
     /** When the current stretch of playing started (SystemClock.elapsedRealtime), -1 while not playing */
@@ -132,6 +134,14 @@ public final class HearthAllowance {
             return YouTubeAllowance.Decision.NO_LIMIT;
         }
 
+        // No Hearth to give a limit (a phone or tablet): the one a parent set on the device itself, if any
+        if (hearth == null) {
+            Long left = local(context).msLeft(today());
+            return left != null && left <= 0
+                    ? new YouTubeAllowance.Decision(YouTubeAllowance.Verdict.USED_UP, null, 0L)
+                    : new YouTubeAllowance.Decision(YouTubeAllowance.Verdict.PLAY, null, left);
+        }
+
         YouTubeAllowance.Row row = hearth == null ? null : new YouTubeAllowance.Row(hearth.contractVersion, hearth.key(),
                 hearth.youtubeMinutesLeft, hearth.scheduleLocked, hearth.allowanceMessage, hearth.allowanceSource,
                 hearth.allowanceCheckedAt);
@@ -166,6 +176,35 @@ public final class HearthAllowance {
 
         allowance(context).played(ms, System.currentTimeMillis());
         save(context);
+        local(context).played(today(), ms);
+        saveLocal(context);
+    }
+
+    /** The daily limit a parent set on this device (minutes); 0 is none. Used only without a Hearth. */
+    public static int getLocalLimitMinutes(Context context) {
+        return local(context).getLimitMinutes();
+    }
+
+    public static void setLocalLimitMinutes(Context context, int minutes) {
+        local(context).setLimitMinutes(minutes);
+        saveLocal(context);
+    }
+
+    private static synchronized LocalAllowance local(Context context) {
+        if (sLocal == null) {
+            sLocal = new LocalAllowance();
+            sLocal.restore(prefs(context).getString(PREF_LOCAL, null));
+        }
+
+        return sLocal;
+    }
+
+    private static synchronized void saveLocal(Context context) {
+        prefs(context).edit().putString(PREF_LOCAL, local(context).save()).apply();
+    }
+
+    private static String today() {
+        return new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(new java.util.Date());
     }
 
     /** Hands the time Hearth hasn't had yet to it, off the main thread; what it doesn't take waits for the next time */

@@ -960,6 +960,21 @@ public class Utils {
         removeCallbacks(sForceFinishTheApp);
     }
 
+    /** The activity that starts the app: the TV's splash, or, in HearthTube Mobile, whatever its launcher starts */
+    private static Class<?> bootstrapClass(Context context) throws ClassNotFoundException {
+        try {
+            return Class.forName(BOOTSTRAP_ACTIVITY_CLASS_NAME);
+        } catch (ClassNotFoundException e) {
+            Intent launch = context.getPackageManager().getLaunchIntentForPackage(context.getPackageName());
+
+            if (launch != null && launch.getComponent() != null) {
+                return Class.forName(launch.getComponent().getClassName());
+            }
+
+            throw e;
+        }
+    }
+
     public static void restartTheApp(Context context) {
         persistData(context);
         postDelayed(() -> restartTheAppInt(context), 1_000);
@@ -967,7 +982,7 @@ public class Utils {
 
     private static void restartTheAppInt(Context context) {
         try {
-            Intent intent = new Intent(context, Class.forName(BOOTSTRAP_ACTIVITY_CLASS_NAME));
+            Intent intent = new Intent(context, bootstrapClass(context));
             intent.putExtra(IntentExtractor.RESTART_INTENT, true);
             ProcessPhoenix.triggerRebirth(context, intent);
         } catch (ClassNotFoundException e) {
@@ -990,7 +1005,7 @@ public class Utils {
                     Intent.ACTION_VIEW,
                     Uri.parse(String.format("https://www.youtube.com/watch?v=%s&t=%ss", video.videoId, posMs / 1_000)),
                     context,
-                    Class.forName(BOOTSTRAP_ACTIVITY_CLASS_NAME)
+                    bootstrapClass(context)
             );
             intent.putExtra(IntentExtractor.RESTART_INTENT, true);
             intent.putExtra(IntentExtractor.INCOGNITO_INTENT, video.incognito);

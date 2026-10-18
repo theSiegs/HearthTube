@@ -23,6 +23,7 @@ import java.util.Set;
  * <p>
  * Also YouTube's own say: a kid signed in to their supervised account gets YouTube's refusal (their content level,
  * channels a parent blocked) from the signed-in client, and the player must not then fetch the video signed out.
+ * On the phone and tablet build a kid who isn't signed in plays nothing: only a signed-in answer carries the supervision.
  */
 public final class KidsRefused {
     private static final Set<String> sRefused = Collections.synchronizedSet(new HashSet<>());
@@ -46,8 +47,30 @@ public final class KidsRefused {
      * a video that can't play goes quietly too, rather than with YouTube's reason on the screen.
      */
     public static boolean isNotAllowed(Context context, @Nullable MediaItemFormatInfo formatInfo) {
-        return formatInfo != null && (!formatInfo.isAuth() || formatInfo.isUnplayable()) && ParentGate.isKidsProfile(context)
-                && MediaServiceManager.instance().getSelectedAccount() != null;
+        return formatInfo != null && ParentGate.isKidsProfile(context)
+                && isNotAllowed(KidsMode.isMobileBuild(context), isSignedIn(), formatInfo.isAuth(), formatInfo.isUnplayable());
+    }
+
+    /** Somebody is signed in to YouTube in this app */
+    public static boolean isSignedIn() {
+        return MediaServiceManager.instance().getSelectedAccount() != null;
+    }
+
+    /**
+     * The rule for a kids profile, apart from Android. On the phone and tablet build a kid who isn't signed in plays
+     * nothing: only the signed-in client carries the supervision, and the answer's own "signed in" flag can't be trusted
+     * then (the TV client says yes without an account). On the TV a kid without an account plays as before.
+     *
+     * @param signedIn an account is selected
+     * @param answerSignedIn the answer came from a signed-in client
+     * @param unplayable YouTube said the video can't play
+     */
+    static boolean isNotAllowed(boolean mobileBuild, boolean signedIn, boolean answerSignedIn, boolean unplayable) {
+        if (!signedIn) {
+            return mobileBuild;
+        }
+
+        return !answerSignedIn || unplayable;
     }
 
     /** What to do with a video a kid's signed-in account didn't get from the signed-in client */

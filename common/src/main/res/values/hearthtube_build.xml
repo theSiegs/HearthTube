@@ -2,6 +2,9 @@
 <resources>
     <!-- HearthTube: a pre-release build unless release.ps1 -Stable says otherwise (smarttubetv/build.gradle overrides it) -->
     <bool name="hearthtube_prerelease_build">true</bool>
+    <!-- The phone and tablet build overrides this to true (its own resources): no suspended-apps guess, and a kids
+         profile plays nothing until a kid is signed in -->
+    <bool name="hearthtube_mobile_build">false</bool>
     <!-- HearthTube has no microphone permission, so voice search always goes to the TV's own voice search -->
     <bool name="speech_recognizer_intent_only">false</bool>
 </resources>
