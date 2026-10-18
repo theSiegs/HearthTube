@@ -1,0 +1,108 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+          xmlns:tools="http://schemas.android.com/tools"
+          package="com.thesiegs.hearthtube.mobile">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Libraries bring these in for the TV app; a kid's phone needs none of them. Removing them also keeps the app from
+         starting by itself at boot, drawing over other apps, or deleting packages. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" tools:node="remove" />
+    <uses-permission android:name="android.permission.QUICKBOOT_POWERON" tools:node="remove" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" tools:node="remove" />
+    <uses-permission android:name="android.permission.ACTION_MANAGE_OVERLAY_PERMISSION" tools:node="remove" />
+    <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" tools:node="remove" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" tools:node="remove" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" tools:node="remove" />
+    <uses-permission android:name="com.android.providers.tv.permission.READ_EPG_DATA" tools:node="remove" />
+    <uses-permission android:name="com.android.providers.tv.permission.WRITE_EPG_DATA" tools:node="remove" />
+
+    <!-- No updater yet (see update_urls in the resources) and nothing here uses Bluetooth -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" tools:node="remove" />
+    <uses-permission android:name="android.permission.BLUETOOTH" tools:node="remove" />
+
+    <!-- The TV libraries say Leanback is required: not on a phone or tablet -->
+    <uses-feature android:name="android.software.leanback" android:required="false" tools:node="replace" />
+    <uses-feature android:name="android.hardware.touchscreen" android:required="true" tools:node="replace" />
+
+    <application
+        android:name=".MobileApplication"
+        android:allowBackup="false"
+        android:icon="@android:drawable/ic_media_play"
+        android:label="@string/app_name"
+        android:requestLegacyExternalStorage="false"
+        android:supportsRtl="true"
+        android:theme="@style/Mobile.Theme"
+        tools:node="merge"
+        tools:replace="android:allowBackup,android:requestLegacyExternalStorage,android:theme,android:label,android:supportsRtl"
+        tools:ignore="GoogleAppIndexingWarning">
+
+        <!-- The way in: the launcher, and the links to YouTube that open here (the YouTube app is blocked on a kid's
+             phone). The shared splash presenter reads the link and sends it through the kids filters. -->
+        <activity
+            android:name=".MobileSplashActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation|keyboardHidden">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="http" />
+                <data android:scheme="https" />
+                <data android:host="youtube.com" />
+                <data android:host="www.youtube.com" />
+                <data android:host="m.youtube.com" />
+                <data android:host="youtu.be" />
+                <data android:pathPattern=".*" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".browse.MobileBrowseActivity"
+            android:exported="false"
+            android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation|keyboardHidden"
+            android:launchMode="singleTask" />
+
+        <activity
+            android:name=".playback.MobilePlaybackActivity"
+            android:exported="false"
+            android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation|keyboardHidden"
+            android:screenOrientation="fullUser"
+            android:supportsPictureInPicture="false" />
+
+        <activity
+            android:name=".channel.MobileChannelActivity"
+            android:exported="false"
+            android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation|keyboardHidden" />
+        <activity
+            android:name=".channel.MobileChannelUploadsActivity"
+            android:exported="false"
+            android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation|keyboardHidden" />
+        <activity
+            android:name=".search.MobileSearchActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize"
+            android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation|keyboardHidden" />
+        <activity
+            android:name=".dialogs.MobileDialogActivity"
+            android:exported="false"
+            android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation|keyboardHidden" />
+        <activity
+            android:name=".signin.MobileSignInActivity"
+            android:exported="false"
+            android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation|keyboardHidden" />
+
+        <!-- Not for a kid's phone: the TV app's boot receiver, the zip restore that anything could send a file to,
+             and the TV search and channels from the Leanback helper -->
+        <receiver android:name="com.liskovsoft.smartyoutubetv2.common.misc.RemoteControlReceiver" tools:ignore="MissingClass" tools:node="remove" />
+        <activity android:name="com.liskovsoft.smartyoutubetv2.common.misc.BackupReceiverActivity" tools:ignore="MissingClass" tools:node="remove" />
+        <activity android:name="com.liskovsoft.leanbackassistant.search.SearchableActivity" tools:ignore="MissingClass" tools:node="remove" />
+        <provider android:name="com.liskovsoft.leanbackassistant.search.VideoContentProvider" tools:ignore="MissingClass"
+                  android:authorities="org.smarttube" tools:node="remove" />
+        <receiver android:name="com.liskovsoft.leanbackassistant.channels.UpdateChannelsReceiver" tools:ignore="MissingClass" tools:node="remove" />
+    </application>
+</manifest>

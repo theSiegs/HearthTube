@@ -1,0 +1,91 @@
+apply from: gradle.ext.sharedModulesConstants
+
+apply plugin: 'com.android.application'
+
+// HearthTube Mobile: the phone and tablet app. It reuses everything under :common (presenters, kids filters, parent PIN,
+// allowance) and MediaServiceCore, and brings its own touch screens. Unlike the TV app it is built for kids' devices
+// first, so it ships no boot receiver, no overlay permission and no TV channels (see AndroidManifest.xml).
+android {
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    compileSdkVersion project.properties.compileSdkVersion
+    buildToolsVersion project.properties.buildToolsVersion
+    testOptions.unitTests.includeAndroidResources = true
+
+    defaultConfig {
+        applicationId "com.thesiegs.hearthtube.mobile"
+        // The kids check (ParentGate.isKidsProfile) answers "no" below API 24, and Family Link's tools need it anyway
+        minSdkVersion 24
+        targetSdkVersion project.properties.compileSdkVersion
+        versionCode 1
+        versionName "0.1.0"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+        // Take the libraries' ststable flavor, as the TV app's hearthtube flavor does
+        missingDimensionStrategy 'default', 'ststable'
+
+        ndk {
+            abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86'
+        }
+    }
+
+    // Tells common this is the phone and tablet build (no suspended-apps guess, no playback signed out)
+    buildTypes {
+        debug {
+            applicationIdSuffix ".debug"
+        }
+        release {
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    lintOptions {
+        abortOnError true
+        // This is not a TV app: its TV checks don't apply
+        disable 'MissingLeanbackLauncher', 'UnsupportedTvHardware'
+        // The library's own R.bool, read by :common, looks unused from here
+        disable 'UnusedResources'
+        // Glide's code mentions posting a notification; nothing here posts one
+        disable 'NotificationPermission'
+    }
+}
+
+// AiSList's AI-channel lists ship in the app (assets/aislist, read by AiSlopList), so a kid's phone is covered from the
+// first start, even offline; the app fetches newer ones once a day. The copy is the one the TV app keeps in its sources.
+def aislistAssets = file("$buildDir/generated/aislist/assets")
+def copyAiSlopLists = tasks.register('copyAiSlopLists', Copy) {
+    from(rootProject.file('smarttubetv/src/hearthtube/aislist'))
+    into(new File(aislistAssets, 'aislist'))
+}
+android.sourceSets.main.assets.srcDir(aislistAssets)
+android.applicationVariants.all { variant ->
+    variant.mergeAssetsProvider.configure { dependsOn copyAiSlopLists }
+}
+
+dependencies {
+    implementation 'androidx.annotation:annotation:' + annotationXVersion
+    implementation 'androidx.recyclerview:recyclerview:' + recyclerviewXVersion
+    implementation 'androidx.media:media:' + mediaXVersion // exoplayer fix
+
+    implementation 'com.github.bumptech.glide:glide:' + glideVersion
+
+    implementation project(':fragment-1.1.0')
+    implementation project(':common')
+    implementation project(':sharedutils')
+    implementation project(':mediaserviceinterfaces')
+    implementation project(':youtubeapi')
+    implementation project(':doubletapplayerview')
+
+    implementation project(':exoplayer-library-core')
+    implementation project(':exoplayer-library-ui')
+    implementation project(':exoplayer-extension-mediasession')
+
+    implementation 'io.reactivex.rxjava2:rxandroid:' + rxAndroidVersion
+    implementation 'io.reactivex.rxjava2:rxjava:' + rxJavaVersion
+
+    testImplementation 'junit:junit:' + junitVersion
+    testImplementation 'org.robolectric:robolectric:' + robolectricVersion
+}

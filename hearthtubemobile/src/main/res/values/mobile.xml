@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">HearthTube</string>
+    <string name="parent_button">Parent</string>
+    <string name="settings_button">Settings</string>
+    <string name="settings_menu_title">Settings</string>
+    <string name="sign_in_open">Open the sign-in page</string>
+    <string name="search_button">Search</string>
+    <string name="search_hint">Search</string>
+    <string name="parent_menu_title">Parent</string>
+    <string name="parent_accounts">Accounts and parent PIN</string>
+    <string name="parent_kids_mode">Kids mode on this device</string>
+    <string name="parent_daily_time">Daily YouTube time</string>
+    <string name="daily_time_none">No limit</string>
+    <string name="daily_time_minutes">%d minutes</string>
+    <string name="gated_title">Ask a parent to sign in</string>
+    <string name="sign_in_steps">On a phone or computer, open:</string>
+    <string name="sign_in_code">and enter this code:</string>
+
+    <!-- No update feeds yet. The library's default for the stable flavor is SmartTube's own feed: this app must never
+         offer SmartTube's APK. A feed for HearthTube Mobile comes with its first release. -->
+    <string-array name="update_urls" />
+    <string-array name="update_urls_prerelease" />
+
+    <!-- The phone and tablet build: common's kids checks behave differently (no suspended-apps guess, a Family Link
+         restriction that only phones are expected to show, and no playback for a kid who isn't signed in) -->
+    <bool name="hearthtube_mobile_build">true</bool>
+
+    <style name="Mobile.Theme" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@android:color/black</item>
+        <item name="android:colorBackground">@android:color/black</item>
+        <item name="android:statusBarColor">@android:color/black</item>
+        <item name="android:navigationBarColor">@android:color/black</item>
+    </style>
+</resources>
