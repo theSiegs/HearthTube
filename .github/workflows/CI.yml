@@ -48,3 +48,20 @@ jobs:
           name: HearthTube_debug_universal
           path: ./smarttubetv/build/outputs/apk/hearthtube/debug/*_universal.apk
           if-no-files-found: warn
+
+      # The phone and tablet app shares :common with the TV app, so a change there can break it without any test noticing
+      - name: Unit tests (HearthTube Mobile)
+        run: ./gradlew :hearthtubemobile:testDebugUnitTest
+
+      - name: Lint (HearthTube Mobile)
+        run: ./gradlew :hearthtubemobile:lintDebug
+
+      - name: Build HearthTube Mobile (debug)
+        run: ./gradlew :hearthtubemobile:assembleDebug
+
+      - name: Upload the mobile debug APK
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: HearthTubeMobile_debug
+          path: ./hearthtubemobile/build/outputs/apk/debug/*.apk
+          if-no-files-found: warn
