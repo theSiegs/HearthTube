@@ -2,6 +2,34 @@ apply from: gradle.ext.sharedModulesConstants
 
 apply plugin: 'com.android.application'
 
+// Release signing: the same key as Hearth and the TV app (one signing certificate, so Hearth's provider trusts this app
+// by package and certificate, and one key lineage to look after). keystore.properties (git-ignored, in the repository
+// root) holds storeFile, storePassword, keyAlias and keyPassword, or a single signingPropertiesFile=<path> line pointing
+// at the file that holds them, as for the TV app. Without it a release build is simply unsigned.
+def keystorePropertiesFile = rootProject.file("keystore.properties")
+def keystoreProperties = new Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+
+    def pointer = keystoreProperties['signingPropertiesFile']
+    if (pointer) {
+        def signingFile = new File(pointer)
+        if (!signingFile.isFile()) {
+            throw new GradleException("keystore.properties: signingPropertiesFile not found")
+        }
+        keystoreProperties = new Properties()
+        signingFile.withReader('UTF-8') { keystoreProperties.load(it) }
+        // A Windows path with single backslashes loses them to .properties escaping (C:\keys\a.jks reads as
+        // C:keysa.jks): take the line as written when only that names an existing file
+        def storeFile = keystoreProperties['storeFile']
+        def rawLine = signingFile.readLines('UTF-8').find { it.trim().startsWith('storeFile=') }
+        def raw = rawLine != null ? rawLine.trim().substring('storeFile='.length()).trim() : null
+        if (storeFile != null && !new File(storeFile).isFile() && raw != null && new File(raw).isFile()) {
+            keystoreProperties['storeFile'] = raw
+        }
+    }
+}
+
 // HearthTube Mobile: the phone and tablet app. It reuses everything under :common (presenters, kids filters, parent PIN,
 // allowance) and MediaServiceCore, and brings its own touch screens. Unlike the TV app it is built for kids' devices
 // first, so it ships no boot receiver, no overlay permission and no TV channels (see AndroidManifest.xml).
@@ -14,6 +42,7 @@ android {
     compileSdkVersion project.properties.compileSdkVersion
     buildToolsVersion project.properties.buildToolsVersion
     testOptions.unitTests.includeAndroidResources = true
+    ndkVersion "21.0.6113669" // as the TV app: strips debug symbols from the native libraries (much smaller APKs)
 
     defaultConfig {
         applicationId "com.thesiegs.hearthtube.mobile"
@@ -27,8 +56,27 @@ android {
         // Take the libraries' ststable flavor, as the TV app's hearthtube flavor does
         missingDimensionStrategy 'default', 'ststable'
 
-        ndk {
-            abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86'
+    }
+
+    // One APK per ABI (a phone or tablet takes the one for its processor) and a universal one for the rest: the all-in-one
+    // is about 120 MB
+    splits {
+        abi {
+            enable true
+            reset()
+            include 'armeabi-v7a', 'arm64-v8a', 'x86'
+            universalApk true
+        }
+    }
+
+    signingConfigs {
+        release {
+            if (keystorePropertiesFile.exists()) {
+                storeFile = file(keystoreProperties['storeFile'])
+                storePassword = keystoreProperties['storePassword']
+                keyAlias = keystoreProperties['keyAlias']
+                keyPassword = keystoreProperties['keyPassword']
+            }
         }
     }
 
@@ -39,6 +87,10 @@ android {
         }
         release {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+
+            if (keystorePropertiesFile.exists()) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 

@@ -64,10 +64,18 @@ new version is installed the way the first one was. Android's developer verifica
 worldwide in 2027) will need the package registered; the limited-distribution account (up to 20 devices) fits a
 family.
 
+## Signing
+
+Release builds are signed with the same key as Hearth and the TV app (certificate SHA-256 in the
+[technical notes](technical.md)), so Hearth can trust the app by its package and certificate. The key stays in the
+git-ignored local file `keystore.properties` points at; nothing here needs it except a release build. A debug build
+has its own package (`.debug` added) and the debug key, which Hearth doesn't trust.
+
 ## For developers
 
 ```sh
-.\gradlew.bat :hearthtubemobile:assembleDebug          # the APK lands in hearthtubemobile/build/outputs/apk/debug
+.\gradlew.bat :hearthtubemobile:assembleDebug          # one APK per ABI in hearthtubemobile/build/outputs/apk/debug
+.\gradlew.bat :hearthtubemobile:assembleRelease        # signed when keystore.properties points at the key
 .\gradlew.bat :hearthtubemobile:testDebugUnitTest      # unit tests
 .\gradlew.bat :hearthtubemobile:lintDebug
 ```
