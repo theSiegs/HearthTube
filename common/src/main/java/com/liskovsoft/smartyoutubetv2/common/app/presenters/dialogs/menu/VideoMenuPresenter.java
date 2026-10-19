@@ -984,20 +984,20 @@ public class VideoMenuPresenter extends BaseMenuPresenter {
                 mMediaItemService.unsubscribeObserve(video.channelId) : mMediaItemService.subscribeObserve(video.channelId);
 
         boolean subscribing = !video.isSubscribed;
-        // HearthTube: when YouTube doesn't accept it (a supervised account may not be allowed), say so
-        mSubscribeAction = RxHelper.execute(observable, error -> {
-            video.isSubscribed = !subscribing;
-            com.liskovsoft.smartyoutubetv2.common.utils.Utils.post(() -> MessageHelpers.showMessage(getContext(),
-                    getContext().getString(subscribing ? R.string.subscribe_failed : R.string.unsubscribe_failed)));
-        });
+        VideoMenuCallback callback = mCallback; // the menu may be reused before YouTube answers
+        // HearthTube: follow what YouTube answered (a supervised account may not be allowed to subscribe)
+        mSubscribeAction = RxHelper.execute(observable,
+                error -> MessageHelpers.showMessage(getContext(),
+                        getContext().getString(subscribing ? R.string.subscribe_failed : R.string.unsubscribe_failed)),
+                () -> {
+                    video.isSubscribed = subscribing;
 
-        video.isSubscribed = !video.isSubscribed;
+                    if (!subscribing && callback != null) {
+                        callback.onItemAction(video, VideoMenuCallback.ACTION_UNSUBSCRIBE);
+                    }
 
-        if (!video.isSubscribed && mCallback != null) {
-            mCallback.onItemAction(video, VideoMenuCallback.ACTION_UNSUBSCRIBE);
-        }
-
-        MessageHelpers.showMessage(getContext(), getContext().getString(!video.isSubscribed ? R.string.unsubscribed_from_channel : R.string.subscribed_to_channel));
+                    MessageHelpers.showMessage(getContext(), getContext().getString(subscribing ? R.string.subscribed_to_channel : R.string.unsubscribed_from_channel));
+                });
     }
 
     @Override
