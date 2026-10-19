@@ -671,22 +671,25 @@ public class PlayerUIController extends BasePlayerController {
         disableSuggestionsResetTimeout();
     }
 
-    /** YouTube didn't accept a subscribe or an unsubscribe: show the button as it was, and say so */
-    private void undoSubscribe(boolean wasSubscribing) {
-        if (getPlayer() == null || getVideo() == null) {
-            return;
-        }
+    /** YouTube accepted a subscribe or an unsubscribe: only now the button and the video's flag change */
+    private void onSubscribeAccepted(Video video, boolean subscribing) {
+        video.isSubscribed = subscribing;
 
-        getVideo().isSubscribed = !wasSubscribing;
-        getPlayer().setButtonState(R.id.action_subscribe, wasSubscribing ? PlayerUI.BUTTON_OFF : PlayerUI.BUTTON_ON);
-        MessageHelpers.showMessage(getContext(), wasSubscribing ? R.string.subscribe_failed : R.string.unsubscribe_failed);
+        if (getPlayer() != null && getVideo() == video) {
+            getPlayer().setButtonState(R.id.action_subscribe, subscribing ? PlayerUI.BUTTON_ON : PlayerUI.BUTTON_OFF);
+        }
+    }
+
+    /** YouTube didn't accept a subscribe or an unsubscribe: the button stays as it was, say so */
+    private void onSubscribeRejected(boolean subscribing) {
+        MessageHelpers.showMessage(getContext(), subscribing ? R.string.subscribe_failed : R.string.unsubscribe_failed);
     }
 
     private void callMediaItemObservable(MediaItemObservable callable) {
-        callMediaItemObservable(callable, null);
+        callMediaItemObservable(callable, null, null);
     }
 
-    private void callMediaItemObservable(MediaItemObservable callable, com.liskovsoft.sharedutils.rx.OnError onError) {
+    private void callMediaItemObservable(MediaItemObservable callable, com.liskovsoft.sharedutils.rx.OnError onError, Runnable onFinish) {
         Video video = getVideo();
 
         if (video == null) {
@@ -696,11 +699,7 @@ public class PlayerUIController extends BasePlayerController {
 
         Observable<Void> observable = callable.call(video.mediaItem != null ? video.mediaItem : video.toMediaItem());
 
-        if (onError != null) {
-            RxHelper.execute(observable, onError);
-        } else {
-            RxHelper.execute(observable);
-        }
+        RxHelper.execute(observable, onError, onFinish);
     }
 
     private boolean handleBackKey(int keyCode) {
@@ -1028,17 +1027,16 @@ public class PlayerUIController extends BasePlayerController {
         }
 
         boolean subscribing = buttonState == PlayerUI.BUTTON_OFF;
-        // HearthTube: when YouTube doesn't accept it (a supervised account may not be allowed), the button goes back
-        com.liskovsoft.sharedutils.rx.OnError undo = error -> Utils.post(() -> undoSubscribe(subscribing));
+        Video video = getVideo();
+        // HearthTube: the button follows what YouTube answered (a supervised account may not be allowed to subscribe)
+        com.liskovsoft.sharedutils.rx.OnError rejected = error -> onSubscribeRejected(subscribing);
+        Runnable accepted = () -> onSubscribeAccepted(video, subscribing);
 
         if (subscribing) {
-            callMediaItemObservable(mMediaItemService::subscribeObserve, undo);
+            callMediaItemObservable(mMediaItemService::subscribeObserve, rejected, accepted);
         } else {
-            callMediaItemObservable(mMediaItemService::unsubscribeObserve, undo);
+            callMediaItemObservable(mMediaItemService::unsubscribeObserve, rejected, accepted);
         }
-
-        getVideo().isSubscribed = buttonState == PlayerUI.BUTTON_OFF;
-        getPlayer().setButtonState(R.id.action_subscribe, buttonState == PlayerUI.BUTTON_OFF ? PlayerUI.BUTTON_ON : PlayerUI.BUTTON_OFF);
     }
 
     private void applySoundOff(int buttonState) {
