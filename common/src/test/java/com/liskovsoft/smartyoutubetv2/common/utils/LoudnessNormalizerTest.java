@@ -6,12 +6,9 @@ import static org.junit.Assert.assertTrue;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItemFormatInfo;
 import com.liskovsoft.youtubeapi.innertube.impl.MediaItemFormatInfoImpl;
 import com.liskovsoft.youtubeapi.innertube.models.PlayerResult;
-import com.liskovsoft.youtubeapi.service.data.YouTubeMediaItemFormatInfo;
 
 import org.junit.Test;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
 import java.lang.reflect.Proxy;
 
 /** Loudness values are real ones, from the player responses of the videos named */
@@ -111,14 +108,15 @@ public class LoudnessNormalizerTest {
         assertEquals(600, LoudnessNormalizer.getLiftMb(3f));
     }
 
-    // MediaServiceCore: the parsed loudnessDb is read from both implementations, also where the heuristic gives up
+    // MediaServiceCore's public getLoudnessDb() is the raw value, also where getVolumeLevel()'s heuristic gives up
 
     @Test
-    public void readsTheLegacyFormatInfosLoudness() throws Exception {
-        assertEquals(LONELY_DAY, LoudnessNormalizer.loudnessDbOf(legacy(LONELY_DAY)), 0);
-        assertEquals(7.04f, LoudnessNormalizer.loudnessDbOf(legacy(7.04f)), 0); // Baby Shark
-        assertEquals(REM, LoudnessNormalizer.loudnessDbOf(legacy(REM)), 0);
-        assertTrue(Float.isNaN(LoudnessNormalizer.loudnessDbOf(legacy(0f))));
+    public void readsTheFormatInfosLoudness() {
+        assertEquals(LONELY_DAY, LoudnessNormalizer.loudnessDbOf(withLoudnessDb(LONELY_DAY)), 0);
+        assertEquals(7.04f, LoudnessNormalizer.loudnessDbOf(withLoudnessDb(7.04f)), 0); // Baby Shark
+        assertEquals(REM, LoudnessNormalizer.loudnessDbOf(withLoudnessDb(REM)), 0);
+        assertTrue(Float.isNaN(LoudnessNormalizer.loudnessDbOf(withLoudnessDb(0f))));
+        assertTrue(Float.isNaN(LoudnessNormalizer.loudnessDbOf(null)));
     }
 
     @Test
@@ -126,38 +124,6 @@ public class LoudnessNormalizerTest {
         assertEquals(LONELY_DAY, LoudnessNormalizer.loudnessDbOf(innertube(LONELY_DAY)), 0);
         assertEquals(TED_TALK, LoudnessNormalizer.loudnessDbOf(innertube(TED_TALK)), 0);
         assertTrue(Float.isNaN(LoudnessNormalizer.loudnessDbOf(innertube(null))));
-        assertTrue(Float.isNaN(LoudnessNormalizer.loudnessDbOf(null)));
-    }
-
-    @Test
-    public void undoesTheHeuristicOfBothImplementations() throws Exception {
-        for (float loudnessDb = -20f; loudnessDb < 5.75f; loudnessDb += 0.37f) {
-            assertEquals(loudnessDb, LoudnessNormalizer.loudnessDbFromVolumeLevel(legacy(loudnessDb).getVolumeLevel()), DELTA);
-            assertEquals(loudnessDb, LoudnessNormalizer.loudnessDbFromVolumeLevel(innertube(loudnessDb).getVolumeLevel()), DELTA);
-        }
-
-        assertEquals(ENTER_SANDMAN, LoudnessNormalizer.loudnessDbFromVolumeLevel(legacy(ENTER_SANDMAN).getVolumeLevel()), DELTA);
-        // Above 5.8 dB the heuristic clamps: the least it can stand for
-        assertEquals(5.8f, LoudnessNormalizer.loudnessDbFromVolumeLevel(legacy(LONELY_DAY).getVolumeLevel()), 0);
-        assertEquals(5.8f, LoudnessNormalizer.loudnessDbFromVolumeLevel(innertube(7.04f).getVolumeLevel()), 0);
-        assertTrue(Float.isNaN(LoudnessNormalizer.loudnessDbFromVolumeLevel(legacy(0f).getVolumeLevel())));
-    }
-
-    @Test
-    public void fallsBackToTheHeuristicForAnotherImplementation() {
-        assertEquals(RICK_ASTLEY, LoudnessNormalizer.loudnessDbOf(withVolumeLevel(0.4396363f)), DELTA);
-        assertEquals(5.8f, LoudnessNormalizer.loudnessDbOf(withVolumeLevel(0.25f)), 0);
-        assertTrue(Float.isNaN(LoudnessNormalizer.loudnessDbOf(withVolumeLevel(0.5f))));
-    }
-
-    private static MediaItemFormatInfo legacy(float loudnessDb) throws Exception {
-        Constructor<YouTubeMediaItemFormatInfo> constructor = YouTubeMediaItemFormatInfo.class.getDeclaredConstructor();
-        constructor.setAccessible(true);
-        YouTubeMediaItemFormatInfo formatInfo = constructor.newInstance();
-        Field field = YouTubeMediaItemFormatInfo.class.getDeclaredField("mLoudnessDb");
-        field.setAccessible(true);
-        field.setFloat(formatInfo, loudnessDb);
-        return formatInfo;
     }
 
     private static MediaItemFormatInfo innertube(Float loudnessDb) {
@@ -165,9 +131,9 @@ public class LoudnessNormalizerTest {
         return new MediaItemFormatInfoImpl(new PlayerResult(null, null, playerConfig, null, null, null, null, null, null));
     }
 
-    private static MediaItemFormatInfo withVolumeLevel(float volumeLevel) {
+    private static MediaItemFormatInfo withLoudnessDb(float loudnessDb) {
         return (MediaItemFormatInfo) Proxy.newProxyInstance(LoudnessNormalizerTest.class.getClassLoader(),
                 new Class<?>[] {MediaItemFormatInfo.class},
-                (proxy, method, args) -> "getVolumeLevel".equals(method.getName()) ? volumeLevel : null);
+                (proxy, method, args) -> "getLoudnessDb".equals(method.getName()) ? loudnessDb : null);
     }
 }
