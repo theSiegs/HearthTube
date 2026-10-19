@@ -1,7 +1,6 @@
 package com.thesiegs.hearthtube.mobile.browse;
 
 import android.content.res.Configuration;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
@@ -20,10 +19,11 @@ import com.liskovsoft.smartyoutubetv2.common.app.models.data.VideoGroup;
 import com.liskovsoft.smartyoutubetv2.common.app.models.errors.ErrorFragmentData;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.BrowsePresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.views.BrowseView;
-import com.liskovsoft.smartyoutubetv2.common.misc.MotherActivity;
 import com.liskovsoft.smartyoutubetv2.common.utils.ParentGate;
 import com.thesiegs.hearthtube.mobile.R;
 import com.thesiegs.hearthtube.mobile.parent.MobileParentMenu;
+import com.thesiegs.hearthtube.mobile.ui.HearthActivity;
+import com.thesiegs.hearthtube.mobile.ui.HearthLook;
 import com.thesiegs.hearthtube.mobile.ui.KidGate;
 import com.thesiegs.hearthtube.mobile.ui.VideoGrid;
 
@@ -36,7 +36,7 @@ import java.util.List;
  * <p>
  * A kid who isn't signed in sees no videos at all, not only no playback: what YouTube lists signed out isn't supervised.
  */
-public class MobileBrowseActivity extends MotherActivity implements BrowseView {
+public class MobileBrowseActivity extends HearthActivity implements BrowseView {
     /** The TV's own tabs: a play queue, notifications, blocked channels and its settings tab (a parent has the Parent button) */
     private static final int[] HIDDEN_SECTIONS = {
             MediaGroup.TYPE_PLAYBACK_QUEUE, MediaGroup.TYPE_NOTIFICATIONS, MediaGroup.TYPE_BLOCKED_CHANNELS, MediaGroup.TYPE_SETTINGS
@@ -114,7 +114,6 @@ public class MobileBrowseActivity extends MotherActivity implements BrowseView {
     private View createContent() {
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setBackgroundColor(Color.BLACK);
 
         mChipScroll = new HorizontalScrollView(this);
         mChipScroll.setHorizontalScrollBarEnabled(false);
@@ -155,9 +154,9 @@ public class MobileBrowseActivity extends MotherActivity implements BrowseView {
     private TextView barButton(String text, View.OnClickListener onClick) {
         TextView button = new TextView(this);
         button.setText(text);
-        button.setTextColor(Color.WHITE);
         button.setTextSize(14);
-        button.setPadding(dp(12), dp(8), dp(12), dp(8));
+        button.setPadding(dp(14), dp(8), dp(14), dp(8));
+        HearthLook.accentButton(button);
         button.setOnClickListener(onClick);
         return button;
     }
@@ -200,6 +199,7 @@ public class MobileBrowseActivity extends MotherActivity implements BrowseView {
         chip.setText(section.getTitle());
         chip.setTextSize(14);
         chip.setPadding(dp(14), dp(8), dp(14), dp(8));
+        HearthLook.chip(chip, false);
         chip.setOnClickListener(v -> selectSection(mSections.indexOf(section), false));
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         params.setMargins(dp(4), 0, dp(4), 0);
@@ -362,8 +362,7 @@ public class MobileBrowseActivity extends MotherActivity implements BrowseView {
 
         for (int i = 0; i < mChips.size(); i++) {
             boolean selected = i == shown;
-            mChips.get(i).setTextColor(selected ? Color.BLACK : Color.WHITE);
-            mChips.get(i).setBackgroundColor(selected ? Color.WHITE : 0x33FFFFFF);
+            HearthLook.chip(mChips.get(i), selected);
         }
 
         // The start section can be far along the row (Music is the sixth): bring its chip into view

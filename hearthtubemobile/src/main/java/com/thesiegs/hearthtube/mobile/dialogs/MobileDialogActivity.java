@@ -19,7 +19,8 @@ import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.OptionCatego
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.OptionItem;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.AppDialogPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.views.AppDialogView;
-import com.liskovsoft.smartyoutubetv2.common.misc.MotherActivity;
+import com.thesiegs.hearthtube.mobile.ui.HearthActivity;
+import com.thesiegs.hearthtube.mobile.ui.HearthLook;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -31,10 +32,9 @@ import java.util.Map;
  * {@link AppDialogView}: a menu of rows (switches and buttons inline, lists opening their own screen), then Back goes
  * up one screen and, from the first, closes. The TV renders the same categories as Leanback preferences.
  */
-public class MobileDialogActivity extends MotherActivity implements AppDialogView {
+public class MobileDialogActivity extends HearthActivity implements AppDialogView {
     private static final int TEXT = Color.WHITE;
-    private static final int SUBTEXT = 0xFFAAAAAA;
-    private static final int ROW_BG = 0xFF1C1C1C;
+    private static final int SUBTEXT = 0xFFBBBBBB;
 
     /** One screen of the dialog: a menu of categories, or the options of one list category */
     private static final class Screen {
@@ -83,13 +83,23 @@ public class MobileDialogActivity extends MotherActivity implements AppDialogVie
     private View createContent() {
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setBackgroundColor(Color.BLACK);
+        // The wallpaper stays behind it, dimmed (Hearth's panels dim what's behind them)
+        root.setBackgroundColor(0x80000000);
 
+        // A centered title over a hairline, like the TV's panels
         mTitle = new TextView(this);
         mTitle.setTextColor(TEXT);
         mTitle.setTextSize(22);
+        mTitle.setGravity(android.view.Gravity.CENTER);
         mTitle.setPadding(dp(20), dp(20), dp(20), dp(12));
+        HearthLook.textShadow(mTitle);
         root.addView(mTitle);
+
+        View divider = new View(this);
+        divider.setBackgroundColor(0x1FFFFFFF);
+        LinearLayout.LayoutParams dividerParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Math.max(1, dp(1)));
+        dividerParams.setMargins(dp(20), 0, dp(20), dp(8));
+        root.addView(divider, dividerParams);
 
         ScrollView scroll = new ScrollView(this);
         mBody = new LinearLayout(this);
@@ -368,7 +378,8 @@ public class MobileDialogActivity extends MotherActivity implements AppDialogVie
         button.setText(TextUtils.isEmpty(description) ? item.getTitle() : item.getTitle() + "\n" + description);
         button.setTextColor(TEXT);
         button.setTextSize(16);
-        button.setBackgroundColor(ROW_BG);
+        HearthLook.panelRow(button);
+        HearthLook.accentTint(button);
         button.setPadding(dp(12), dp(14), dp(12), dp(14));
     }
 
@@ -377,7 +388,8 @@ public class MobileDialogActivity extends MotherActivity implements AppDialogVie
         toggle.setText(item.getTitle());
         toggle.setTextColor(TEXT);
         toggle.setTextSize(16);
-        toggle.setBackgroundColor(ROW_BG);
+        HearthLook.panelRow(toggle);
+        HearthLook.accentTint(toggle);
         toggle.setPadding(dp(16), dp(14), dp(16), dp(14));
         toggle.setChecked(item.isSelected());
         toggle.setOnCheckedChangeListener((b, checked) -> item.onSelect(checked));
@@ -391,7 +403,7 @@ public class MobileDialogActivity extends MotherActivity implements AppDialogVie
     private void addRow(CharSequence title, @Nullable CharSequence subtitle, View.OnClickListener onClick) {
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.VERTICAL);
-        row.setBackgroundColor(ROW_BG);
+        HearthLook.panelRow(row);
         row.setPadding(dp(16), dp(14), dp(16), dp(14));
         row.setOnClickListener(onClick);
 

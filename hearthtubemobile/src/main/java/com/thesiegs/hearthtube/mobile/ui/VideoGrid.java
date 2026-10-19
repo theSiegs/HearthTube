@@ -84,22 +84,26 @@ public class VideoGrid extends FrameLayout {
         addView(mList, new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
         mProgress = new ProgressBar(context);
+        mProgress.setIndeterminateTintList(android.content.res.ColorStateList.valueOf(HearthLook.accent(context)));
         mProgress.setVisibility(GONE);
         addView(mProgress, new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER));
 
         mMessage = new TextView(context);
-        mMessage.setTextColor(Color.LTGRAY);
+        // The TV's empty-page card: the message on black at 55%
+        mMessage.setTextColor(Color.WHITE);
         mMessage.setTextSize(16);
         mMessage.setGravity(Gravity.CENTER);
         mMessage.setPadding(dp(24), dp(24), dp(24), dp(24));
+        HearthLook.emptyCard(mMessage);
         mMessage.setVisibility(GONE);
-        addView(mMessage, new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER));
+        LayoutParams messageParams = new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER);
+        messageParams.setMargins(dp(24), 0, dp(24), 0);
+        addView(mMessage, messageParams);
 
         mAction = new TextView(context);
-        mAction.setTextColor(Color.BLACK);
-        mAction.setBackgroundColor(Color.WHITE);
         mAction.setTextSize(15);
-        mAction.setPadding(dp(24), dp(12), dp(24), dp(12));
+        mAction.setPadding(dp(28), dp(12), dp(28), dp(12));
+        HearthLook.glassButton(mAction);
         mAction.setVisibility(GONE);
         LayoutParams actionParams = new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER);
         actionParams.topMargin = dp(120);

@@ -18,9 +18,10 @@ import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.VideoGroup;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.SearchPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.views.SearchView;
-import com.liskovsoft.smartyoutubetv2.common.misc.MotherActivity;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 import com.thesiegs.hearthtube.mobile.R;
+import com.thesiegs.hearthtube.mobile.ui.HearthActivity;
+import com.thesiegs.hearthtube.mobile.ui.HearthLook;
 import com.thesiegs.hearthtube.mobile.ui.KidGate;
 import com.thesiegs.hearthtube.mobile.ui.VideoGrid;
 
@@ -29,7 +30,7 @@ import com.thesiegs.hearthtube.mobile.ui.VideoGrid;
  * The shared {@link SearchPresenter} runs the search and applies the kids filters (blocked words, no Shorts, AI
  * channels) to what comes back. Suggestions as you type, and voice, come later (a kid's phone has no microphone permission).
  */
-public class MobileSearchActivity extends MotherActivity implements SearchView {
+public class MobileSearchActivity extends HearthActivity implements SearchView {
     private SearchPresenter mPresenter;
     private EditText mField;
     private VideoGrid mGrid;
@@ -45,9 +46,9 @@ public class MobileSearchActivity extends MotherActivity implements SearchView {
 
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setBackgroundColor(Color.BLACK);
 
         mField = new EditText(this);
+        HearthLook.searchBox(mField);
         mField.setHint(R.string.search_hint);
         mField.setHintTextColor(Color.GRAY);
         mField.setTextColor(Color.WHITE);
@@ -63,7 +64,9 @@ public class MobileSearchActivity extends MotherActivity implements SearchView {
             }
             return false;
         });
-        root.addView(mField, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        LinearLayout.LayoutParams fieldParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        fieldParams.setMargins(pad, pad, pad, pad / 2);
+        root.addView(mField, fieldParams);
 
         mGrid = new VideoGrid(this, new VideoGrid.Listener() {
             @Override

@@ -16,15 +16,16 @@ import androidx.annotation.Nullable;
 
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.SignInPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.views.SignInView;
-import com.liskovsoft.smartyoutubetv2.common.misc.MotherActivity;
 import com.liskovsoft.smartyoutubetv2.common.utils.ParentGate;
 import com.thesiegs.hearthtube.mobile.R;
+import com.thesiegs.hearthtube.mobile.ui.HearthActivity;
+import com.thesiegs.hearthtube.mobile.ui.HearthLook;
 
 /**
  * Signing in: the code to enter at YouTube's activation page (on a kid's phone, from a parent's own device). The
  * shared sign-in presenter waits for it and closes this screen when the account is in.
  */
-public class MobileSignInActivity extends MotherActivity implements SignInView {
+public class MobileSignInActivity extends HearthActivity implements SignInView {
     private SignInPresenter mPresenter;
     private TextView mUrl;
     private TextView mCode;
@@ -38,26 +39,33 @@ public class MobileSignInActivity extends MotherActivity implements SignInView {
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setGravity(Gravity.CENTER);
-        root.setBackgroundColor(Color.BLACK);
         int pad = (int) (24 * getResources().getDisplayMetrics().density);
         root.setPadding(pad, pad, pad, pad);
 
-        root.addView(text(getString(R.string.sign_in_steps), 18, false));
+        // The steps sit on the TV's empty-page card, so they read on any wallpaper
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setGravity(Gravity.CENTER);
+        card.setPadding(pad, pad, pad, pad);
+        HearthLook.emptyCard(card);
+        card.addView(text(getString(R.string.sign_in_steps), 18, false));
         mUrl = text("", 22, true);
-        root.addView(mUrl);
-        root.addView(text(getString(R.string.sign_in_code), 18, false));
+        card.addView(mUrl);
+        card.addView(text(getString(R.string.sign_in_code), 18, false));
         mCode = text("...", 40, true);
-        root.addView(mCode);
+        card.addView(mCode);
 
         // On a kid's phone the browser is blocked and a parent signs in from their own device; anyone else can use
         // this one
         mOpen = text(getString(R.string.sign_in_open), 16, true);
-        mOpen.setBackgroundColor(Color.WHITE);
-        mOpen.setTextColor(Color.BLACK);
-        mOpen.setPadding(48, 24, 48, 24);
+        mOpen.setPadding(pad * 2, pad / 2, pad * 2, pad / 2);
+        HearthLook.accentButton(mOpen);
         mOpen.setVisibility(View.GONE);
         mOpen.setOnClickListener(v -> openPage());
-        root.addView(mOpen);
+        LinearLayout.LayoutParams openParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        openParams.topMargin = pad / 2;
+        card.addView(mOpen, openParams);
+        root.addView(card, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         setContentView(root, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
         mPresenter = SignInPresenter.instance(this);

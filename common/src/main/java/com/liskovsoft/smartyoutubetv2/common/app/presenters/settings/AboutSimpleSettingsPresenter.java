@@ -53,6 +53,21 @@ public class AboutSimpleSettingsPresenter extends BasePresenter<Void> {
         settingsPresenter.showDialog(mainTitle);
     }
 
+    /** HearthTube Mobile: the version, the wallpaper's credit and the credits; its updates aren't from here, so no update controls */
+    public void showCredits() {
+        String mainTitle = String.format("%s %s %s", getContext().getString(R.string.settings_about),
+                getContext().getString(R.string.app_name),
+                AboutSettingsPresenter.getVersionLine(getContext()));
+
+        AppDialogPresenter settingsPresenter = AppDialogPresenter.instance(getContext());
+
+        AboutSettingsPresenter.appendBackgroundCredit(getContext(), settingsPresenter);
+
+        appendCredits(settingsPresenter);
+
+        settingsPresenter.showDialog(mainTitle);
+    }
+
     private void appendAutoUpdateSwitch(AppDialogPresenter settingsPresenter) {
         settingsPresenter.appendSingleSwitch(UiOptionItem.from(getContext().getString(R.string.check_updates_auto), optionItem -> {
             mUpdateChecker.setUpdateCheckEnabled(optionItem.isSelected());

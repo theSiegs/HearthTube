@@ -32,6 +32,8 @@ import com.liskovsoft.smartyoutubetv2.common.exoplayer.versions.selector.Restore
 import com.liskovsoft.smartyoutubetv2.common.misc.MotherActivity;
 
 import java.io.InputStream;
+import com.thesiegs.hearthtube.mobile.ui.HearthLook;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -104,7 +106,17 @@ public class MobilePlaybackActivity extends MotherActivity implements PlaybackVi
         mTitle.setPadding(pad, pad, pad, pad);
         root.addView(mTitle, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP));
 
+        // The accent (Hearth's) on the seek bar and the spinner; the video stays on black
+        int accent = HearthLook.accent(this);
+        android.view.View timeBar = mPlayerView.findViewById(com.google.android.exoplayer2.ui.R.id.exo_progress);
+        if (timeBar instanceof com.google.android.exoplayer2.ui.DefaultTimeBar) {
+            ((com.google.android.exoplayer2.ui.DefaultTimeBar) timeBar).setPlayedColor(accent);
+            ((com.google.android.exoplayer2.ui.DefaultTimeBar) timeBar).setScrubberColor(accent);
+        }
+        HearthLook.textShadow(mTitle);
+
         mProgress = new ProgressBar(this);
+        mProgress.setIndeterminateTintList(android.content.res.ColorStateList.valueOf(accent));
         root.addView(mProgress, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER));
 
         return root;

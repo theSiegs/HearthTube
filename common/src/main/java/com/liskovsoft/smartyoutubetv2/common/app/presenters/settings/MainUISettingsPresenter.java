@@ -45,6 +45,22 @@ public class MainUISettingsPresenter extends BasePresenter<Void> {
         return new MainUISettingsPresenter(context);
     }
 
+    /** HearthTube Mobile: just the accent color and the wallpaper (the TV's card and grid options don't apply on a phone) */
+    public void showLook(Runnable onChanged) {
+        AppDialogPresenter settingsPresenter = AppDialogPresenter.instance(getContext());
+
+        appendAccentColor(settingsPresenter);
+        appendWallpaper(settingsPresenter);
+
+        // The screens pick the new look up as they open: no "restart the app" needed, the caller opens them again
+        settingsPresenter.showDialog(getContext().getString(R.string.settings_look_and_layout), () -> {
+            if (mRestartApp) {
+                mRestartApp = false;
+                onChanged.run();
+            }
+        });
+    }
+
     public void show() {
         AppDialogPresenter settingsPresenter = AppDialogPresenter.instance(getContext());
 

@@ -13,6 +13,11 @@ the same way.
   is meant for a supervised Google account in Family Link: the kid is signed in to YouTube with that account, so
   YouTube's own content level and channel blocks apply, and HearthTube adds its own on top.
 - It lives in the `hearthtubemobile` module. `common` holds everything it shares with the TV app.
+- **It looks like HearthTube on the TV.** The same wallpaper behind every screen (Bing's picture of the day, or
+  Hearth's own when Hearth is on the device), under a shade that is darker at the top and bottom; dark glass pills for
+  the sections and buttons, the open one in white; rounded cards with the "Likely AI" label; and Hearth's accent color on
+  the Search and Settings buttons, switches and the player's seek bar. Settings has **Look and layout** (accent color
+  and wallpaper) and **About**, which names the day's picture and its photographer. The video itself stays on black.
 
 ## Adults and kids
 
@@ -100,7 +105,8 @@ daily limit without Hearth), the signed-out rule in `KidsRefused`, and `MotherAc
 
 ## Open
 
-- Tablet and phone layouts are checked on emulators only.
+- Tablet and phone layouts are checked on emulators only. Hearth's own wallpaper and accent reach the app only once
+  Hearth accepts its package; until then it shows Bing's picture and the default accent.
 - Suggestions while typing in search, the player's suggestion rows, comments and chat, subtitles menus.
 - A mobile update feed and release script.
 - With Hearth on the phone (a launcher), reading its profile and allowance like the TV does: needs a package

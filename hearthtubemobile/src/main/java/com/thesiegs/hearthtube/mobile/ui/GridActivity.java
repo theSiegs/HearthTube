@@ -1,7 +1,6 @@
 package com.thesiegs.hearthtube.mobile.ui;
 
 import android.content.res.Configuration;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
@@ -10,14 +9,13 @@ import androidx.annotation.Nullable;
 
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.VideoGroup;
-import com.liskovsoft.smartyoutubetv2.common.misc.MotherActivity;
 import com.thesiegs.hearthtube.mobile.R;
 
 /**
  * A screen that is a list of videos and nothing else (a channel, its uploads): the grid fills it, and the kid gate
  * applies (nothing YouTube lists signed out is shown to a kid). Subclasses connect it to their presenter.
  */
-public abstract class GridActivity extends MotherActivity {
+public abstract class GridActivity extends HearthActivity {
     private VideoGrid mGrid;
 
     /** The screen is up: attach to the presenter (setView, onViewInitialized) */
@@ -35,7 +33,6 @@ public abstract class GridActivity extends MotherActivity {
 
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setBackgroundColor(Color.BLACK);
         mGrid = new VideoGrid(this, new VideoGrid.Listener() {
             @Override
             public void onClick(Video video) {
