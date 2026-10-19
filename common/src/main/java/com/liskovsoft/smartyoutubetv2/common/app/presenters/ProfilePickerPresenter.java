@@ -9,6 +9,7 @@ import com.liskovsoft.mediaserviceinterfaces.ServiceManager;
 import com.liskovsoft.mediaserviceinterfaces.SignInService;
 import com.liskovsoft.mediaserviceinterfaces.oauth.Account;
 import com.liskovsoft.sharedutils.helpers.Helpers;
+import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.smartyoutubetv2.common.R;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.base.BasePresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.AccountSelectionPresenter;
@@ -20,6 +21,7 @@ import com.liskovsoft.smartyoutubetv2.common.utils.GlideIconFetcher;
 import com.liskovsoft.smartyoutubetv2.common.utils.HearthProfile;
 import com.liskovsoft.smartyoutubetv2.common.utils.IntentExtractor;
 import com.liskovsoft.smartyoutubetv2.common.utils.PinDialog;
+import com.liskovsoft.smartyoutubetv2.common.utils.UnlinkedProfileRule;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 import com.liskovsoft.youtubeapi.service.YouTubeServiceManager;
 
@@ -35,6 +37,7 @@ public class ProfilePickerPresenter extends BasePresenter<ProfilePickerView> {
     /** First time for this profile: the picker is open and remembers the pick for it. */
     public static final int FOLLOW_PICKER = 2;
     @SuppressLint("StaticFieldLeak")
+    private static final String TAG = ProfilePickerPresenter.class.getSimpleName();
     private static ProfilePickerPresenter sInstance;
     private final SignInService mSignInService;
     // Google TV profile the open picker links its pick to; null when picking just for now
@@ -166,10 +169,29 @@ public class ProfilePickerPresenter extends BasePresenter<ProfilePickerView> {
             }
         }
 
+        UnlinkedProfileRule.Action unlinked = null;
+
+        if (link == null) {
+            // No link, but an account may already be selected. Only an account that can't be this profile's is put
+            // away; otherwise it's linked here, so a lost link never signs the person out
+            Account selected = mSignInService.getSelectedAccount();
+            boolean kidsWithAdult = selected != null && kids && links.isAdultAccount(selected) && !ParentGate.isUnlocked();
+            unlinked = UnlinkedProfileRule.decide(HearthProfile.isOwnerUser(getContext()), selected != null, kidsWithAdult);
+
+            if (unlinked == UnlinkedProfileRule.Action.LINK_SELECTED) {
+                Log.d(TAG, "Profile %s had no link: linking its selected account", key);
+                links.setLink(key, selected);
+                link = links.getLink(key, accounts);
+            }
+        }
+
         if (link == null) {
             // One login per Google TV profile: nobody else's account meanwhile. The picker shows this profile no
             // accounts, so it's the welcome, and signing in links the new account to the profile (YTSignInPresenter)
-            mSignInService.selectAccount(null);
+            if (unlinked == UnlinkedProfileRule.Action.HIDE_SELECTED) {
+                Log.d(TAG, "Profile %s has no link: putting the selected account away (still signed in)", key);
+                mSignInService.selectAccount(null);
+            }
 
             if (isDeepLink(intent)) {
                 return FOLLOW_NONE;
