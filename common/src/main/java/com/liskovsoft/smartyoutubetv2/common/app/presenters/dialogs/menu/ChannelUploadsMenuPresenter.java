@@ -163,13 +163,21 @@ public class ChannelUploadsMenuPresenter extends BaseMenuPresenter {
         }
 
         RxHelper.disposeActions(mUnsubscribeAction);
-        mUnsubscribeAction = RxHelper.execute(mItemManager.unsubscribeObserve(channelId));
+        VideoMenuCallback callback = mCallback; // the menu may be reused before YouTube answers
+        Video video = mVideo;
+        // HearthTube: the channel only leaves the list when YouTube accepted the unsubscribe
+        mUnsubscribeAction = RxHelper.execute(mItemManager.unsubscribeObserve(channelId),
+                error -> MessageHelpers.showMessage(getContext(), R.string.unsubscribe_failed),
+                () -> {
+                    if (callback != null) {
+                        callback.onItemAction(video, VideoMenuCallback.ACTION_UNSUBSCRIBE);
+                    } else {
+                        MessageHelpers.showMessage(getContext(), R.string.unsubscribed_from_channel);
+                    }
+                });
 
         if (mCallback != null) {
             mDialogPresenter.closeDialog();
-            mCallback.onItemAction(mVideo, VideoMenuCallback.ACTION_UNSUBSCRIBE);
-        } else {
-            MessageHelpers.showMessage(getContext(), R.string.unsubscribed_from_channel);
         }
     }
 }

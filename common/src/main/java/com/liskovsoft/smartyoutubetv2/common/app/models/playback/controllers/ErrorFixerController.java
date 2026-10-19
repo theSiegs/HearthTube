@@ -18,6 +18,7 @@ import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerTweaksData;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 import com.liskovsoft.youtubeapi.service.YouTubeServiceManager;
+import com.liskovsoft.youtubeapi.videoinfo.LoginRequiredException;
 
 import java.util.List;
 
@@ -405,7 +406,8 @@ public class ErrorFixerController extends BasePlayerController implements OnLong
         String fullMsg = String.format("loadFormatInfo error: %s: %s", className, Utils.getStackTraceAsString(error));
         Log.e(TAG, fullMsg);
 
-        if (!Helpers.containsAny(message, "fromNullable result is null")) {
+        // HearthTube: sign-in required from every client is a known answer, not a failure to dump on the screen
+        if (!isBotBlocked(error)) {
             MessageHelpers.showLongMessage(getContext(), fullMsg);
             if (getPlayer() != null) {
                 getPlayer().setTitle(fullMsg);
@@ -423,7 +425,7 @@ public class ErrorFixerController extends BasePlayerController implements OnLong
         } else if (Helpers.containsAny(message, "is not defined")) {
             YouTubeServiceManager.instance().invalidateCache();
             mVideoLoaderController.reloadVideo();
-        } else if (isBotBlocked(message)) {
+        } else if (isBotBlocked(error)) {
             runBotBlockRetry();
         } else {
             Log.e(TAG, "Probably no internet connection");
@@ -431,10 +433,11 @@ public class ErrorFixerController extends BasePlayerController implements OnLong
         }
     }
 
-    private boolean isBotBlocked(String message) {
+    private boolean isBotBlocked(Throwable error) {
         // YouTube returned no playable format (e.g. LOGIN_REQUIRED "Sign in to confirm that you're not a bot").
+        // MediaServiceCore reports it from every client as LoginRequiredException (it's no network failure).
         // RxHelper reports the empty result as "fromNullable result is null".
-        return Helpers.containsAny(message, "fromNullable result is null");
+        return error instanceof LoginRequiredException || Helpers.containsAny(error.getMessage(), "fromNullable result is null");
     }
 
     private void runBotBlockRetry() {

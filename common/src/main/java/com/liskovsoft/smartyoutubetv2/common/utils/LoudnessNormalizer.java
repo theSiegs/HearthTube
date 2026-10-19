@@ -2,9 +2,6 @@ package com.liskovsoft.smartyoutubetv2.common.utils;
 
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItemFormatInfo;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-
 /**
  * HearthTube: "Even out volume" (the Auto volume adjustment setting). Every video plays at about the same level, the
  * way youtube.com does it.<br/>
@@ -22,11 +19,6 @@ public final class LoudnessNormalizer {
     public static final float MAX_CUT_DB = 12f;
     /** SmartTube plays Shorts at half volume. Kept for Shorts without a loudness: a measured Short needs no rule */
     public static final float SHORTS_VOLUME = 0.5f;
-    /** 20 * log10(1.95): MediaServiceCore's getVolumeLevel() stops following the loudness above this */
-    static final float HEURISTIC_CLAMP_DB = 5.8f;
-    // Where MediaServiceCore keeps the loudnessDb it parsed (both private): LoudnessNormalizerTest pins them
-    private static final String LEGACY_FIELD = "mLoudnessDb"; // YouTubeMediaItemFormatInfo
-    private static final String INNERTUBE_GETTER = "get_loudnessDb"; // MediaItemFormatInfoImpl, a Kotlin lazy
 
     private LoudnessNormalizer() {
     }
@@ -75,62 +67,17 @@ public final class LoudnessNormalizer {
 
     /**
      * The video's loudnessDb, NaN when the response has none (a live stream, say).<br/>
-     * MediaServiceCore parses it but only hands out getVolumeLevel(), a heuristic of its own that gives up above
-     * +5.8 dB, which is where loud music sits (Lonely Day is +6.0, Baby Shark +7.0). So the parsed value is read from
-     * the instance. Should that fail (MediaServiceCore renamed it), it's worked back out of the heuristic instead.
+     * MediaServiceCore's getVolumeLevel() is a heuristic of its own that gives up above +5.8 dB, which is where loud
+     * music sits (Lonely Day is +6.0, Baby Shark +7.0), so the raw value of getLoudnessDb() is used.
      */
     public static float loudnessDbOf(MediaItemFormatInfo formatInfo) {
         if (formatInfo == null) {
             return Float.NaN;
         }
 
-        Float parsed = readParsedLoudnessDb(formatInfo);
-        float loudnessDb = parsed != null ? parsed : loudnessDbFromVolumeLevel(formatInfo.getVolumeLevel());
+        float loudnessDb = formatInfo.getLoudnessDb();
 
-        return loudnessDb == 0f ? Float.NaN : loudnessDb; // both parsers give 0 when the response has none
-    }
-
-    /**
-     * Undoes MediaServiceCore's getVolumeLevel(): level = (2 - n) / 2, with n = 10^(loudnessDb/20), except that an n
-     * over 1.95 becomes 1.5 and no loudness gives n = 1.<br/>
-     * Exact up to +5.8 dB. A level from that clamp (n = 1.5) comes back as +5.8 dB, the least it can stand for (it could
-     * be exactly +3.5 dB too, which is unlikely).
-     */
-    static float loudnessDbFromVolumeLevel(float volumeLevel) {
-        double normalLevel = 2.0 - 2.0 * volumeLevel;
-
-        if (!(normalLevel > 0) || Math.abs(normalLevel - 1.0) < 1e-6) {
-            return Float.NaN; // n = 1: no loudness (a live stream, say)
-        }
-
-        if (Math.abs(normalLevel - 1.5) < 1e-6) {
-            return HEURISTIC_CLAMP_DB;
-        }
-
-        return (float) (20 * Math.log10(normalLevel));
-    }
-
-    private static Float readParsedLoudnessDb(MediaItemFormatInfo formatInfo) {
-        Class<?> type = formatInfo.getClass();
-
-        try {
-            Field field = type.getDeclaredField(LEGACY_FIELD);
-            field.setAccessible(true);
-            return field.getFloat(formatInfo);
-        } catch (NoSuchFieldException e) {
-            // Not the legacy one
-        } catch (Exception e) {
-            return null;
-        }
-
-        try {
-            Method getter = type.getDeclaredMethod(INNERTUBE_GETTER);
-            getter.setAccessible(true);
-            Object value = getter.invoke(formatInfo);
-            return value instanceof Number ? ((Number) value).floatValue() : null;
-        } catch (Exception e) {
-            return null;
-        }
+        return loudnessDb == 0f ? Float.NaN : loudnessDb; // 0 when the response has none
     }
 
     private static boolean hasLoudness(float loudnessDb, boolean isLive) {
