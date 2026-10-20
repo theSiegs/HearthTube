@@ -1,5 +1,6 @@
 package com.thesiegs.hearthtube.mobile.dialogs;
 
+import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -122,13 +123,15 @@ public class MobileDialogActivity extends HearthActivity implements AppDialogVie
         mPaused = true;
     }
 
+    /**
+     * A dialog was opened while this one is showing: the presenter has already put it on the stack ({@link #show}); the
+     * system only brings the one activity forward again (ViewManager starts it single-top), where a second activity
+     * would have hidden the first page
+     */
     @Override
-    protected void onDestroy() {
-        super.onDestroy();
-
-        if (mPresenter.getView() == this) {
-            mPresenter.onViewDestroyed();
-        }
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
     }
 
     @Override
@@ -140,7 +143,10 @@ public class MobileDialogActivity extends HearthActivity implements AppDialogVie
         }
     }
 
-    /** Closing by Back or by the presenter: tell it once, so callbacks (a dialog's "on finish") run */
+    /**
+     * Closing by Back or by the presenter: tell it once, so callbacks (a dialog's "on finish") run. That also clears
+     * the presenter (what its "view destroyed" would do), so onDestroy has nothing left to tell it.
+     */
     @Override
     public void finish() {
         if (!mFinished) {
@@ -155,7 +161,10 @@ public class MobileDialogActivity extends HearthActivity implements AppDialogVie
 
     @Override
     public void show(List<OptionCategory> categories, CharSequence title, boolean isExpandable, boolean isTransparent, boolean isOverlay, int id) {
-        mTransparent = isTransparent;
+        // Only the first page decides what the dialog is (the TV's panels do the same)
+        if (mStack.isEmpty()) {
+            mTransparent = isTransparent;
+        }
         mOverlay = isOverlay;
         mId = id;
 
@@ -168,7 +177,7 @@ public class MobileDialogActivity extends HearthActivity implements AppDialogVie
             screen = new Screen(categories, null, title);
         }
 
-        mStack.clear();
+        // One dialog opened from another stacks on it: Back goes to the page it was opened from, like the TV's panels
         mStack.add(screen);
         render(screen);
     }
