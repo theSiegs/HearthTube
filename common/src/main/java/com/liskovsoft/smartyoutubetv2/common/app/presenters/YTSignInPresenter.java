@@ -154,12 +154,11 @@ public class YTSignInPresenter extends SignInPresenter {
 
         AccountSelectionPresenter.instance(context).selectAccount(added);
 
-        // The profile's account from now on: in its own copy (each Google TV profile runs one), or when it has
-        // none yet. In the owner's copy an account added for someone else doesn't take the profile over.
+        // The profile's account from now on, when it has none yet. Only in the owner's user, where adults share the app
+        // and an account added for someone else doesn't take the profile over; a kid's profile has no links.
         ProfileLinkData links = ProfileLinkData.instance(context);
-        HearthProfile profile = HearthProfile.query(context);
-        if (profile != null && links.isFollowEnabled()
-                && (!HearthProfile.isOwnerUser(context) || links.getLink(profile.key(), accounts) == null)) {
+        HearthProfile profile = !ProfilePickerPresenter.usesOneAccount(context) ? HearthProfile.query(context) : null;
+        if (profile != null && links.isFollowEnabled() && links.getLink(profile.key(), accounts) == null) {
             links.setLink(profile.key(), added);
         }
 

@@ -62,45 +62,12 @@ public class ProfileLinkDataTest {
     }
 
     @Test
-    public void adultAccountIsOneLinkedFromAnAdultsProfile() {
-        Map<String, Object> saved = new HashMap<>();
-        saved.put("link:Alex", "Alex Rivera");
-        saved.put("kids:Alex", false);
-        saved.put("link:Sam", "Sam Rivera");
-        saved.put("kids:Sam", true);
-
-        assertTrue(ProfileLinkData.isAdult(saved, "Alex Rivera"));
-        assertFalse(ProfileLinkData.isAdult(saved, "Sam Rivera"));
-    }
-
-    @Test
-    public void unknownAccountsAreNotAdultsButTheGuestIs() {
-        Map<String, Object> saved = new HashMap<>();
-        saved.put("link:Alex", "Alex Rivera"); // kids flag never seen
-
-        assertFalse(ProfileLinkData.isAdult(saved, "Alex Rivera"));
-        assertFalse(ProfileLinkData.isAdult(saved, "Jordan Rivera"));
-        assertTrue(ProfileLinkData.isAdult(saved, null));
-    }
-
-    @Test
-    public void anAccountSharedWithAnAdultsProfileIsAnAdults() {
-        Map<String, Object> saved = new HashMap<>();
-        saved.put("link:Sam", "Alex Rivera");
-        saved.put("kids:Sam", true);
-        saved.put("link:Living room", "Alex Rivera");
-        saved.put("kids:Living room", false);
-
-        assertTrue(ProfileLinkData.isAdult(saved, "Alex Rivera"));
-    }
-
-    @Test
     public void removingAnAccountClearsEveryLinkToItAndNoOther() {
         Map<String, Object> saved = new HashMap<>();
         saved.put("link:user:10", "Alex Rivera");
         saved.put("link:user:11", "Sam Rivera");
         saved.put("link:user:12", "Alex Rivera");
-        saved.put("kids:user:11", true);
+        saved.put("kids:user:11", true); // an older version's flag: never touched
 
         List<String> keys = ProfileLinkData.linksTo(saved, "Alex Rivera");
 

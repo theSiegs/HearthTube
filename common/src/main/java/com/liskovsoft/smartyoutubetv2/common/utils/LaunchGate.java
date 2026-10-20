@@ -35,20 +35,6 @@ public final class LaunchGate {
     }
 
     /**
-     * The phone has no picker screen: which of the signed-in accounts to select when none is. A kid's phone only gets
-     * accounts from a parent, but with several, which one is the kid's isn't known: none (the screens ask a parent).
-     *
-     * @return the index, or -1 for none
-     */
-    public static int phoneAutoSelect(boolean kids, int accounts) {
-        if (accounts <= 0 || (kids && accounts > 1)) {
-            return -1;
-        }
-
-        return 0;
-    }
-
-    /**
      * A kids profile and nobody signed in: no videos, no search, no channels. On the TV; the phone's own screens ask
      * the same (KidGate) and show "Ask a parent to sign in" where they stand.
      */

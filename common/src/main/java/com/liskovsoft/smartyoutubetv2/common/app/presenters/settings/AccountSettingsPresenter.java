@@ -262,7 +262,8 @@ public class AccountSettingsPresenter extends BasePresenter<Void> {
      * Which YouTube account each Google TV profile watches with. Only with Hearth around (or links made before).
      */
     private void appendGoogleTvProfiles(List<Account> accounts, List<Drawable> icons, AppDialogPresenter settingsPresenter) {
-        if (accounts == null || accounts.isEmpty()) {
+        // A kid's profile has one account and no links
+        if (accounts == null || accounts.isEmpty() || ProfilePickerPresenter.usesOneAccount(getContext())) {
             return;
         }
 

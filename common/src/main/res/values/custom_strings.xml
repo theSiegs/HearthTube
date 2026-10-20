@@ -18,6 +18,7 @@
     <string name="pin_wrong">Wrong PIN</string>
     <string name="pin_label">Enter PIN</string>
     <string name="profile_picker_link_hint">For %s\'s Google TV profile. HearthTube will remember it.</string>
+    <string name="profile_matched_by_name">Using the account %1$s for the profile %2$s (matched by name). Change it in Accounts.</string>
     <string name="follow_google_tv_profile">Switch accounts with the Google TV profile</string>
     <string name="google_tv_profiles">Google TV profiles</string>
     <string name="google_tv_profile_ask">Ask next time</string>

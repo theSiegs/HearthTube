@@ -27,13 +27,4 @@ public class LaunchGateTest {
         assertEquals(Decision.PROCEED, LaunchGate.decide(false, false, true));
         assertEquals(Decision.ASK, LaunchGate.decide(false, false, false));
     }
-
-    @Test
-    public void thePhoneSelectsTheOnlyAccountForAKidAndTheFirstForAnAdult() {
-        assertEquals(0, LaunchGate.phoneAutoSelect(true, 1));
-        assertEquals(-1, LaunchGate.phoneAutoSelect(true, 2)); // which one is the kid's isn't known
-        assertEquals(0, LaunchGate.phoneAutoSelect(false, 3));
-        assertEquals(-1, LaunchGate.phoneAutoSelect(true, 0));
-        assertEquals(-1, LaunchGate.phoneAutoSelect(false, 0));
-    }
 }
