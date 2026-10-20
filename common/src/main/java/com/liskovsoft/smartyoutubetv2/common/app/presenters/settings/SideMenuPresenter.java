@@ -118,8 +118,9 @@ public class SideMenuPresenter {
             }
         }
 
-        dialog.appendCheckedCategory(context.getString(R.string.edit_tabs_at_top), atTop);
+        // First which sections there are, then which of those are tabs: that is the order to think of them in
         dialog.appendCheckedCategory(context.getString(R.string.edit_shown_sections), shown);
+        dialog.appendCheckedCategory(context.getString(R.string.edit_tabs_at_top), atTop);
         dialog.showDialog(context.getString(R.string.edit_menu_and_tabs));
     }
 
