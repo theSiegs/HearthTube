@@ -31,6 +31,7 @@
     <string name="first_parent_pin_hint">This is a kids profile. Choose a PIN for parents: it unlocks settings and accounts here. Don\'t reuse a kid\'s PIN.</string>
     <string name="parent_pin_hearth_gone">HearthTube was using Hearth\'s parent PIN, and Hearth no longer has one. Choose a new parent PIN for HearthTube.</string>
     <string name="parent_pin_hearth_silent">Hearth isn\'t answering, so its parent PIN can\'t be checked. Try again in a moment.</string>
+    <string name="parent_pin_set_in_hearth">Hearth has no parent PIN to ask for here. A parent can set one in Hearth.</string>
     <string name="updates_from_owner">HearthTube updates from the TV\'s main profile, for every profile at once.</string>
     <string name="updates_by_hearth">Hearth keeps HearthTube up to date (Hearth Settings, Companion apps).</string>
     <string name="include_prereleases">Include pre-releases</string>

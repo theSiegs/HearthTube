@@ -45,7 +45,9 @@ the same way.
   signed out isn't supervised.
 - **The parent PIN.** In kids mode the first parent to open the Parent menu chooses it. It protects that menu,
   signing in, the PIN itself, and a video's long-press menu (subscribing, playlists, blocking channels and words).
-  Outside kids mode none of this asks for a PIN.
+  Outside kids mode none of this asks for a PIN. Five wrong tries lock the PIN for a minute (as in Hearth). Known
+  gap: nothing forces the PIN on the very first launch, so on a device that is already in kids mode a child who opens
+  the Parent menu before any parent has done so could choose it. Set it up before handing the device over.
 - **Daily YouTube time.** A parent can set it on a kid's device (15 minutes to 2 hours). It counts what played and
   starts again at midnight. When Hearth is on the device, Hearth's limit takes its place. (The counting is unit
   tested; stopping a video at the limit hasn't been run on a device yet.)

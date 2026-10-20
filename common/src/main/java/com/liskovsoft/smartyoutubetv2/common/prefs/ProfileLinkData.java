@@ -8,6 +8,7 @@ import androidx.annotation.Nullable;
 
 import com.liskovsoft.mediaserviceinterfaces.oauth.Account;
 import com.liskovsoft.sharedutils.helpers.Helpers;
+import com.liskovsoft.smartyoutubetv2.common.utils.PinThrottle;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -24,6 +25,10 @@ public class ProfileLinkData {
     private static final String LINK_PREFIX = "link:";
     private static final String FOLLOW_KEY = "follow_google_tv_profile";
     private static final String PARENT_PIN_KEY = "parent_pin";
+    /** The parent PIN's throttle: wrong tries, and when the last wait started (monotonic and wall clock) */
+    private static final String PIN_FAILS_KEY = "parent_pin_fails";
+    private static final String PIN_LOCK_ELAPSED_KEY = "parent_pin_lock_elapsed";
+    private static final String PIN_LOCK_WALL_KEY = "parent_pin_lock_wall";
     private static final String USING_HEARTH_PIN_KEY = "using_hearth_pin";
     /** Gone: HearthTube has no guest. Removed from older installs. */
     private static final String GUEST_ENABLED_KEY = "guest_enabled";
@@ -72,24 +77,50 @@ public class ProfileLinkData {
         return mPrefs.getString(PARENT_PIN_KEY, null) != null;
     }
 
-    /** True when the PIN is the parent PIN. A PIN saved as plain digits by an older version is hashed on success. */
+    /** True when the PIN is the parent PIN (and no wait is on). See {@link #verifyParentPin}. */
     public boolean checkParentPin(@Nullable String pin) {
+        return verifyParentPin(pin) == PIN_OK;
+    }
+
+    public static final int PIN_OK = 0;
+    public static final int PIN_WRONG = -1;
+
+    /**
+     * Checks the parent PIN with the same throttle Hearth has ({@link PinThrottle}): {@link #PIN_OK}, {@link #PIN_WRONG},
+     * or the seconds to wait (a positive number; the PIN isn't looked at then, right or not). A PIN saved as plain
+     * digits by an older version is hashed on success.
+     */
+    public int verifyParentPin(@Nullable String pin) {
         String saved = mPrefs.getString(PARENT_PIN_KEY, null);
 
         if (saved == null || pin == null) {
-            return false;
+            return PIN_WRONG;
         }
 
-        if (saved.equals(hash(pin))) {
-            return true;
+        long nowElapsed = android.os.SystemClock.elapsedRealtime();
+        long nowWall = System.currentTimeMillis();
+        PinThrottle.State state = new PinThrottle.State(
+                mPrefs.getInt(PIN_FAILS_KEY, 0), mPrefs.getLong(PIN_LOCK_ELAPSED_KEY, -1), mPrefs.getLong(PIN_LOCK_WALL_KEY, -1));
+        int wait = PinThrottle.waitSeconds(state, nowElapsed, nowWall);
+
+        if (wait > 0) {
+            return wait;
         }
 
-        if (saved.equals(pin)) { // older versions kept it as is
-            setParentPin(pin);
-            return true;
+        if (saved.equals(hash(pin)) || saved.equals(pin)) {
+            if (!saved.startsWith("sha256:")) { // older versions kept it as is
+                setParentPin(pin);
+            }
+            mPrefs.edit().remove(PIN_FAILS_KEY).remove(PIN_LOCK_ELAPSED_KEY).remove(PIN_LOCK_WALL_KEY).apply();
+            return PIN_OK;
         }
 
-        return false;
+        state = PinThrottle.afterWrong(state, nowElapsed, nowWall);
+        mPrefs.edit().putInt(PIN_FAILS_KEY, state.fails).putLong(PIN_LOCK_ELAPSED_KEY, state.lockedAtElapsed)
+                .putLong(PIN_LOCK_WALL_KEY, state.lockedAtWall).apply();
+        wait = PinThrottle.waitSeconds(state, nowElapsed, nowWall);
+
+        return wait > 0 ? wait : PIN_WRONG;
     }
 
     /** Saved hashed, not as the digits themselves. Null removes it. */
