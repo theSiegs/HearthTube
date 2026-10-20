@@ -302,7 +302,8 @@ public class MotherActivity extends FragmentActivity {
             float widthRatio = DEFAULT_WIDTH / widthPixels;
             float density = DEFAULT_DENSITY / widthRatio * uiScale;
             displayMetrics.density = density;
-            displayMetrics.scaledDensity = density;
+            // Text follows the TV's own font size (Settings > Accessibility) on top of the app's UI scale
+            displayMetrics.scaledDensity = density * context.getResources().getConfiguration().fontScale;
             sCachedDisplayMetrics = displayMetrics;
         }
 
