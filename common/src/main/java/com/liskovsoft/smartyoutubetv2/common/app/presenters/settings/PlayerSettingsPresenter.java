@@ -79,7 +79,6 @@ public class PlayerSettingsPresenter extends BasePresenter<Void> {
         //appendPlayerExitCategory(settingsPresenter);
         appendSleepTimerCategory(settingsPresenter);
         appendMiscCategory(settingsPresenter);
-        appendDeveloperCategory(settingsPresenter);
 
         settingsPresenter.showDialog(getContext().getString(R.string.settings_player), mOnFinish);
     }
@@ -354,10 +353,6 @@ public class PlayerSettingsPresenter extends BasePresenter<Void> {
                 option -> mPlayerTweaksData.setSuggestionsHorizontallyScrolled(option.isSelected()),
                 mPlayerTweaksData.isSuggestionsHorizontallyScrolled()));
 
-        options.add(UiOptionItem.from(getContext().getString(R.string.dont_resize_video_to_fit_dialog),
-                option -> mPlayerTweaksData.setDontResizeVideoToFitDialogEnabled(option.isSelected()),
-                mPlayerTweaksData.isDontResizeVideoToFitDialogEnabled()));
-
         options.add(UiOptionItem.from(getContext().getString(R.string.player_audio_focus),
                 option -> mPlayerTweaksData.setAudioFocusEnabled(option.isSelected()),
                 mPlayerTweaksData.isAudioFocusEnabled()));
@@ -375,18 +370,6 @@ public class PlayerSettingsPresenter extends BasePresenter<Void> {
                 option -> mPlayerTweaksData.setSectionPlaylistEnabled(option.isSelected()),
                 mPlayerTweaksData.isSectionPlaylistEnabled()));
 
-        options.add(UiOptionItem.from(getContext().getString(R.string.player_chapter_notification2),
-                option -> mPlayerTweaksData.setChapterNotificationEnabled(option.isSelected()),
-                mPlayerTweaksData.isChapterNotificationEnabled()));
-
-        options.add(UiOptionItem.from(getContext().getString(R.string.search_background_playback),
-                option -> mSearchData.setTempBackgroundModeEnabled(option.isSelected()),
-                mSearchData.isTempBackgroundModeEnabled()));
-
-        options.add(UiOptionItem.from(getContext().getString(R.string.player_exit_shortcut) + ": " + getContext().getString(R.string.app_double_back_exit),
-                option -> mGeneralData.setPlayerExitShortcut(option.isSelected() ? GeneralData.EXIT_DOUBLE_BACK : GeneralData.EXIT_SINGLE_BACK),
-                mGeneralData.getPlayerExitShortcut() == GeneralData.EXIT_DOUBLE_BACK));
-
         options.add(UiOptionItem.from(getContext().getString(R.string.player_loop_shorts),
                 option -> mPlayerTweaksData.setLoopShortsEnabled(option.isSelected()),
                 mPlayerTweaksData.isLoopShortsEnabled()));
@@ -402,10 +385,6 @@ public class PlayerSettingsPresenter extends BasePresenter<Void> {
         options.add(UiOptionItem.from(getContext().getString(R.string.player_disable_suggestions),
                 option -> mPlayerTweaksData.setSuggestionsDisabled(option.isSelected()),
                 mPlayerTweaksData.isSuggestionsDisabled()));
-
-        options.add(UiOptionItem.from(getContext().getString(R.string.player_number_key_seek),
-                option -> mPlayerData.setNumberKeySeekEnabled(option.isSelected()),
-                mPlayerData.isNumberKeySeekEnabled()));
 
         //options.add(UiOptionItem.from(getContext().getString(R.string.app_corner_clock),
         //        option -> {
@@ -430,10 +409,6 @@ public class PlayerSettingsPresenter extends BasePresenter<Void> {
                 option -> mPlayerTweaksData.setRememberPositionOfShortVideosEnabled(option.isSelected()),
                 mPlayerTweaksData.isRememberPositionOfShortVideosEnabled()));
 
-        options.add(UiOptionItem.from(getContext().getString(R.string.player_speed_button_old_behavior),
-                option -> mPlayerTweaksData.setSpeedButtonOldBehaviorEnabled(option.isSelected()),
-                mPlayerTweaksData.isSpeedButtonOldBehaviorEnabled()));
-
         options.add(UiOptionItem.from(getContext().getString(R.string.player_show_clock),
                 option -> mPlayerData.setClockEnabled(option.isSelected()),
                 mPlayerData.isClockEnabled()));
@@ -446,19 +421,11 @@ public class PlayerSettingsPresenter extends BasePresenter<Void> {
                 option -> mPlayerTweaksData.setQualityInfoBitrateEnabled(option.isSelected()),
                 mPlayerTweaksData.isQualityInfoBitrateEnabled()));
 
-        options.add(UiOptionItem.from(getContext().getString(R.string.player_global_focus),
-                getContext().getString(R.string.player_global_focus_desc),
-                option -> mPlayerTweaksData.setSyncRowButtonIndexEnabled(option.isSelected()),
-                mPlayerTweaksData.isSyncRowButtonIndexEnabled()));
-
         options.add(UiOptionItem.from(getContext().getString(R.string.player_ui_on_next),
                 option -> mPlayerTweaksData.setPlayerUiOnNextEnabled(option.isSelected()),
                 mPlayerTweaksData.isPlayerUiOnNextEnabled()));
 
-        options.add(UiOptionItem.from(getContext().getString(R.string.player_ui_animations),
-                option -> mPlayerTweaksData.setUIAnimationsEnabled(option.isSelected()),
-                mPlayerTweaksData.isUIAnimationsEnabled()));
-
+        // Stays: it is also the switch for the Return YouTube Dislike request (PRIVACY.md)
         options.add(UiOptionItem.from(getContext().getString(R.string.player_likes_count),
                 option -> mPlayerTweaksData.setLikesCounterEnabled(option.isSelected()),
                 mPlayerTweaksData.isLikesCounterEnabled()));
@@ -479,10 +446,6 @@ public class PlayerSettingsPresenter extends BasePresenter<Void> {
                 option -> mPlayerTweaksData.setButtonLongClickEnabled(option.isSelected()),
                 mPlayerTweaksData.isButtonLongClickEnabled()));
 
-        options.add(UiOptionItem.from(getContext().getString(R.string.real_channel_icon),
-                option -> mPlayerTweaksData.setRealChannelIconEnabled(option.isSelected()),
-                mPlayerTweaksData.isRealChannelIconEnabled()));
-
         options.add(UiOptionItem.from(getContext().getString(R.string.queue_respects_playback_mode),
                 option -> mPlayerTweaksData.setQueueRespectsPlaybackMode(option.isSelected()),
                 mPlayerTweaksData.isQueueRespectsPlaybackMode()));
@@ -490,185 +453,4 @@ public class PlayerSettingsPresenter extends BasePresenter<Void> {
         settingsPresenter.appendCheckedCategory(getContext().getString(R.string.player_other), options);
     }
 
-    private void appendDeveloperCategory(AppDialogPresenter settingsPresenter) {
-        List<OptionItem> options = new ArrayList<>();
-
-        options.add(UiOptionItem.from(getContext().getString(R.string.playback_notifications_fix),
-                getContext().getString(R.string.playback_notifications_fix_desc),
-                option -> mPlayerTweaksData.setPlaybackNotificationsDisabled(option.isSelected()),
-                mPlayerTweaksData.isPlaybackNotificationsDisabled()));
-
-        options.add(UiOptionItem.from(getContext().getString(R.string.disable_network_error_fixing),
-                getContext().getString(R.string.disable_network_error_fixing_desc),
-                option -> mPlayerTweaksData.setNetworkErrorFixingDisabled(option.isSelected()),
-                mPlayerTweaksData.isNetworkErrorFixingDisabled()));
-
-        // Oculus Quest fix: back button not closing the activity
-        options.add(UiOptionItem.from(getContext().getString(R.string.oculus_quest_fix),
-                option -> {
-                    mPlayerTweaksData.setOculusQuestFixEnabled(option.isSelected());
-                    mRestartApp = true;
-                },
-                mPlayerTweaksData.isOculusQuestFixEnabled()));
-
-        options.add(UiOptionItem.from(getContext().getString(R.string.prefer_ipv4),
-                getContext().getString(R.string.prefer_ipv4_desc),
-                option -> {
-                    // OkHttp is the only engine that supports custom DNS
-                    mPlayerTweaksData.setPlayerDataSource(option.isSelected() ? PlayerTweaksData.PLAYER_DATA_SOURCE_OKHTTP : Utils.getFasterDataSource());
-                    mPlayerTweaksData.setPreferredDnsType(option.isSelected() ? PlayerTweaksData.DNS_TYPE_IPV4 : PlayerTweaksData.DNS_TYPE_SYSTEM);
-                    mRestartApp = true;
-                },
-                mPlayerTweaksData.getPreferredDnsType() == PlayerTweaksData.DNS_TYPE_IPV4));
-
-        options.add(UiOptionItem.from(getContext().getString(R.string.prefer_google_dns),
-                getContext().getString(R.string.prefer_ipv4_desc),
-                option -> {
-                    // OkHttp is the only engine that supports custom DNS
-                    mPlayerTweaksData.setPlayerDataSource(option.isSelected() ? PlayerTweaksData.PLAYER_DATA_SOURCE_OKHTTP : Utils.getFasterDataSource());
-                    mPlayerTweaksData.setPreferredDnsType(option.isSelected() ? PlayerTweaksData.DNS_TYPE_GOOGLE : PlayerTweaksData.DNS_TYPE_SYSTEM);
-                    mRestartApp = true;
-                },
-                mPlayerTweaksData.getPreferredDnsType() == PlayerTweaksData.DNS_TYPE_GOOGLE));
-
-        options.add(UiOptionItem.from(getContext().getString(R.string.audio_sync_fix),
-                getContext().getString(R.string.audio_sync_fix_desc),
-                option -> mPlayerTweaksData.setAudioSyncFixEnabled(option.isSelected()),
-                mPlayerTweaksData.isAudioSyncFixEnabled()));
-
-        options.add(UiOptionItem.from(getContext().getString(R.string.ambilight_ratio_fix),
-                getContext().getString(R.string.ambilight_ratio_fix_desc),
-                option -> {
-                    mPlayerTweaksData.setTextureViewEnabled(option.isSelected());
-                    if (option.isSelected()) {
-                        // Tunneled playback works only with SurfaceView
-                        mPlayerTweaksData.setTunneledPlaybackEnabled(false);
-                    }
-                },
-                mPlayerTweaksData.isTextureViewEnabled()));
-
-        options.add(UiOptionItem.from(getContext().getString(R.string.unlock_high_bitrate_formats) + " " + TrackSelectorUtil.HIGH_BITRATE_MARK,
-                option -> mPlayerTweaksData.setHighBitrateFormatsEnabled(option.isSelected()),
-                mPlayerTweaksData.isHighBitrateFormatsEnabled()));
-
-        options.add(UiOptionItem.from(getContext().getString(R.string.unlock_high_bitrate_audio_formats),
-                option -> mPlayerTweaksData.setUnsafeAudioFormatsEnabled(option.isSelected()),
-                mPlayerTweaksData.isUnsafeAudioFormatsEnabled()));
-
-        options.add(UiOptionItem.from(getContext().getString(R.string.force_legacy_codecs),
-                getContext().getString(R.string.force_legacy_codecs_desc),
-                option -> mPlayerData.setLegacyCodecsForced(option.isSelected()),
-                mPlayerData.isLegacyCodecsForced()));
-
-        options.add(UiOptionItem.from(getContext().getString(R.string.live_stream_fix),
-                getContext().getString(R.string.live_stream_fix_desc),
-                option -> {
-                    mPlayerTweaksData.setHlsStreamsForced(option.isSelected());
-                },
-                mPlayerTweaksData.isHlsStreamsForced()));
-
-        options.add(UiOptionItem.from(getContext().getString(R.string.live_stream_fix_4k),
-                getContext().getString(R.string.live_stream_fix_4k_desc),
-                option -> {
-                    mPlayerTweaksData.setDashUrlStreamsForced(option.isSelected());
-                },
-                mPlayerTweaksData.isDashUrlStreamsForced()));
-
-        options.add(UiOptionItem.from(getContext().getString(R.string.disable_stream_buffer),
-                getContext().getString(R.string.disable_stream_buffer_desc),
-                option -> mPlayerTweaksData.setBufferOnStreamsDisabled(option.isSelected()),
-                mPlayerTweaksData.isBufferOnStreamsDisabled()));
-
-        options.add(UiOptionItem.from(getContext().getString(R.string.unlock_all_formats),
-                getContext().getString(R.string.unlock_all_formats_desc),
-                option -> mPlayerTweaksData.setAllFormatsUnlocked(option.isSelected()),
-                mPlayerTweaksData.isAllFormatsUnlocked()));
-
-        options.add(UiOptionItem.from(getContext().getString(R.string.alt_presets_behavior),
-                getContext().getString(R.string.alt_presets_behavior_desc),
-                option -> mPlayerTweaksData.setAltPresetsEnabled(option.isSelected()),
-                mPlayerTweaksData.isAltPresetsEnabled()));
-
-        options.add(UiOptionItem.from(getContext().getString(R.string.prefer_avc_over_vp9),
-                getContext().getString(R.string.prefer_avc_over_vp9_desc),
-                option -> mPlayerTweaksData.setAvcOverVp9Preferred(option.isSelected()),
-                mPlayerTweaksData.isAvcOverVp9Preferred()));
-
-        options.add(UiOptionItem.from(getContext().getString(R.string.amlogic_fix),
-                getContext().getString(R.string.amlogic_fix_desc),
-                option -> mPlayerTweaksData.setAmlogicFixEnabled(option.isSelected()),
-                mPlayerTweaksData.isAmlogicFixEnabled()));
-
-        options.add(UiOptionItem.from(getContext().getString(R.string.tunneled_video_playback),
-                getContext().getString(R.string.tunneled_video_playback_desc),
-                option -> {
-                    mPlayerTweaksData.setTunneledPlaybackEnabled(option.isSelected());
-                    if (option.isSelected()) {
-                        // Tunneled playback works only with SurfaceView
-                        mPlayerTweaksData.setTextureViewEnabled(false);
-                    }
-                },
-                mPlayerTweaksData.isTunneledPlaybackEnabled()));
-
-        options.add(UiOptionItem.from(getContext().getString(R.string.disable_vsync),
-                getContext().getString(R.string.disable_vsync_desc),
-                option -> mPlayerTweaksData.setSnappingToVsyncDisabled(option.isSelected()),
-                mPlayerTweaksData.isSnappingToVsyncDisabled()));
-
-        options.add(UiOptionItem.from(getContext().getString(R.string.skip_codec_profile_check),
-                getContext().getString(R.string.skip_codec_profile_check_desc),
-                option -> mPlayerTweaksData.setProfileLevelCheckSkipped(option.isSelected()),
-                mPlayerTweaksData.isProfileLevelCheckSkipped()));
-
-        options.add(UiOptionItem.from(getContext().getString(R.string.force_sw_codec),
-                getContext().getString(R.string.force_sw_codec_desc),
-                option -> mPlayerTweaksData.setSWDecoderForced(option.isSelected()),
-                mPlayerTweaksData.isSWDecoderForced()));
-
-        options.add(UiOptionItem.from(getContext().getString(R.string.sony_frame_drop_fix),
-                getContext().getString(R.string.sony_frame_drop_fix_desc),
-                option -> mPlayerTweaksData.setSonyFrameDropFixEnabled(option.isSelected()),
-                mPlayerTweaksData.isSonyFrameDropFixEnabled()));
-
-        options.add(UiOptionItem.from(getContext().getString(R.string.amazon_frame_drop_fix),
-                getContext().getString(R.string.amazon_frame_drop_fix_desc),
-                option -> mPlayerTweaksData.setAmazonFrameDropFixEnabled(option.isSelected()),
-                mPlayerTweaksData.isAmazonFrameDropFixEnabled()));
-
-        options.add(UiOptionItem.from(getContext().getString(R.string.keep_finished_activities),
-                option -> mPlayerTweaksData.setKeepFinishedActivityEnabled(option.isSelected()),
-                mPlayerTweaksData.isKeepFinishedActivityEnabled()));
-
-        options.add(UiOptionItem.from(getContext().getString(R.string.disable_channels_service),
-                option -> GlobalPreferences.instance(getContext()).setChannelsServiceEnabled(!option.isSelected()),
-                !GlobalPreferences.instance(getContext()).isChannelsServiceEnabled()));
-
-        options.add(UiOptionItem.from(getContext().getString(R.string.hide_settings_section),
-                option -> {
-                    mSidebarService.enableSettingsSection(!option.isSelected());
-                    mRestartApp = true;
-                },
-                !mSidebarService.isSettingsSectionEnabled()));
-
-        options.add(UiOptionItem.from(getContext().getString(R.string.fix_empty_subs_and_channels),
-                option -> mMediaServiceData.setLegacyUIEnabled(option.isSelected()),
-                mMediaServiceData.isLegacyUIEnabled()));
-
-        // Disabled inside RetrofitHelper
-        //options.add(UiOptionItem.from("Prefer IPv4 DNS",
-        //        option -> GlobalPreferences.instance(getContext()).preferIPv4Dns(option.isSelected()),
-        //        GlobalPreferences.instance(getContext()).isIPv4DnsPreferred()));
-        //
-        //options.add(UiOptionItem.from("Enable DNS over HTTPS",
-        //        option -> GlobalPreferences.instance(getContext()).enableDnsOverHttps(option.isSelected()),
-        //        GlobalPreferences.instance(getContext()).isDnsOverHttpsEnabled()));
-
-        // Need to be enabled on older version of ExoPlayer (e.g. 2.10.6).
-        // It's because there's no tweaks for modern devices.
-        //options.add(UiOptionItem.from("Enable set output surface workaround",
-        //        option -> mPlayerTweaksData.enableSetOutputSurfaceWorkaround(option.isSelected()),
-        //        mPlayerTweaksData.isSetOutputSurfaceWorkaroundEnabled()));
-
-        settingsPresenter.appendCheckedCategory(getContext().getString(R.string.player_tweaks), options);
-    }
 }

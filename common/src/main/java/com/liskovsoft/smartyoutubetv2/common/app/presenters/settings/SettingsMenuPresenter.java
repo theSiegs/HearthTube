@@ -76,7 +76,14 @@ public class SettingsMenuPresenter {
                 withIcon(context, R.drawable.ic_hearth_settings_hearth, context.getString(R.string.works_with_hearth)),
                 option -> WorksWithHearthPresenter.show(context)));
 
+        // Hearth's language is the one used while Hearth is there (HearthLook): Language/Country is only for without it
+        boolean hearthThere = com.liskovsoft.smartyoutubetv2.common.utils.HearthProfile.queryHearth(context) != null;
+
         for (SettingsItem item : ordered(AppDataSourceManager.instance().getSettingItems(context))) {
+            if (hearthThere && item.imageResId == R.drawable.settings_language) {
+                continue;
+            }
+
             int titleResId = TITLES.get(item.imageResId, 0);
             CharSequence title = titleResId != 0 ? context.getString(titleResId) : item.title;
             dialog.appendSingleButton(UiOptionItem.from(

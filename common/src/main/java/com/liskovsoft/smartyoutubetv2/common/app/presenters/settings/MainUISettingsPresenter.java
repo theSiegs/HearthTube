@@ -161,6 +161,12 @@ public class MainUISettingsPresenter extends BasePresenter<Void> {
                 {R.string.settings_search, MainUIData.TOP_BUTTON_SEARCH},
                 {R.string.settings_language_country, MainUIData.TOP_BUTTON_CHANGE_LANGUAGE},
                 {R.string.settings_accounts, MainUIData.TOP_BUTTON_BROWSE_ACCOUNTS}}) {
+            // Hearth's language is used while Hearth is there: no button to change it
+            if (pair[1] == MainUIData.TOP_BUTTON_CHANGE_LANGUAGE
+                    && com.liskovsoft.smartyoutubetv2.common.utils.HearthProfile.queryHearth(getContext()) != null) {
+                continue;
+            }
+
             options.add(UiOptionItem.from(getContext().getString(pair[0]), optionItem -> {
                 if (optionItem.isSelected()) {
                     mMainUIData.setTopButtonEnabled(pair[1]);
@@ -374,19 +380,15 @@ public class MainUISettingsPresenter extends BasePresenter<Void> {
     private void appendMiscCategory(AppDialogPresenter settingsPresenter) {
         List<OptionItem> options = new ArrayList<>();
         
-        options.add(UiOptionItem.from(getContext().getString(R.string.card_unlocalized_titles),
-                option -> {
-                    mMainUIData.setUnlocalizedTitlesEnabled(option.isSelected());
-                    mDeArrowData.setReplaceTitlesEnabled(false);
-                },
-                mMainUIData.isUnlocalizedTitlesEnabled()));
-
-        options.add(UiOptionItem.from(getContext().getString(R.string.time_format_24) + " " + getContext().getString(R.string.time_format),
-                option -> {
-                    mGeneralData.set24HourLocaleEnabled(option.isSelected());
-                    mRestartApp = true;
-                },
-                mGeneralData.is24HourLocaleEnabled()));
+        // Hearth's time format is the one used while Hearth is there (HearthLook): the choice is only for without it
+        if (com.liskovsoft.smartyoutubetv2.common.utils.HearthProfile.queryHearth(getContext()) == null) {
+            options.add(UiOptionItem.from(getContext().getString(R.string.time_format_24) + " " + getContext().getString(R.string.time_format),
+                    option -> {
+                        mGeneralData.set24HourLocaleEnabled(option.isSelected());
+                        mRestartApp = true;
+                    },
+                    mGeneralData.is24HourLocaleEnabled()));
+        }
 
         options.add(UiOptionItem.from(getContext().getString(R.string.app_corner_clock),
                 option -> {
@@ -402,20 +404,6 @@ public class MainUISettingsPresenter extends BasePresenter<Void> {
         options.add(UiOptionItem.from(getContext().getString(R.string.player_corner_ending_time),
                 option -> mPlayerData.setGlobalEndingTimeEnabled(option.isSelected()),
                 mPlayerData.isGlobalEndingTimeEnabled()));
-
-        options.add(UiOptionItem.from(getContext().getString(R.string.channels_old_look),
-                optionItem -> {
-                    mMainUIData.setUploadsOldLookEnabled(optionItem.isSelected());
-                    mRestartApp = true;
-                },
-                mMainUIData.isUploadsOldLookEnabled()));
-
-        options.add(UiOptionItem.from(getContext().getString(R.string.fullscreen_mode),
-                option -> {
-                    mGeneralData.setFullscreenModeEnabled(option.isSelected());
-                    mRestartApp = true;
-                },
-                mGeneralData.isFullscreenModeEnabled()));
 
         options.add(UiOptionItem.from(getContext().getString(R.string.pinned_channel_rows),
                 optionItem -> {

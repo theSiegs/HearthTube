@@ -70,29 +70,8 @@ public class BackupSettingsPresenter extends BasePresenter<Void> {
         AppDialogPresenter settingsPresenter = AppDialogPresenter.instance(getContext());
 
         appendLocalBackupCategory(settingsPresenter);
-        appendGDriveBackupCategory(settingsPresenter);
         appendSubscriptionsBackupButton(settingsPresenter);
         settingsPresenter.showDialog(getContext().getString(R.string.app_backup_restore), BackupSettingsPresenter::unhold);
-    }
-
-    private void appendGDriveBackupCategory(AppDialogPresenter settingsPresenter) {
-        settingsPresenter.appendSingleButton(UiOptionItem.from("Google Drive", optionItem -> {
-            AppDialogPresenter settingsPresenter2 = AppDialogPresenter.instance(getContext());
-            appendGDriveBackupSettings(settingsPresenter2);
-            appendGDriveRestoreSettings(settingsPresenter2);
-            // NOTE: google account doesn't have a name or email
-            appendGDriveAutoBackupButton(settingsPresenter2);
-            appendGDriveMiscButtons(settingsPresenter2);
-            settingsPresenter2.showDialog("Google Drive");
-        }));
-    }
-
-    private void appendGDriveRestoreSettings(AppDialogPresenter settingsPresenter) {
-        settingsPresenter.appendSingleButton(UiOptionItem.from(getContext().getString(R.string.app_restore), optionItem -> mGDriveBackupManager.restore()));
-    }
-
-    private void appendGDriveBackupSettings(AppDialogPresenter settingsPresenter) {
-        settingsPresenter.appendSingleButton(UiOptionItem.from(getContext().getString(R.string.app_backup), optionItem -> mGDriveBackupManager.backup()));
     }
 
     private void appendLocalAutoBackupOption(List<OptionItem> options) {
@@ -125,47 +104,6 @@ public class BackupSettingsPresenter extends BasePresenter<Void> {
                             settingsPresenter2.showDialog();
                         })
         );
-    }
-
-    private void appendGDriveAutoBackupButton(AppDialogPresenter settingsPresenter) {
-        settingsPresenter.appendSingleButton(UiOptionItem.from(
-                getContext().getString(R.string.auto_backup_category), option -> {
-                    AppDialogPresenter settingsPresenter2 = AppDialogPresenter.instance(getContext());
-                    List<OptionItem> options = new ArrayList<>();
-
-                    for (int[] pair : new int[][] {
-                            {R.string.dialog_account_none, -1},
-                            {R.string.once_a_day, 1},
-                            {R.string.once_a_week, 7},
-                            {R.string.once_a_month, 30},
-                    }) {
-                        options.add(UiOptionItem.from(getContext().getString(pair[0]),
-                                optionItem -> {
-                                    mGeneralData.setGDriveBackupFreqDays(pair[1]);
-                                    if (pair[1] > 0) {
-                                        GDriveBackupWorker.forceSchedule(getContext());
-                                    } else {
-                                        GDriveBackupWorker.cancel(getContext());
-                                    }
-                                },
-                                mGeneralData.getGDriveBackupFreqDays() == pair[1]
-                        ));
-                    }
-
-                    settingsPresenter2.appendRadioCategory(getContext().getString(R.string.auto_backup_category), options);
-                    settingsPresenter2.showDialog();
-                }));
-    }
-
-    private void appendGDriveMiscButtons(AppDialogPresenter settingsPresenter) {
-        settingsPresenter.appendSingleSwitch(UiOptionItem.from(
-                getContext().getString(R.string.device_specific_backup),
-                option2 -> mGeneralData.setDeviceSpecificBackupEnabled(option2.isSelected()),
-                mGeneralData.isDeviceSpecificBackupEnabled()
-        ));
-
-        settingsPresenter.appendSingleButton(UiOptionItem.from(
-                getContext().getString(R.string.dialog_add_account), option2 -> GoogleSignInPresenter.instance(getContext()).start()));
     }
 
     private void appendLocalBackupCategory(AppDialogPresenter settingsPresenter) {

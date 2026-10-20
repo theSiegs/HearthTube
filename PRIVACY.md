@@ -24,10 +24,8 @@ HearthTube is new, and this policy will change as its features do. Each change i
 | DeArrow | `sponsor.ajay.app`, `dearrow-thumb.ajay.app` | The IDs of the videos shown | Off by default |
 | Return YouTube Dislike | `returnyoutubedislikeapi.com` | The ID of the video playing | While the like and dislike counter is on (on by default) |
 | Bing photo of the day | `www.bing.com` | A request for the photo | Only if you choose it as the background (without Hearth) |
-| Backup to Google Drive | Your own Google Drive | HearthTube's settings | Only if you set it up |
 | Links in About | `api.qrserver.com` | The link being shown, to draw it as a QR code | When you open a link there |
 | Country flags | `flagcdn.com` | A country code | When a list of countries is shown |
-| Secure DNS | The provider you pick | DNS lookups | Only if you turn it on |
 
 These services see the TV's IP address, like any website you visit. None of them gets your Google account, your
 sign-in token or your profile's name from HearthTube.

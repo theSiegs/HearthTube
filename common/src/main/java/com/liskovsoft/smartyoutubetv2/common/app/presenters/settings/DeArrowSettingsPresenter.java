@@ -33,7 +33,6 @@ public class DeArrowSettingsPresenter extends BasePresenter<Void> {
         AppDialogPresenter settingsPresenter = AppDialogPresenter.instance(getContext());
         
         appendSwitches(settingsPresenter);
-        appendThumbQuality(settingsPresenter);
         appendLinks(settingsPresenter);
 
         settingsPresenter.showDialog(getContext().getString(R.string.dearrow_provider), onFinish);
@@ -41,23 +40,6 @@ public class DeArrowSettingsPresenter extends BasePresenter<Void> {
 
     public void show() {
         show(null);
-    }
-
-    private void appendThumbQuality(AppDialogPresenter settingsPresenter) {
-        List<OptionItem> options = new ArrayList<>();
-
-        for (int[] pair : new int[][] {
-                {R.string.thumb_quality_default, ClickbaitRemover.THUMB_QUALITY_DEFAULT},
-                {R.string.thumb_quality_start, ClickbaitRemover.THUMB_QUALITY_START},
-                {R.string.thumb_quality_middle, ClickbaitRemover.THUMB_QUALITY_MIDDLE},
-                {R.string.thumb_quality_end, ClickbaitRemover.THUMB_QUALITY_END}}) {
-            options.add(UiOptionItem.from(getContext().getString(pair[0]),
-                    optionItem -> mMainUIData.setThumbQuality(pair[1]),
-                    mMainUIData.getThumbQuality() == pair[1]
-            ));
-        }
-
-        settingsPresenter.appendRadioCategory(getContext().getString(R.string.dearrow_not_submitted_thumbs), options);
     }
 
     private void appendSwitches(AppDialogPresenter settingsPresenter) {
