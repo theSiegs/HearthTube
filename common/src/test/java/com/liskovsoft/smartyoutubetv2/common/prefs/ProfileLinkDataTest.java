@@ -93,4 +93,20 @@ public class ProfileLinkDataTest {
 
         assertTrue(ProfileLinkData.isAdult(saved, "Alex Rivera"));
     }
+
+    @Test
+    public void removingAnAccountClearsEveryLinkToItAndNoOther() {
+        Map<String, Object> saved = new HashMap<>();
+        saved.put("link:user:10", "Alex Rivera");
+        saved.put("link:user:11", "Sam Rivera");
+        saved.put("link:user:12", "Alex Rivera");
+        saved.put("kids:user:11", true);
+
+        List<String> keys = ProfileLinkData.linksTo(saved, "Alex Rivera");
+
+        assertTrue(keys.contains("link:user:10"));
+        assertTrue(keys.contains("link:user:12"));
+        assertFalse(keys.contains("link:user:11"));
+        assertTrue(keys.size() == 2);
+    }
 }

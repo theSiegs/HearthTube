@@ -348,6 +348,8 @@ public class AccountSettingsPresenter extends BasePresenter<Void> {
 
     private void removeAccount(Account account) {
         getSignInService().removeAccount(account);
+        // No profile keeps a link to an account that's gone (it would only land on a welcome with nothing to pick)
+        ProfileLinkData.instance(getContext()).removeLinksTo(account);
         BrowsePresenter.instance(getContext()).refresh(false);
     }
 

@@ -69,6 +69,11 @@ adb shell am start -a com.thesiegs.hearthtube.action.OPEN_SETTINGS --es section 
   blocked-word list. Adults share the TV owner's copy.
 - A kid signed in to their own supervised account only plays what YouTube allows that account. When YouTube refuses a
   video, HearthTube doesn't fetch it another way.
+- A kids profile with nobody signed in shows and plays nothing, however HearthTube was opened (launcher, link, cast,
+  voice or Google TV search, Watch Next, a shortcut): Home says "Ask a parent to sign in", search, channels and the
+  player refuse, and the welcome asks for the parent PIN (`LaunchGate`). Adult profiles are unchanged.
+- Shorts and TikTok-style clips are blocked in kids profiles even when the process starts without the splash screen
+  (`KidsShorts` asks `ParentGate` itself).
 - Refused videos close quietly and leave the rows. Only a video opened from a link or a cast shows a short reason.
 
 ## Building

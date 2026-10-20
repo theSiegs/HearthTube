@@ -151,7 +151,7 @@ public class ChannelPresenter extends BasePresenter<ChannelView> implements Vide
     }
 
     public void openChannel(String channelId) {
-        if (channelId == null) {
+        if (channelId == null || com.liskovsoft.smartyoutubetv2.common.utils.LaunchGate.refuse(getContext())) { // HearthTube: no channels for a kid nobody is signed in for
             return;
         }
 

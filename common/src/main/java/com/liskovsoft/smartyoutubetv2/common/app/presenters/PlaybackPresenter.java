@@ -119,6 +119,11 @@ public class PlaybackPresenter extends BasePresenter<PlaybackView> implements Pl
             return;
         }
 
+        // HearthTube: nothing plays in a kids profile with nobody signed in (the welcome or Home asks for a parent)
+        if (com.liskovsoft.smartyoutubetv2.common.utils.LaunchGate.isClosed(getContext())) {
+            return;
+        }
+
         // HearthTube: no Shorts in Google TV kids profiles, even from a link or a cast
         if (com.liskovsoft.smartyoutubetv2.common.utils.KidsShorts.isBlocked(getContext(), video.isShorts)) {
             // Said only for a link or a cast: kids aren't reminded of what's left out

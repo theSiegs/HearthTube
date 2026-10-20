@@ -8,6 +8,7 @@ import com.liskovsoft.mediaserviceinterfaces.data.MediaItem;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItemFormatInfo;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaFormat;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.BrowsePresenter;
+import com.liskovsoft.sharedutils.prefs.GlobalPreferences;
 import com.liskovsoft.youtubeapi.service.internal.MediaServiceData;
 
 /**
@@ -32,8 +33,8 @@ public final class KidsShorts {
     private static final long SHORT_MAX_MS = 3 * 60_000;
     /** Set by apply(): Shorts are hidden right now (kids profile, or Show Shorts off) */
     private static volatile boolean sHidden = true;
-    /** Set by apply(): this is a kids profile */
-    private static volatile boolean sKids;
+    /** apply() has run in this process (a process that came up without the splash applies on first use) */
+    private static volatile boolean sStarted;
 
     /**
      * Shorts from elsewhere: TikTok and Instagram clips, and compilations of them, are Shorts by another name. Matched
@@ -55,7 +56,34 @@ public final class KidsShorts {
 
     /** Shorts (and TikTok-style clips) are being left out right now */
     public static boolean isHidingShorts() {
-        return sHidden;
+        return isHiding(null);
+    }
+
+    /** Hidden in a kids profile whatever apply() last saw; a process that never ran it applies now */
+    private static boolean isHiding(Context context) {
+        Context app = start(context);
+
+        return sHidden || (app != null && ParentGate.isKidsProfile(app));
+    }
+
+    private static boolean isKids(Context context) {
+        Context app = start(context);
+
+        return app != null && ParentGate.isKidsProfile(app);
+    }
+
+    /**
+     * In case nothing called apply() (the exported launcher activities, or Android bringing Browse or the player back
+     * after the process died): like AiSlopList.start. Returns the context to ask with, or null when there is none.
+     */
+    private static Context start(Context context) {
+        Context app = context != null ? context.getApplicationContext() : GlobalPreferences.context();
+
+        if (!sStarted && app != null) {
+            apply(app);
+        }
+
+        return app;
     }
 
     /**
@@ -72,7 +100,11 @@ public final class KidsShorts {
      * TikTok or Instagram clips and their compilations.
      */
     public static boolean isHiddenShort(MediaItem item) {
-        if (!sHidden || item == null) {
+        return isHiddenShort(isHiding(null), item);
+    }
+
+    static boolean isHiddenShort(boolean hidden, MediaItem item) {
+        if (!hidden || item == null) {
             return false;
         }
 
@@ -103,8 +135,12 @@ public final class KidsShorts {
      * A TikTok or Instagram clip (or a compilation of them) in a kids profile, by its title or channel name alone. The
      * player asks again once a link's or a cast's title is in, since it has none when the formats arrive.
      */
-    public static boolean isBlockedClip(String title, String author) {
-        return sKids && ((title != null && CLIPS.matcher(title).find()) || (author != null && CLIPS.matcher(author).find()));
+    public static boolean isBlockedClip(Context context, String title, String author) {
+        return isBlockedClip(isKids(context), title, author);
+    }
+
+    static boolean isBlockedClip(boolean kids, String title, String author) {
+        return kids && ((title != null && CLIPS.matcher(title).find()) || (author != null && CLIPS.matcher(author).find()));
     }
 
     /**
@@ -112,12 +148,16 @@ public final class KidsShorts {
      * a TikTok or Instagram clip (or a compilation of them) counts too. In a kids profile neither plays, however it got
      * here (a search, a link, a cast, autoplay).
      */
-    public static boolean isBlockedFormat(MediaItemFormatInfo formatInfo, String title, String author) {
-        if (!sKids || formatInfo == null || formatInfo.isLive()) {
+    public static boolean isBlockedFormat(Context context, MediaItemFormatInfo formatInfo, String title, String author) {
+        return isBlockedFormat(isKids(context), formatInfo, title, author);
+    }
+
+    static boolean isBlockedFormat(boolean kids, MediaItemFormatInfo formatInfo, String title, String author) {
+        if (!kids || formatInfo == null || formatInfo.isLive()) {
             return false;
         }
 
-        if (isBlockedClip(title, author)) {
+        if (isBlockedClip(true, title, author)) {
             return true;
         }
 
@@ -162,7 +202,7 @@ public final class KidsShorts {
         boolean kids = ParentGate.isKidsProfile(context);
         boolean hide = kids || !isShowShortsEnabled(context);
         sHidden = hide;
-        sKids = kids;
+        sStarted = true;
 
         if (hide && !forced) {
             SharedPreferences.Editor editor = prefs.edit();

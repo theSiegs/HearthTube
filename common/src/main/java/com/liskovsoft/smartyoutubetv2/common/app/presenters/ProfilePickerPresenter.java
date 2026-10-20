@@ -139,8 +139,7 @@ public class ProfilePickerPresenter extends BasePresenter<ProfilePickerView> {
                     return FOLLOW_NONE;
                 }
 
-                getViewManager().startView(ProfilePickerView.class);
-                return FOLLOW_PICKER;
+                return openPicker(accounts) ? FOLLOW_PICKER : FOLLOW_NONE;
             }
 
             return FOLLOW_NONE;
@@ -186,20 +185,21 @@ public class ProfilePickerPresenter extends BasePresenter<ProfilePickerView> {
         }
 
         if (link == null) {
-            // One login per Google TV profile: nobody else's account meanwhile. The picker shows this profile no
-            // accounts, so it's the welcome, and signing in links the new account to the profile (YTSignInPresenter)
+            // A link or a cast plays first, with the account selected now. Not in a kids profile: nothing plays there
+            // unless someone is signed in as that kid
+            if (isDeepLink(intent) && !kids) {
+                return FOLLOW_NONE;
+            }
+
+            // One login per Google TV profile: nobody else's account meanwhile. The picker offers this profile the
+            // accounts no other profile watches with, and "Sign in" (YTSignInPresenter links what's signed in)
             if (unlinked == UnlinkedProfileRule.Action.HIDE_SELECTED) {
                 Log.d(TAG, "Profile %s has no link: putting the selected account away (still signed in)", key);
                 mSignInService.selectAccount(null);
             }
 
-            if (isDeepLink(intent)) {
-                return FOLLOW_NONE;
-            }
-
             mLinkingProfile = key;
-            getViewManager().startView(ProfilePickerView.class);
-            return FOLLOW_PICKER;
+            return openPicker(accounts) ? FOLLOW_PICKER : FOLLOW_NONE;
         }
 
         if (!isSameAccount(mSignInService.getSelectedAccount(), link.account)) {
@@ -261,8 +261,8 @@ public class ProfilePickerPresenter extends BasePresenter<ProfilePickerView> {
     /**
      * One login per Google TV profile: while HearthTube follows Hearth's profile, the picker offers only the
      * profile's own account and that account's channels (YouTube lists each channel as an account with the same
-     * email), and none when it has no account yet (the picker is then the welcome, which signs it in). Without
-     * Hearth, or when it can't tell who's watching, every account.
+     * email). A profile with no link yet gets the accounts no other profile is linked to (an account removed and
+     * signed in again, say), and the welcome's "Sign in" when there are none. Without Hearth, or when it can't tell who's watching, every account.
      */
     public List<Account> getVisibleAccounts() {
         List<Account> accounts = mSignInService.getAccounts();
@@ -272,16 +272,30 @@ public class ProfilePickerPresenter extends BasePresenter<ProfilePickerView> {
             return accounts;
         }
 
-        ProfileLinkData.Link link = ProfileLinkData.instance(getContext()).getLink(profile, accounts);
+        ProfileLinkData links = ProfileLinkData.instance(getContext());
+        ProfileLinkData.Link link = links.getLink(profile, accounts);
         List<Account> own = new ArrayList<>();
 
         for (Account account : accounts) {
-            if (link != null && isSamePerson(account, link.account)) {
+            if (link != null ? isSamePerson(account, link.account) : !isLinkedToAnotherProfile(links, profile, account, accounts)) {
                 own.add(account);
             }
         }
 
         return own;
+    }
+
+    /** Another Google TV profile watches with this account (one login per profile) */
+    private static boolean isLinkedToAnotherProfile(ProfileLinkData links, String profile, Account account, List<Account> accounts) {
+        for (String other : links.getProfileKeys()) {
+            ProfileLinkData.Link otherLink = !other.equals(profile) ? links.getLink(other, accounts) : null;
+
+            if (otherLink != null && isSamePerson(account, otherLink.account)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /** "Add account" in the picker: not while it follows a Google TV profile, which has its one login */
@@ -365,10 +379,15 @@ public class ProfilePickerPresenter extends BasePresenter<ProfilePickerView> {
         }
         mLinkingProfile = null;
 
+        boolean wasClosed = com.liskovsoft.smartyoutubetv2.common.utils.LaunchGate.isClosed(getContext());
         AccountSelectionPresenter.instance(getContext()).selectAccount(account);
 
         if (getView() != null) {
             getView().finishView();
+        }
+
+        if (wasClosed && !hasPin) {
+            BrowsePresenter.instance(getContext()).updateSections(); // a kid's Home was only asking for a sign-in
         }
 
         if (hasPin) {
@@ -404,6 +423,43 @@ public class ProfilePickerPresenter extends BasePresenter<ProfilePickerView> {
         }
 
         mLinkingProfile = null;
-        getViewManager().startView(ProfilePickerView.class);
+        openPicker(accounts);
+    }
+
+    /**
+     * A kids profile with nobody signed in was asked for something (see {@link
+     * com.liskovsoft.smartyoutubetv2.common.utils.LaunchGate}): the welcome, or the picker when there are accounts.
+     */
+    public void askToSignIn() {
+        List<Account> accounts = mSignInService.getAccounts();
+
+        if (accounts == null || accounts.isEmpty()) {
+            showWelcomeIfNeeded();
+        } else {
+            openPicker(accounts);
+        }
+    }
+
+    /**
+     * Opens the picker, or the welcome when there are no accounts. The phone has no picker screen (its sign-in is
+     * the parent's): there, the one account is selected for the kid (several: none, the screens say to ask a parent),
+     * and an adult gets the first.
+     *
+     * @return the picker is open
+     */
+    public boolean openPicker(List<Account> accounts) {
+        if (getViewManager().getActivity(ProfilePickerView.class) != null) {
+            getViewManager().startView(ProfilePickerView.class);
+            return true;
+        }
+
+        int index = com.liskovsoft.smartyoutubetv2.common.utils.LaunchGate.phoneAutoSelect(
+                ParentGate.isKidsProfile(getContext()), accounts != null ? accounts.size() : 0);
+
+        if (index != -1 && mSignInService.getSelectedAccount() == null) {
+            AccountSelectionPresenter.instance(getContext()).selectAccount(accounts.get(index));
+        }
+
+        return false;
     }
 }

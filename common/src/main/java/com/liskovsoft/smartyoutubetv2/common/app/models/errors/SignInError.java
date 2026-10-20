@@ -6,9 +6,16 @@ import com.liskovsoft.smartyoutubetv2.common.app.presenters.YTSignInPresenter;
 
 public class SignInError implements ErrorFragmentData {
     private final Context mContext;
+    private final boolean mAskParent;
 
     public SignInError(Context context) {
+        this(context, false);
+    }
+
+    /** @param askParent a kids profile: says a parent signs in (the sign-in itself asks for the PIN) */
+    public SignInError(Context context, boolean askParent) {
         mContext = context;
+        mAskParent = askParent;
     }
 
     @Override
@@ -18,7 +25,7 @@ public class SignInError implements ErrorFragmentData {
 
     @Override
     public String getMessage() {
-        return mContext.getString(R.string.library_signin_to_show_more);
+        return mContext.getString(mAskParent ? R.string.kids_sign_in_needed : R.string.library_signin_to_show_more);
     }
 
     @Override

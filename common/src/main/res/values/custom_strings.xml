@@ -36,6 +36,7 @@
     <string name="include_prereleases">Include pre-releases</string>
     <string name="parent_pin_setting_hint">Needed to change accounts in Google TV kids profiles. Don\'t reuse a kid\'s PIN.</string>
     <string name="search_only_shorts">Nothing to show: every result was a Short or a TikTok-style clip, and those are hidden</string>
+    <string name="kids_sign_in_needed">Ask a parent to sign in</string>
     <string name="kids_no_shorts">Shorts aren\'t available in kids profiles</string>
     <string name="kids_profile_accounts_locked">Accounts can\'t be changed in a kids profile. A parent can change them from their own Google TV profile.</string>
     <string name="background_image">Background image</string>

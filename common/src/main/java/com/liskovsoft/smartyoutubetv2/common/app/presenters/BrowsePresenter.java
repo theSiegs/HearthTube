@@ -349,6 +349,7 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
         initPinnedSections();
         initPinnedCallbacks();
         initPasswordSection();
+        initSignInSection();
     }
 
     private void sortSections() {
@@ -1218,6 +1219,16 @@ public class BrowsePresenter extends BasePresenter<BrowseView> implements Sectio
 
         mSections.clear();
         appendToSections(getContext().getString(R.string.header_notifications), R.drawable.icon_notification, new PasswordError(getContext()));
+    }
+
+    /** HearthTube: a kids profile with nobody signed in lists nothing (what YouTube lists signed out isn't supervised) */
+    private void initSignInSection() {
+        if (!com.liskovsoft.smartyoutubetv2.common.utils.LaunchGate.isClosed(getContext())) {
+            return;
+        }
+
+        mSections.clear();
+        appendToSections(getContext().getString(R.string.action_signin), R.drawable.icon_notification, new SignInError(getContext(), true));
     }
 
     private void createPinnedMapping(Video item) {

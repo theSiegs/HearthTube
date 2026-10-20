@@ -201,6 +201,32 @@ public class ProfileLinkData {
         mPrefs.edit().remove(LINK_PREFIX + profileName).apply();
     }
 
+    /** The account was removed from the app: every profile linked to it has no link now */
+    public void removeLinksTo(@Nullable Account account) {
+        if (account == null || account.getName() == null) {
+            return;
+        }
+
+        SharedPreferences.Editor editor = mPrefs.edit();
+        for (String key : linksTo(mPrefs.getAll(), account.getName())) {
+            editor.remove(key);
+        }
+        editor.apply();
+    }
+
+    /** The "link:<profile>" keys that hold this account's name */
+    static List<String> linksTo(java.util.Map<String, ?> saved, String accountName) {
+        List<String> keys = new ArrayList<>();
+
+        for (java.util.Map.Entry<String, ?> entry : saved.entrySet()) {
+            if (entry.getKey().startsWith(LINK_PREFIX) && accountName.equals(entry.getValue())) {
+                keys.add(entry.getKey());
+            }
+        }
+
+        return keys;
+    }
+
     /**
      * Links are saved under Hearth's lasting profile key ("user:11", {@link
      * com.liskovsoft.smartyoutubetv2.common.utils.HearthProfile#key}), so a renamed Google TV profile keeps its

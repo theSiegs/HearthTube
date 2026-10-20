@@ -64,7 +64,8 @@ public class SearchPresenter extends BasePresenter<SearchView> implements VideoG
     public void onViewInitialized() {
         super.onViewInitialized();
 
-        if (!AccountsData.instance(getContext()).isPasswordAccepted()) {
+        // HearthTube: nothing is searched in a kids profile with nobody signed in
+        if (!AccountsData.instance(getContext()).isPasswordAccepted() || com.liskovsoft.smartyoutubetv2.common.utils.LaunchGate.refuse(getContext())) {
             getView().finishReally();
             return;
         }
@@ -169,6 +170,11 @@ public class SearchPresenter extends BasePresenter<SearchView> implements VideoG
     }
 
     private void loadSearchResult(String searchText) {
+        if (com.liskovsoft.smartyoutubetv2.common.utils.LaunchGate.refuse(getContext())) {
+            getView().finishReally();
+            return;
+        }
+
         Log.d(TAG, "Start search for '%s'", searchText);
 
         disposeActions();
@@ -293,6 +299,10 @@ public class SearchPresenter extends BasePresenter<SearchView> implements VideoG
     }
 
     private void startSearch(String searchText, boolean isVoice, boolean startPlay) {
+        if (com.liskovsoft.smartyoutubetv2.common.utils.LaunchGate.refuse(getContext())) { // no search screen, no playing the first hit
+            return;
+        }
+
         mSearchText = searchText;
         mIsVoice = isVoice;
         mStartPlay = startPlay;

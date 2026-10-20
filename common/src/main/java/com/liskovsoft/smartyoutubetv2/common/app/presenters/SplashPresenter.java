@@ -18,7 +18,8 @@ import com.liskovsoft.smartyoutubetv2.common.app.presenters.base.BasePresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.AccountSelectionPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.BootDialogPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.views.BrowseView;
-import com.liskovsoft.smartyoutubetv2.common.app.views.ProfilePickerView;
+import com.liskovsoft.smartyoutubetv2.common.utils.LaunchGate;
+import com.liskovsoft.smartyoutubetv2.common.utils.ParentGate;
 import com.liskovsoft.smartyoutubetv2.common.app.views.SplashView;
 import com.liskovsoft.smartyoutubetv2.common.app.views.ViewManager;
 import com.liskovsoft.smartyoutubetv2.common.misc.GDriveBackupWorker;
@@ -164,13 +165,19 @@ public class SplashPresenter extends BasePresenter<SplashView> {
             return;
         }
 
+        // A kids profile asks whatever opened the app (LaunchGate); an adult's link plays first
+        boolean ask = LaunchGate.decide(ParentGate.isKidsProfile(getContext()), false, ProfilePickerPresenter.isDeepLinkIntent(intent))
+                == LaunchGate.Decision.ASK;
+
         com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager.instance().loadAccounts(accounts -> {
+            if (!ask) {
+                return;
+            }
+
             if (accounts == null || accounts.isEmpty()) {
-                if (!ProfilePickerPresenter.isDeepLinkIntent(intent)) {
-                    ProfilePickerPresenter.instance(getContext()).showWelcomeIfNeeded();
-                }
+                ProfilePickerPresenter.instance(getContext()).showWelcomeIfNeeded();
             } else {
-                getViewManager().startView(ProfilePickerView.class);
+                ProfilePickerPresenter.instance(getContext()).openPicker(accounts);
             }
         });
     }
@@ -182,7 +189,7 @@ public class SplashPresenter extends BasePresenter<SplashView> {
             // The picker fully replaces the native dialog, warm launches included.
             // The activity itself attaches as the ProfilePickerPresenter's view and triggers
             // show() once it's created - same relationship as SplashActivity/SplashPresenter.
-            getViewManager().startView(ProfilePickerView.class);
+            ProfilePickerPresenter.instance(getContext()).openPicker(getSignInService().getAccounts());
         }
     }
 
@@ -271,6 +278,17 @@ public class SplashPresenter extends BasePresenter<SplashView> {
         mIntentChain.add(intent -> {
             if (com.liskovsoft.smartyoutubetv2.common.app.presenters.settings.SettingsDeepLink.isOpenSettings(intent)) {
                 com.liskovsoft.smartyoutubetv2.common.app.presenters.settings.SettingsDeepLink.open(getContext(), intent);
+                return true;
+            }
+
+            return false;
+        });
+
+        // HearthTube: a kids profile with nobody signed in opens nothing (a link, a cast, a search, Watch Next): the
+        // welcome asks for a parent to sign in
+        mIntentChain.add(intent -> {
+            if (LaunchGate.isClosed(getContext())) {
+                getViewManager().startDefaultView();
                 return true;
             }
 

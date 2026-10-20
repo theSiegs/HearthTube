@@ -103,7 +103,10 @@ public class SignInFragment extends GuidedStepSupportFragment implements SignInV
                 .title(getString(R.string.login_from_browser))
                 .build();
         actions.add(login);
-        actions.add(openBrowser);
+        // HearthTube: a kid has no browser to sign in with (the phone hides it too)
+        if (!com.liskovsoft.smartyoutubetv2.common.utils.ParentGate.isKidsProfile(getContext())) {
+            actions.add(openBrowser);
+        }
     }
 
     @Override
