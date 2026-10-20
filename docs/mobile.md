@@ -116,7 +116,7 @@ How it is put together:
 | `ui/KidGate` | "Kids mode and nobody signed in": every video screen asks it |
 
 Shared pieces added for it in `common`: `KidsDecision` and `KidsMode` (is this a kids device), `LocalAllowance` (the
-daily limit without Hearth), the signed-out rule in `KidsRefused`, and `MotherActivity.initDpi()` made overridable
+daily limit without Hearth; the day never goes back or skips ahead when the phone's date is changed), the signed-out rule in `KidsRefused`, and `MotherActivity.initDpi()` made overridable
 (the TV's fixed-width scaling is wrong on a phone).
 
 ## Open

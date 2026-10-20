@@ -54,6 +54,14 @@ versions up to 7:
 
 HearthTube tells Hearth how long videos played (milliseconds only), for the daily limit.
 
+When Hearth is silent (suspended, older than contract 6, or in a kids profile whose Hearth agent isn't connected), the
+limit doesn't lapse: HearthTube keeps the last allowance Hearth gave each profile, with the time of that check, and
+counts it down itself for the rest of that calendar day. At zero it refuses. Time played meanwhile is not forgotten:
+Hearth gets the full figure, ten minutes per report, when it is back. A kid Hearth never gave a limit for has none,
+except a limit a parent set on the phone. The bedtime lock needs Hearth and lapses with it. Without Hearth, the day for
+the countdown and the phone's own limit never goes back, and a changed device date is ignored while the phone stays
+on (a reboot with a later date is taken as a new day).
+
 **Opening HearthTube's settings from another app:** start the action
 `com.thesiegs.hearthtube.action.OPEN_SETTINGS`, optionally with a String extra `section`: `general`, `player`,
 `accounts`, `blocked_words` or `about`. Without one, or with an unknown one, the main settings menu opens. Kids

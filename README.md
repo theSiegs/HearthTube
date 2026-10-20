@@ -30,6 +30,8 @@
 **With the Hearth launcher**
 - Each person's own YouTube account. Switch profiles on the TV and HearthTube switches account.
 - A daily YouTube time limit for each kid, and an optional bedtime lock with Home Assistant.
+  If Hearth goes quiet (suspended, or not connected in a kid's profile), HearthTube keeps counting down the last limit it
+  was given for the rest of the day, and stops at zero. The bedtime lock needs Hearth.
 - Family Link's screen time still applies.
 - Hearth installs HearthTube on every profile and keeps it up to date.
 
