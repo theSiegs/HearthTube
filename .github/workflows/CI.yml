@@ -25,19 +25,17 @@ jobs:
       - name: Grant Gradle permissions
         run: chmod +x gradlew
 
-      # HearthTube's own unit tests. ScreensaverManagerTest and SuggestionsControllerTest are SmartTube's and fail
-      # under Robolectric, so they're not listed. (Run separately from the build: a "Ststable" task name next to a
-      # hearthtube task pulls in a plugin the hearthtube variant doesn't use.)
+      # All of :common's unit tests. SmartTube's ScreensaverManagerTest and SuggestionsControllerTest fail under
+      # Robolectric and are excluded in common/build.gradle. (Run separately from the build: a "Ststable" task name
+      # next to a hearthtube task pulls in a plugin the hearthtube variant doesn't use.)
       - name: Unit tests
-        run: >
-          ./gradlew :common:testStstableDebugUnitTest
-          --tests '*.utils.*Test'
-          --tests '*.prefs.*Test'
-          --tests '*.app.presenters.*Test'
-          --tests '*.misc.BackupArchiveImporterTest'
+        run: ./gradlew :common:testStstableDebugUnitTest
 
       - name: Lint (shared module)
         run: ./gradlew :common:lintStstableRelease
+
+      - name: Lint (TV app)
+        run: ./gradlew :smarttubetv:lintHearthtubeRelease
 
       - name: Build HearthTube (debug)
         run: ./gradlew :smarttubetv:assembleHearthtubeDebug

@@ -28,6 +28,7 @@ import com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager;
 import com.liskovsoft.smartyoutubetv2.common.misc.StreamReminderService;
 import com.liskovsoft.smartyoutubetv2.common.prefs.AccountsData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.GeneralData;
+import com.liskovsoft.smartyoutubetv2.common.prefs.RemovedSettingsReset;
 import com.liskovsoft.smartyoutubetv2.common.proxy.ProxyManager;
 import com.liskovsoft.smartyoutubetv2.common.utils.IntentExtractor;
 import com.liskovsoft.smartyoutubetv2.common.utils.SimpleEditDialog;
@@ -80,6 +81,9 @@ public class SplashPresenter extends BasePresenter<SplashView> {
         if (getView() == null) {
             return;
         }
+
+        // Before the master password check below: a password with no switch left to clear it must not lock anyone out
+        RemovedSettingsReset.runOnce(getContext());
 
         Utils.cancelFinishTheApp(getContext());
 
