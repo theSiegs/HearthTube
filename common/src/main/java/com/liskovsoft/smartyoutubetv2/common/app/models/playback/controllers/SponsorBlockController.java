@@ -20,6 +20,7 @@ import com.liskovsoft.smartyoutubetv2.common.app.presenters.AppDialogPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.settings.SponsorBlockSettingsPresenter;
 import com.liskovsoft.smartyoutubetv2.common.prefs.SponsorBlockData;
 import com.liskovsoft.sharedutils.rx.RxHelper;
+import com.liskovsoft.smartyoutubetv2.common.utils.ParentGate;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 import com.liskovsoft.youtubeapi.service.YouTubeServiceManager;
 import io.reactivex.Observable;
@@ -153,11 +154,12 @@ public class SponsorBlockController extends BasePlayerController {
     @Override
     public void onButtonLongClicked(int buttonId, int buttonState) {
         if (buttonId == R.id.action_content_block) {
-            SponsorBlockSettingsPresenter.instance(getContext()).show(() -> {
+            // Its settings change what is skipped: in a kids profile only with a parent's PIN
+            ParentGate.run(getContext(), () -> SponsorBlockSettingsPresenter.instance(getContext()).show(() -> {
                 if (getPlayer() != null) {
                     onVideoLoaded(getVideo());
                 }
-            });
+            }));
         }
     }
 

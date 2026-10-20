@@ -27,6 +27,10 @@
     <application
         android:icon="@drawable/hearthtube_icon"
         android:banner="@drawable/hearthtube_banner"
-        tools:replace="android:icon,android:banner">
+        android:usesCleartextTraffic="false"
+        tools:replace="android:icon,android:banner,android:usesCleartextTraffic">
+        <!-- A file manager's "open with" or "share" of a .zip must not replace the settings, PIN and account without a
+             parent (a kids profile has no gate there); restoring stays in Settings → Backup and restore -->
+        <activity android:name="com.liskovsoft.smartyoutubetv2.common.misc.BackupReceiverActivity" tools:node="remove"/>
     </application>
 </manifest>
