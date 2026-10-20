@@ -96,13 +96,8 @@
             android:exported="false"
             android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation|keyboardHidden" />
 
-        <!-- Not for a kid's phone: the TV app's boot receiver, the zip restore that anything could send a file to,
-             and the TV search and channels from the Leanback helper -->
+        <!-- Not for a kid's phone: the TV app's boot receiver and the zip restore that anything could send a file to -->
         <receiver android:name="com.liskovsoft.smartyoutubetv2.common.misc.RemoteControlReceiver" tools:ignore="MissingClass" tools:node="remove" />
         <activity android:name="com.liskovsoft.smartyoutubetv2.common.misc.BackupReceiverActivity" tools:ignore="MissingClass" tools:node="remove" />
-        <activity android:name="com.liskovsoft.leanbackassistant.search.SearchableActivity" tools:ignore="MissingClass" tools:node="remove" />
-        <provider android:name="com.liskovsoft.leanbackassistant.search.VideoContentProvider" tools:ignore="MissingClass"
-                  android:authorities="org.smarttube" tools:node="remove" />
-        <receiver android:name="com.liskovsoft.leanbackassistant.channels.UpdateChannelsReceiver" tools:ignore="MissingClass" tools:node="remove" />
     </application>
 </manifest>

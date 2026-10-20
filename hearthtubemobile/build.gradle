@@ -47,8 +47,8 @@ android {
 
     defaultConfig {
         applicationId "com.thesiegs.hearthtube.mobile"
-        // The kids check (ParentGate.isKidsProfile) answers "no" below API 24, and Family Link's tools need it anyway
-        minSdkVersion 24
+        // Android 8+, as the TV app
+        minSdkVersion 26
         targetSdkVersion project.properties.compileSdkVersion
         // The same version as the TV app (a release date; its versionCode rises with every release), built on the same
         // SmartTube, shown in About (common's smarttube_base_version). Only a higher versionCode is an update.

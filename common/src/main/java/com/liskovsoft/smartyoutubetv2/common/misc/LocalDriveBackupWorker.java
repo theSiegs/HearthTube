@@ -6,7 +6,7 @@ import android.os.Build.VERSION;
 import androidx.annotation.NonNull;
 import androidx.work.ExistingPeriodicWorkPolicy;
 import androidx.work.PeriodicWorkRequest;
-import com.liskovsoft.leanbackassistant.utils.SafeWorkManager;
+import com.liskovsoft.smartyoutubetv2.common.utils.SafeWorkManager;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 

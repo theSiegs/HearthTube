@@ -5,7 +5,6 @@ import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
-import android.os.Build.VERSION;
 
 import com.liskovsoft.sharedutils.helpers.MessageHelpers;
 import com.liskovsoft.smartyoutubetv2.common.R;
@@ -241,10 +240,6 @@ public final class ParentGate {
             return true; // can't tell who is there: treat as a kid (filters stay on, accounts stay locked)
         }
 
-        if (VERSION.SDK_INT < 24) {
-            return false;
-        }
-
         // Asked many times per screen, and each answer can take a provider query and package scans: keep it a few
         // seconds (a profile switch restarts the app anyway)
         long now = android.os.SystemClock.elapsedRealtime();
@@ -312,10 +307,6 @@ public final class ParentGate {
 
     /** Restrictions Family Link puts on a supervised user, whatever the parent allows (see {@link SupervisionRestrictions}) */
     private static boolean isSupervisedUser(Context context) {
-        if (VERSION.SDK_INT < 21) { // UserManager.getUserRestrictions needs API 18; HearthTube runs on 21+
-            return false;
-        }
-
         try {
             android.os.UserManager users = (android.os.UserManager) context.getSystemService(Context.USER_SERVICE);
             android.os.Bundle restrictions = users != null ? users.getUserRestrictions() : null;

@@ -247,7 +247,7 @@ public class HearthProfile {
         for (String hearth : HEARTH_PACKAGES) {
             try {
                 android.content.pm.ApplicationInfo info = context.getPackageManager().getApplicationInfo(hearth, 0);
-                if (android.os.Build.VERSION.SDK_INT < 24 || (info.flags & android.content.pm.ApplicationInfo.FLAG_SUSPENDED) == 0) {
+                if ((info.flags & android.content.pm.ApplicationInfo.FLAG_SUSPENDED) == 0) {
                     return hearth;
                 }
                 if (suspended == null) {
@@ -308,7 +308,7 @@ public class HearthProfile {
 
     /** Hearth is installed but suspended by Google TV (a kids profile that hasn't approved it) */
     public static boolean isHearthSuspended(Context context) {
-        if (context == null || android.os.Build.VERSION.SDK_INT < 24) {
+        if (context == null) {
             return false;
         }
 
@@ -361,10 +361,6 @@ public class HearthProfile {
 
     /** The TV's owner (Android user 0), where Hearth itself runs; other Google TV profiles are other users */
     public static boolean isOwnerUser(Context context) {
-        if (android.os.Build.VERSION.SDK_INT < 23) {
-            return true;
-        }
-
         android.os.UserManager users = (android.os.UserManager) context.getSystemService(Context.USER_SERVICE);
         return users == null || users.isSystemUser();
     }

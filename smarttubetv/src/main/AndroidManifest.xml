@@ -75,8 +75,6 @@
         <!-- Not implemented yet( -->
         <!--<meta-data android:name="whisperplay" android:resource="@xml/whisperplay"/>-->
 
-        <!-- This activity's name used inside atv channels -->
-        <!-- More info: com.liskovsoft.leanbackassistant.utils.AppUtil -->
         <activity
             android:name="com.liskovsoft.smartyoutubetv2.tv.ui.main.SplashActivity"
             android:exported="true"

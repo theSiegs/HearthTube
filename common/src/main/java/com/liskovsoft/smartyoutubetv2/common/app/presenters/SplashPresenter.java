@@ -31,6 +31,7 @@ import com.liskovsoft.smartyoutubetv2.common.prefs.GeneralData;
 import com.liskovsoft.smartyoutubetv2.common.proxy.ProxyManager;
 import com.liskovsoft.smartyoutubetv2.common.utils.IntentExtractor;
 import com.liskovsoft.smartyoutubetv2.common.utils.SimpleEditDialog;
+import com.liskovsoft.smartyoutubetv2.common.utils.HomeChannelsCleanup;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 import com.liskovsoft.youtubeapi.service.YouTubeServiceManager;
 
@@ -151,7 +152,7 @@ public class SplashPresenter extends BasePresenter<SplashView> {
     private void runBackgroundTasks() {
         YouTubeServiceManager.instance().refreshCacheIfNeeded(); // warm up player engine
         enableHistoryIfNeeded();
-        Utils.updateChannels(getContext());
+        new Thread(() -> HomeChannelsCleanup.runOnce(getContext()), "HomeChannelsCleanup").start();
         GDriveBackupWorker.schedule(getContext());
         LocalDriveBackupWorker.schedule(getContext());
     }
@@ -449,10 +450,9 @@ public class SplashPresenter extends BasePresenter<SplashView> {
         ViewManager viewManager = getViewManager();
 
         boolean isRestartIntent = IntentExtractor.isRestartIntent(intent);
-        boolean isATVIntent = IntentExtractor.isATVIntent(intent);
-        boolean isExternalIntent = !isRestartIntent && !isATVIntent && !viewManager.isTopViewVisible();
+        boolean isExternalIntent = !isRestartIntent && !viewManager.isTopViewVisible();
 
-        viewManager.enablePlayerOnlyMode((isATVIntent && GeneralData.instance(getContext()).isReturnToLauncherEnabled()) || isExternalIntent);
+        viewManager.enablePlayerOnlyMode(isExternalIntent);
     }
 
     private void updateBadgeIcon() {

@@ -14,7 +14,8 @@ android {
     testOptions.unitTests.includeAndroidResources = true
 
     defaultConfig {
-        minSdkVersion project.properties.minSdkVersion
+        // Android 8+, as the apps (also what tvprovider, for Watch Next, asks for)
+        minSdkVersion 26
         targetSdkVersion project.properties.targetSdkVersion
         versionCode 10
         versionName "1.0"
@@ -61,6 +62,8 @@ dependencies {
     testImplementation 'org.robolectric:robolectric:' + robolectricVersion
 
     implementation project(':sharedutils')
+    // Player button ids (R.id.lb_control_*)
+    implementation project(':leanback-1.0.0')
     implementation project(':fragment-1.1.0')
     implementation project(':mediaserviceinterfaces')
     implementation project(':youtubeapi')
@@ -99,8 +102,6 @@ dependencies {
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:' + kotlinxVersion
 
     implementation 'com.jakewharton:process-phoenix:' + phoenixVersion
-
-    implementation project(':leanbackassistant')
 
     implementation project(':appupdatechecker2')
 

@@ -341,7 +341,4 @@ public class IntentExtractor {
         return intent != null && intent.getBooleanExtra(INCOGNITO_INTENT, false);
     }
 
-    public static boolean isATVIntent(Intent intent) {
-        return intent != null && intent.getBooleanExtra(GlobalConstants.ATV_INTENT, false);
-    }
 }

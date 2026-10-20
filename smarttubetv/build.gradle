@@ -200,8 +200,8 @@ android {
         // Personal build: "HearthTube" name/icon (src/hearthtube), installs next to the official app
         hearthtube {
             applicationId "com.thesiegs.hearthtube"
-            // Hearth-style drawables take their accent from the theme (?attr/hearthAccent): Android 5+
-            minSdkVersion 21
+            // Android 8+: the family's TVs and phones all run it, and the kids checks (profiles, suspended apps) need it
+            minSdkVersion 26
             targetSdkVersion project.properties.compileSdkVersion
             matchingFallbacks = ['ststable']
 

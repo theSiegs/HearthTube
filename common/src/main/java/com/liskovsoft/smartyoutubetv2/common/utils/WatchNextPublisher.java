@@ -6,7 +6,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
-import android.os.Build.VERSION;
 
 import androidx.tvprovider.media.tv.TvContractCompat;
 import androidx.tvprovider.media.tv.TvContractCompat.WatchNextPrograms;
@@ -42,7 +41,7 @@ public class WatchNextPublisher {
     }
 
     public static void publish(Context context, Video video, long positionMs, long durationMs) {
-        if (context == null || VERSION.SDK_INT < 26 || video == null || video.videoId == null
+        if (context == null || video == null || video.videoId == null
                 || video.isLive || video.isUpcoming || video.isShorts || durationMs <= 0) {
             return;
         }
@@ -111,7 +110,7 @@ public class WatchNextPublisher {
      * Takes every HearthTube video off Continue Watching (the setting was switched off).
      */
     public static void clearAll(Context context) {
-        if (context == null || VERSION.SDK_INT < 26) {
+        if (context == null) {
             return;
         }
 

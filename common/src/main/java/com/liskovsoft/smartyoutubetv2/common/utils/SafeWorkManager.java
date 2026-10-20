@@ -1,4 +1,4 @@
-package com.liskovsoft.leanbackassistant.utils;
+package com.liskovsoft.smartyoutubetv2.common.utils;
 
 import android.content.Context;
 
