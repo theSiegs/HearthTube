@@ -78,9 +78,6 @@ public class GeneralSettingsPresenter extends BasePresenter<Void> {
         // HearthTube: which sections show is Edit menu and tabs, in the side menu
         //appendEnabledSections(settingsPresenter);
         appendContextMenuItemsCategory(settingsPresenter);
-        appendHideContent(settingsPresenter);
-        BlockedWordsPresenter.appendSettingsButton(getContext(), settingsPresenter); // HearthTube
-        BlockedWordsPresenter.appendAiLabelsSwitch(getContext(), settingsPresenter); // HearthTube
         appendAppExitCategory(settingsPresenter);
         appendBackgroundPlaybackCategory(settingsPresenter);
         appendScreenDimmingCategory(settingsPresenter);
@@ -88,36 +85,6 @@ public class GeneralSettingsPresenter extends BasePresenter<Void> {
         appendMiscCategory(settingsPresenter);
 
         settingsPresenter.showDialog(getContext().getString(R.string.settings_general), mOnFinish);
-    }
-
-    private void appendHideContent(AppDialogPresenter settingsPresenter) {
-        List<OptionItem> options = new ArrayList<>();
-
-        options.add(UiOptionItem.from(getContext().getString(R.string.hide_mixes),
-                option -> mMediaServiceData.setContentHidden(MediaServiceData.CONTENT_MIXES, option.isSelected()),
-                mMediaServiceData.isContentHidden(MediaServiceData.CONTENT_MIXES)));
-
-        options.add(UiOptionItem.from(getContext().getString(R.string.hide_watched_from_watch_later),
-                option -> mMediaServiceData.setContentHidden(MediaServiceData.CONTENT_WATCHED_WATCH_LATER, option.isSelected()),
-                mMediaServiceData.isContentHidden(MediaServiceData.CONTENT_WATCHED_WATCH_LATER)));
-
-        options.add(UiOptionItem.from(getContext().getString(R.string.hide_watched_from_home),
-                option -> mMediaServiceData.setContentHidden(MediaServiceData.CONTENT_WATCHED_HOME, option.isSelected()),
-                mMediaServiceData.isContentHidden(MediaServiceData.CONTENT_WATCHED_HOME)));
-
-        options.add(UiOptionItem.from(getContext().getString(R.string.hide_watched_from_subscriptions),
-                option -> mMediaServiceData.setContentHidden(MediaServiceData.CONTENT_WATCHED_SUBSCRIPTIONS, option.isSelected()),
-                mMediaServiceData.isContentHidden(MediaServiceData.CONTENT_WATCHED_SUBSCRIPTIONS)));
-
-        options.add(UiOptionItem.from(getContext().getString(R.string.hide_streams),
-                option -> mMediaServiceData.setContentHidden(MediaServiceData.CONTENT_STREAMS_SUBSCRIPTIONS, option.isSelected()),
-                mMediaServiceData.isContentHidden(MediaServiceData.CONTENT_STREAMS_SUBSCRIPTIONS)));
-
-        options.add(UiOptionItem.from(getContext().getString(R.string.hide_upcoming),
-                option -> mMediaServiceData.setContentHidden(MediaServiceData.CONTENT_UPCOMING_SUBSCRIPTIONS, option.isSelected()),
-                mMediaServiceData.isContentHidden(MediaServiceData.CONTENT_UPCOMING_SUBSCRIPTIONS)));
-
-        settingsPresenter.appendCheckedCategory(getContext().getString(R.string.hide_unwanted_content), options);
     }
 
     private void appendContextMenuItemsCategory(AppDialogPresenter settingsPresenter) {

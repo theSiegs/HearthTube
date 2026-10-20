@@ -60,7 +60,6 @@ public class PlayerSettingsPresenter extends BasePresenter<Void> {
         appendPlaybackModeCategory(settingsPresenter);
         appendVideoPresetsCategory(settingsPresenter);
         appendPlayerButtonsCategory(settingsPresenter);
-        appendNetworkEngineCategory(settingsPresenter);
         appendVideoBufferCategory(settingsPresenter);
         appendVideoZoomCategory(settingsPresenter);
         appendVideoSpeedCategory(settingsPresenter);
@@ -78,9 +77,36 @@ public class PlayerSettingsPresenter extends BasePresenter<Void> {
         appendPixelRatioCategory(settingsPresenter);
         //appendPlayerExitCategory(settingsPresenter);
         appendSleepTimerCategory(settingsPresenter);
+        appendFrameRateButton(settingsPresenter);
+        appendSubtitlesButton(settingsPresenter);
         appendMiscCategory(settingsPresenter);
 
         settingsPresenter.showDialog(getContext().getString(R.string.settings_player), mOnFinish);
+    }
+
+    /** HearthTube Mobile: what applies to a phone's player (no remote-control buttons, no frame rate matching) */
+    public void showMobile() {
+        AppDialogPresenter settingsPresenter = AppDialogPresenter.instance(getContext());
+
+        appendPlaybackModeCategory(settingsPresenter);
+        appendVideoPresetsCategory(settingsPresenter);
+        appendVideoBufferCategory(settingsPresenter);
+        appendVideoSpeedCategory(settingsPresenter);
+        appendAudioLanguageCategory(settingsPresenter);
+        appendSubtitlesButton(settingsPresenter);
+
+        settingsPresenter.showDialog(getContext().getString(R.string.settings_player), mOnFinish);
+    }
+
+    /** Frame rate and subtitles are pages of their own, reached from the Player page (they were separate menu entries) */
+    private void appendFrameRateButton(AppDialogPresenter settingsPresenter) {
+        settingsPresenter.appendSingleButton(UiOptionItem.from(getContext().getString(R.string.settings_frame_rate),
+                option -> AutoFrameRateSettingsPresenter.instance(getContext()).show()));
+    }
+
+    private void appendSubtitlesButton(AppDialogPresenter settingsPresenter) {
+        settingsPresenter.appendSingleButton(UiOptionItem.from(getContext().getString(R.string.subtitle_category_title),
+                option -> SubtitleSettingsPresenter.instance(getContext()).show()));
     }
 
     private void appendOKButtonCategory(AppDialogPresenter settingsPresenter) {
@@ -319,11 +345,6 @@ public class PlayerSettingsPresenter extends BasePresenter<Void> {
 
     private void appendPlaybackModeCategory(AppDialogPresenter settingsPresenter) {
         OptionCategory category = AppDialogUtil.createPlaybackModeCategory(getContext());
-        settingsPresenter.appendCategory(category);
-    }
-
-    private void appendNetworkEngineCategory(AppDialogPresenter settingsPresenter) {
-        OptionCategory category = AppDialogUtil.createNetworkEngineCategory(getContext());
         settingsPresenter.appendCategory(category);
     }
 

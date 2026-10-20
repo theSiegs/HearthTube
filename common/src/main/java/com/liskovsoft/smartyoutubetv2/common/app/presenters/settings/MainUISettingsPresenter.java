@@ -45,12 +45,27 @@ public class MainUISettingsPresenter extends BasePresenter<Void> {
         return new MainUISettingsPresenter(context);
     }
 
+    /** HearthTube Mobile: just the accent color and the wallpaper (the TV's card and grid options don't apply on a phone) */
+    public void showLook(Runnable onChanged) {
+        AppDialogPresenter settingsPresenter = AppDialogPresenter.instance(getContext());
+
+        appendAccentColor(settingsPresenter);
+        appendWallpaper(settingsPresenter);
+
+        // The screens pick the new look up as they open: no "restart the app" needed, the caller opens them again
+        settingsPresenter.showDialog(getContext().getString(R.string.settings_look_and_layout), () -> {
+            if (mRestartApp) {
+                mRestartApp = false;
+                onChanged.run();
+            }
+        });
+    }
+
     public void show() {
         AppDialogPresenter settingsPresenter = AppDialogPresenter.instance(getContext());
 
         appendAccentColor(settingsPresenter);
         appendWallpaper(settingsPresenter);
-        appendShowShorts(settingsPresenter);
         appendTopButtonsCategory(settingsPresenter);
         // HearthTube: the Hearth look only (SmartTube's other schemes undo it); Accent color picks the color
         //appendColorScheme(settingsPresenter);
@@ -137,21 +152,6 @@ public class MainUISettingsPresenter extends BasePresenter<Void> {
         }
 
         settingsPresenter.appendRadioCategory(getContext().getString(R.string.wallpaper), options);
-    }
-
-    /**
-     * HearthTube: Shorts are hidden everywhere unless switched on here. Not offered in kids profiles (never Shorts there).
-     */
-    private void appendShowShorts(AppDialogPresenter settingsPresenter) {
-        if (com.liskovsoft.smartyoutubetv2.common.utils.ParentGate.isKidsProfile(getContext())) {
-            return;
-        }
-
-        settingsPresenter.appendSingleSwitch(UiOptionItem.from(getContext().getString(R.string.show_shorts),
-                getContext().getString(R.string.show_shorts_hint), option -> {
-                    com.liskovsoft.smartyoutubetv2.common.utils.KidsShorts.setShowShortsEnabled(getContext(), option.isSelected());
-                    mRestartApp = true;
-                }, com.liskovsoft.smartyoutubetv2.common.utils.KidsShorts.isShowShortsEnabled(getContext())));
     }
 
     private void appendTopButtonsCategory(AppDialogPresenter settingsPresenter) {
