@@ -165,6 +165,11 @@ public class UriBackgroundManager {
             return;
         }
 
+        if (com.liskovsoft.smartyoutubetv2.common.app.models.data.Video.BLACK_BACKGROUND.equals(uri)) {
+            showBackgroundColor(R.color.black);
+            return;
+        }
+
         int width = mMetrics.widthPixels;
         int height = mMetrics.heightPixels;
 

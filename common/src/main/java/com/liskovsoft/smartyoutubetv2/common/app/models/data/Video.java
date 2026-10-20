@@ -40,7 +40,8 @@ public final class Video {
     public static final long MAX_LIVE_DURATION_MS = 24 * 60 * 60 * 1_000;
     public static final float MIN_WATCHED_PERCENT = 10; // min value for immediately closed videos
     private static final int MAX_AUTHOR_LENGTH_CHARS = 20;
-    private static final String BLACK_PLACEHOLDER_URL = "https://via.placeholder.com/1280x720/000000/000000";
+    /** Not a web address: the player shows a plain black background (no image is fetched) */
+    public static final String BLACK_BACKGROUND = "hearthtube:black-background";
     public int id;
     public String title;
     public String deArrowTitle;
@@ -600,7 +601,7 @@ public final class Video {
     }
 
     public String getBackgroundUrl() {
-        return bgImageUrl != null ? bgImageUrl : BLACK_PLACEHOLDER_URL;
+        return bgImageUrl != null ? bgImageUrl : BLACK_BACKGROUND;
     }
 
     public boolean belongsToSameAuthorGroup() {

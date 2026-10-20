@@ -111,6 +111,11 @@ if (-not $DryRun) {
     if (git status --porcelain) {
         throw "Commit your changes first, so the release matches what's on GitHub."
     }
+    # The release is tagged on $branch but built from, and pushed with, the checked-out branch: they must be the same
+    $current = git branch --show-current
+    if ($current -ne $branch) {
+        throw "A release is cut from $branch, but this is $current. Switch with: git switch $branch"
+    }
 }
 
 $env:JAVA_HOME = "$env:USERPROFILE\dev\tools\jdk-17"

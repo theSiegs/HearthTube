@@ -38,6 +38,8 @@ tokens, saved in the TV's storage under `Android/media/com.thesiegs.hearthtube` 
 and other apps with storage access can read it. It is not encrypted and goes nowhere else. Delete it when you no
 longer need it. The parent PIN and blocked words are not in it. Opening a `.zip` from another app does not restore it:
 restoring is only done from the Backup screen.
+Android's own app backup (to Google's cloud, or by `adb backup`) is switched off for HearthTube, so its accounts and
+settings are not copied anywhere unless you make this backup yourself.
 
 ## On the TV, with Hearth
 
