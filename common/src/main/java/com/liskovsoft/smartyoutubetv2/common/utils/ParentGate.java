@@ -18,7 +18,10 @@ import java.util.List;
  * Keeps kids on their own YouTube account. In a Google TV kids profile, anything that changes the
  * account (picker, Accounts settings, sign in, pairing a profile) needs the parent PIN: Hearth's whenever Hearth
  * has one, so one PIN covers both apps, else HearthTube's own (Accounts settings). Account PINs don't count: a kid
- * knows their own. Without a parent PIN it's simply locked; a parent changes accounts from their own Google TV profile.
+ * knows their own. The person at the screen of a kids profile never chooses the PIN (see {@link ParentPinSource}):
+ * with Hearth there, a PIN comes from Hearth only, and a PIN of HearthTube's own is chosen only without Hearth and
+ * before any account is signed in (the parent's first setup), or in an adult's profile. Otherwise it stays locked; a
+ * parent changes accounts from their own Google TV profile. Wrong PINs are throttled like Hearth's.
  */
 public final class ParentGate {
     /** One PIN covers a few steps in a row (e.g. Accounts settings, then Sign in); playing a video locks again */
@@ -41,6 +44,13 @@ public final class ParentGate {
      * PIN (Back), or can't be checked.
      */
     public static void run(Context context, Runnable action, Runnable onCancel) {
+        if (context == null) { // can't tell who is there: stay locked
+            if (onCancel != null) {
+                onCancel.run();
+            }
+            return;
+        }
+
         if (!isLocked(context)) {
             action.run();
             return;
@@ -48,32 +58,37 @@ public final class ParentGate {
 
         ProfileLinkData links = ProfileLinkData.instance(context);
         HearthProfile hearth = HearthProfile.live(context, HearthProfile.queryHearth(context));
+        // On the phone the first parent signs in (and chooses the PIN) in kids mode: an account doesn't mean a PIN was set
+        boolean signedIn = !KidsMode.isMobileBuild(context) && KidsRefused.isSignedIn();
         Runnable ask;
 
-        if (hearth != null && hearth.hasParentPin) {
-            links.setUsingHearthPin(true);
-            ask = () -> askPin(context, hearthPinChecker(context), action, onCancel);
-        } else if (links.isUsingHearthPin()) {
-            if (isHearthSilent(context, hearth)) {
+        switch (ParentPinSource.decide(hearth != null, hearth != null && hearth.hasParentPin, links.isUsingHearthPin(),
+                HearthProfile.isGenuine(context), links.hasParentPin(), isKidsProfile(context), signedIn)) {
+            case HEARTH:
+                links.setUsingHearthPin(true);
+                ask = () -> askPin(context, hearthPinChecker(context), action, onCancel);
+                break;
+            case LOCAL:
+                ask = () -> askPin(context, localPinChecker(context), action, onCancel);
+                break;
+            case CREATE:
+                // Hearth's PIN went away for good (Hearth uninstalled) and HearthTube has none of its own: nobody is
+                // signed in yet, so this is the parent setting up
+                String message = links.isUsingHearthPin() ? context.getString(R.string.parent_pin_hearth_gone) : null;
+                links.setUsingHearthPin(false);
+                ask = () -> createPin(context, action, message, onCancel);
+                break;
+            case HEARTH_SILENT:
                 // Hearth is there but not answering (busy, restarting): its PIN can't be checked, and a new one
                 // can't be chosen either, or a kid could wait for this moment
-                MessageHelpers.showLongMessage(context, R.string.parent_pin_hearth_silent);
-                if (onCancel != null) {
-                    onCancel.run();
-                }
+                refuse(context, R.string.parent_pin_hearth_silent, onCancel);
                 return;
-            }
-
-            // Hearth's PIN went away for good (removed in Hearth, which takes that PIN, or Hearth uninstalled):
-            // HearthTube's own PIN from before is likely forgotten, so the parent chooses a new one right away
-            links.setUsingHearthPin(false);
-            links.setParentPin(null);
-            ask = () -> createPin(context, action, context.getString(R.string.parent_pin_hearth_gone), onCancel);
-        } else if (!links.hasParentPin()) {
-            // No PIN yet (a kid's own copy starts empty): the parent setting it up chooses one
-            ask = () -> createPin(context, action, null, onCancel);
-        } else {
-            ask = () -> askPin(context, links::checkParentPin, action, onCancel);
+            case SET_IN_HEARTH:
+                refuse(context, R.string.parent_pin_set_in_hearth, onCancel);
+                return;
+            default:
+                refuse(context, R.string.kids_profile_accounts_locked, onCancel);
+                return;
         }
 
         // The PIN screen belongs to the screen below an open settings panel and would show under it
@@ -103,7 +118,7 @@ public final class ParentGate {
                                 confirmed[0] = true;
                                 if (newPin.equals(again)) {
                                     ProfileLinkData.instance(context).setParentPin(newPin);
-                                    sUnlockedUntilMs = System.currentTimeMillis() + UNLOCK_MS;
+                                    sUnlockedUntilMs = android.os.SystemClock.elapsedRealtime() + UNLOCK_MS;
                                     Utils.post(action);
                                 } else {
                                     Utils.post(() -> createPin(context, action, context.getString(R.string.pin_mismatch), onCancel));
@@ -142,12 +157,23 @@ public final class ParentGate {
         };
     }
 
-    /**
-     * Hearth is installed and genuine but didn't answer. (Not installed, or answering that it has no PIN, are both
-     * for good: the first takes an adult uninstalling it, the second Hearth's own PIN.)
-     */
-    private static boolean isHearthSilent(Context context, HearthProfile hearth) {
-        return hearth == null && HearthProfile.isGenuine(context) == Boolean.TRUE;
+    /** Stays locked: says why, and counts as the PIN screen left without the PIN */
+    private static void refuse(Context context, int messageId, Runnable onCancel) {
+        MessageHelpers.showLongMessage(context, messageId);
+        if (onCancel != null) {
+            onCancel.run();
+        }
+    }
+
+    /** HearthTube's own PIN, throttled like Hearth's: 5 wrong tries, then a minute's wait */
+    private static PinChecker localPinChecker(Context context) {
+        return pin -> {
+            int result = ProfileLinkData.instance(context).verifyParentPin(pin);
+            if (result > 0) {
+                MessageHelpers.showMessage(context, R.string.parent_pin_wait, result);
+            }
+            return result == ProfileLinkData.PIN_OK;
+        };
     }
 
     private static void askPin(Context context, PinChecker checker, Runnable action, Runnable onCancel) {
@@ -159,7 +185,7 @@ public final class ParentGate {
                 pin -> {
                     if (checker.check(pin)) {
                         passed[0] = true;
-                        sUnlockedUntilMs = System.currentTimeMillis() + UNLOCK_MS;
+                        sUnlockedUntilMs = android.os.SystemClock.elapsedRealtime() + UNLOCK_MS;
                         Utils.post(action); // after the PIN screen closes
                         return true;
                     }
@@ -191,19 +217,19 @@ public final class ParentGate {
             return;
         }
 
-        askPin(context, links::checkParentPin, action, null);
+        askPin(context, localPinChecker(context), action, null);
     }
 
     /** A parent entered the PIN in the last few minutes */
     public static boolean isUnlocked() {
-        return System.currentTimeMillis() <= sUnlockedUntilMs;
+        return android.os.SystemClock.elapsedRealtime() <= sUnlockedUntilMs;
     }
 
     /**
      * A kids profile that hasn't been unlocked by a parent just now.
      */
     public static boolean isLocked(Context context) {
-        return System.currentTimeMillis() > sUnlockedUntilMs && isKidsProfile(context);
+        return !isUnlocked() && isKidsProfile(context);
     }
 
     /**
@@ -211,7 +237,11 @@ public final class ParentGate {
      * profile suspends every app a parent hasn't approved; adult profiles suspend none).
      */
     public static boolean isKidsProfile(Context context) {
-        if (context == null || VERSION.SDK_INT < 24) {
+        if (context == null) {
+            return true; // can't tell who is there: treat as a kid (filters stay on, accounts stay locked)
+        }
+
+        if (VERSION.SDK_INT < 24) {
             return false;
         }
 

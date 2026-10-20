@@ -69,6 +69,9 @@ adb shell am start -a com.thesiegs.hearthtube.action.OPEN_SETTINGS --es section 
   blocked-word list. Adults share the TV owner's copy.
 - A kid signed in to their own supervised account only plays what YouTube allows that account. When YouTube refuses a
   video, HearthTube doesn't fetch it another way.
+- The parent PIN is Hearth's when Hearth has one. Without it, a kids profile can't choose a PIN: HearthTube's own is
+  chosen only without Hearth and before any account is signed in, or in an adult's profile. Five wrong tries lock
+  checks for a minute.
 - Refused videos close quietly and leave the rows. Only a video opened from a link or a cast shows a short reason.
 
 ## Building
