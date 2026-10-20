@@ -23,6 +23,8 @@ import com.liskovsoft.smartyoutubetv2.common.utils.ParentGate;
 
 public class YTSignInPresenter extends SignInPresenter {
     private static final String TAG = YTSignInPresenter.class.getSimpleName();
+    /** Lets the sign-in screen close before the parent's account list opens */
+    private static final long CHOICE_DELAY_MS = 500;
     private static final String SIGN_IN_URL = "https://yt.be/activate"; // 18+, no search history
     private static final String QR_SIGN_IN_URL = "https://youtube.com/qr/activate/";
     //private static final String SIGN_IN_URL = "https://youtube.com/tv/activate"; // 18+, no search history
@@ -152,6 +154,19 @@ public class YTSignInPresenter extends SignInPresenter {
             return;
         }
 
+        // A kid's profile with several accounts (one Google sign-in can add several channels): the parent, who just
+        // passed the PIN, chooses; the app picks none, not even the first
+        if (ProfilePickerPresenter.usesOneAccount(context) && accounts != null && accounts.size() > 1) {
+            Account selected = mService.getSignInService().getSelectedAccount();
+            if (selected != null && !mAccountsBefore.contains(selected.getName())) {
+                mService.getSignInService().selectAccount(null); // the account manager picked it by itself
+            }
+
+            Utils.postDelayed(() -> AccountSelectionPresenter.instance(context).showParentChoice(() -> finishSignIn(context,
+                    mService.getSignInService().getSelectedAccount())), CHOICE_DELAY_MS);
+            return;
+        }
+
         AccountSelectionPresenter.instance(context).selectAccount(added);
 
         // The profile's account from now on, when it has none yet. Only in the owner's user, where adults share the app
@@ -162,8 +177,15 @@ public class YTSignInPresenter extends SignInPresenter {
             links.setLink(profile.key(), added);
         }
 
+        finishSignIn(context, added);
+    }
+
+    private static void finishSignIn(Context context, Account account) {
         AccountsData.instance(context).setPasswordAccepted(true);
         BrowsePresenter.instance(context).updateSections();
-        MessageHelpers.showMessage(context, context.getString(R.string.signed_in_as, added.getName()));
+
+        if (account != null) {
+            MessageHelpers.showMessage(context, context.getString(R.string.signed_in_as, account.getName()));
+        }
     }
 }

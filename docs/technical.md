@@ -69,10 +69,14 @@ Two situations, two rules (`ProfileFollowRule`, applied by `ProfilePickerPresent
 
 - **A kid's profile** (a Google TV profile that is its own Android user, or a supervised or kids-mode phone, decided
   by `ParentGate.isKidsProfile`, with or without Hearth). One account is the normal case. HearthTube never shows a
-  chooser and writes no links: the selected account stays, else the first is selected. Nobody signed in is the
+  chooser and writes no links: the selected account stays, else the only account is selected. Nobody signed in is the
   "Ask a parent to sign in" welcome. Adding or changing an account stays behind the parent PIN. More than one account
-  can still happen (a parent signs in twice, or one Google account has several channels, which YouTube lists as
-  accounts); the kid stays on the selected one and a parent changes it in the PIN-protected Accounts page.
+  can happen (a parent signs in twice, or one Google account has several channels, which YouTube lists as accounts).
+  The app never picks one for the kid: right after a sign-in that leaves several accounts, the parent (already past the
+  PIN) gets a list and what they pick is selected. With several accounts and none selected (the selected one was
+  removed, say) a kid's profile is back at "Ask a parent to sign in", whose button leads a parent, after the PIN, to
+  that list. Changing it later: sign out and in again, or the PIN-protected Accounts page. The "Follow Google TV
+  profile" switch is not shown in a kid's profile.
 - **The TV owner's user**, shared by adults who each have their own Google TV profile. With Hearth, the profile is
   linked to an account under Hearth's lasting profile key. No link: the account named like the profile's first name
   (not one another profile is linked to), with a short message; else the picker, which offers the accounts no other
@@ -81,7 +85,9 @@ Two situations, two rules (`ProfileFollowRule`, applied by `ProfilePickerPresent
   usual SmartTube launch applies (the account dialog at boot, if turned on).
 
 Links live in `hearth_profile_links` as `link:<key>`; removing an account clears the links to it. Older versions
-also saved `kids:<key>` flags and kids profiles' links; nothing reads them now and they are left as they are.
+also saved `kids:<key>` flags and links for kids profiles. A one-time cleanup (flag `kids_profile_links_purged` in
+`hearthtube_migrations`) removes the `kids:` flags and the links of kids profiles; in a kid's own copy that is every
+link and remembered profile name. The parent PIN and the other settings are not touched.
 
 ## Kids profiles
 

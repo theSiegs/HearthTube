@@ -15,8 +15,9 @@ import java.util.List;
  * <ul>
  * <li><b>One-account profile</b> (a kid's profile: a Google TV profile that is its own Android user, or a kids phone).
  * One account is the normal case. Nothing is asked and no link is written: the account that is selected stays, else
- * the first one is selected. A second account (a parent signed in two, or one Google account with several channels)
- * is the parent's to sort out in the PIN-protected Accounts page; the kid never gets a chooser.</li>
+ * the only one is selected. With several accounts and none selected (a parent signed in two, or one Google account
+ * has several channels) the app never picks one: it is the "Ask a parent to sign in" state, and the parent chooses
+ * (right after signing in, or in the PIN-protected Accounts page). The kid never gets a chooser.</li>
  * <li><b>The owner's user</b>, shared by adults who each have their own Google TV profile. The profile (Hearth's
  * lasting key) is linked to an account: use that one; else the account named like the profile's first name, if just
  * one is; else ask in the picker, which offers the accounts no other profile watches with, and "Sign in". A link
@@ -31,7 +32,9 @@ public final class ProfileFollowRule {
         /** Carry on with {@link Decision#account} */
         USE_ACCOUNT,
         /** Ask in the picker (it offers the accounts for this profile, see {@link #offered}) */
-        ASK
+        ASK,
+        /** A kid's profile with several accounts and none selected: nothing opens until a parent chooses one */
+        ASK_PARENT
     }
 
     public static final class Decision {
@@ -60,6 +63,10 @@ public final class ProfileFollowRule {
 
         static Decision use(Account account, boolean link, boolean guessed) {
             return new Decision(Kind.USE_ACCOUNT, account, link, guessed, false);
+        }
+
+        static Decision askParent() {
+            return new Decision(Kind.ASK_PARENT, null, false, false, false);
         }
 
         static Decision ask(boolean deselect) {
@@ -91,7 +98,12 @@ public final class ProfileFollowRule {
 
         if (oneAccountProfile) {
             Account keep = find(accounts, selected);
-            return Decision.use(keep != null ? keep : accounts.get(0), false, false);
+
+            if (keep != null) {
+                return Decision.use(keep, false, false);
+            }
+
+            return accounts.size() == 1 ? Decision.use(accounts.get(0), false, false) : Decision.askParent();
         }
 
         if (!followEnabled || hearthKey == null) {

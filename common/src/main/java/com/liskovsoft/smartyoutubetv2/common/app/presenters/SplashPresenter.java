@@ -176,6 +176,8 @@ public class SplashPresenter extends BasePresenter<SplashView> {
 
             if (accounts == null || accounts.isEmpty()) {
                 ProfilePickerPresenter.instance(getContext()).showWelcomeIfNeeded();
+            } else if (ParentGate.isKidsProfile(getContext())) {
+                ProfilePickerPresenter.instance(getContext()).askToSignIn(); // a parent chooses, never a chooser for a kid
             } else {
                 ProfilePickerPresenter.instance(getContext()).openPicker(accounts);
             }

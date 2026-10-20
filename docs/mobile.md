@@ -43,8 +43,9 @@ the same way.
 - **In kids mode, nobody signed in means nothing to see.** The home screen, search results and channel pages stay
   empty ("Ask a parent to sign in"), and nothing plays, including a video opened from a link. What YouTube lists
   signed out isn't supervised. The TV build follows the same rule now. A kid's phone never shows an account
-  chooser: the selected account stays, else the first is selected (a second account is a parent's to sort out in
-  Settings, behind the PIN).
+  chooser and never picks one for the kid: the selected account stays, else the only account is selected. After a
+  parent signs in and that leaves several accounts, the parent gets a list and picks; with several and none selected,
+  the screens say "Ask a parent to sign in" until a parent picks one in Settings (behind the PIN).
 - **The parent PIN.** In kids mode the first parent to open the Parent menu chooses it. It protects that menu,
   signing in, the PIN itself, and a video's long-press menu (subscribing, playlists, blocking channels and words).
   Outside kids mode none of this asks for a PIN.

@@ -29,7 +29,10 @@ public class ProfileLinkData {
     private static final String USING_HEARTH_PIN_KEY = "using_hearth_pin";
     /** Gone: HearthTube has no guest. Removed from older installs. */
     private static final String GUEST_ENABLED_KEY = "guest_enabled";
-    // Older versions also saved "kids:<profile>" flags here. Nothing reads them any more; they are left alone.
+    /** Older versions saved "kids:<profile>" = true/false here. Nothing reads it; {@link #purgeKidsDataOnce} removes it. */
+    private static final String LEGACY_KIDS_PREFIX = "kids:";
+    private static final String MIGRATIONS_PREFS = "hearthtube_migrations";
+    private static final String KIDS_DATA_PURGED_KEY = "kids_profile_links_purged";
     /** "name:<key>" = the profile's name when last seen (links are saved under Hearth's lasting profile key) */
     private static final String NAME_PREFIX = "name:";
     /** A link to the guest, saved by older versions: treated as no link */
@@ -164,6 +167,51 @@ public class ProfileLinkData {
 
     public void removeLink(String profileName) {
         mPrefs.edit().remove(LINK_PREFIX + profileName).apply();
+    }
+
+    /**
+     * Once: removes what older versions kept for kids profiles, so no dead data stays. Safe on a fresh install and
+     * when run twice (the second run finds the flag in the migration prefs).
+     *
+     * @param oneAccountProfile this copy of the app is a kid's profile, where no link is used at all
+     */
+    public void purgeKidsDataOnce(boolean oneAccountProfile) {
+        SharedPreferences migrations = mContext.getSharedPreferences(MIGRATIONS_PREFS, Context.MODE_PRIVATE);
+
+        if (migrations.getBoolean(KIDS_DATA_PURGED_KEY, false)) {
+            return;
+        }
+
+        SharedPreferences.Editor editor = mPrefs.edit();
+        for (String key : obsoleteKeys(mPrefs.getAll(), oneAccountProfile)) {
+            editor.remove(key);
+        }
+        editor.apply();
+
+        migrations.edit().putBoolean(KIDS_DATA_PURGED_KEY, true).apply();
+    }
+
+    /**
+     * The saved keys nothing reads any more: every "kids:" flag, the links of profiles flagged as kids profiles, and,
+     * in a kid's own copy, every link and remembered name.
+     */
+    static List<String> obsoleteKeys(java.util.Map<String, ?> saved, boolean oneAccountProfile) {
+        List<String> keys = new ArrayList<>();
+
+        for (java.util.Map.Entry<String, ?> entry : saved.entrySet()) {
+            String key = entry.getKey();
+
+            if (key.startsWith(LEGACY_KIDS_PREFIX)) {
+                keys.add(key);
+            } else if (key.startsWith(LINK_PREFIX)
+                    && (oneAccountProfile || Boolean.TRUE.equals(saved.get(LEGACY_KIDS_PREFIX + key.substring(LINK_PREFIX.length()))))) {
+                keys.add(key);
+            } else if (oneAccountProfile && key.startsWith(NAME_PREFIX)) {
+                keys.add(key);
+            }
+        }
+
+        return keys;
     }
 
     /** The account was removed from the app: every profile linked to it has no link now */

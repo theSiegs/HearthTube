@@ -40,12 +40,17 @@ public class ProfilePickerPresenter extends BasePresenter<ProfilePickerView> {
     public static final int FOLLOW_PICKER = 2;
     /** A kid's profile: its account is selected, with no picker and no native dialog. Its account PIN, if any, still asks. */
     public static final int FOLLOW_KID = 3;
+    /** A kid's profile with several accounts and none selected: the "Ask a parent to sign in" state, no picker. */
+    public static final int FOLLOW_ASK_PARENT = 4;
     @SuppressLint("StaticFieldLeak")
     private static final String TAG = ProfilePickerPresenter.class.getSimpleName();
+    private static final long PARENT_CHOICE_DELAY_MS = 400;
     private static ProfilePickerPresenter sInstance;
     private final SignInService mSignInService;
     // Google TV profile the open picker links its pick to; null when picking just for now
     private String mLinkingProfile;
+    // The welcome is open in a kid's profile that has accounts but none selected: it lists none and a parent chooses
+    private boolean mParentChoice;
 
     private ProfilePickerPresenter(Context context) {
         super(context);
@@ -112,7 +117,7 @@ public class ProfilePickerPresenter extends BasePresenter<ProfilePickerView> {
 
     /**
      * A kid's profile: a Google TV kids profile (its own Android user), a supervised or kids-mode phone. Such a profile
-     * has one account, selected for it without a picker or any link; see {@link ProfileFollowRule}. The owner's user,
+     * has one account, selected for it without a picker or any link (several: a parent chooses); see {@link ProfileFollowRule}. The owner's user,
      * shared by adults, links a profile to an account instead.
      */
     public static boolean usesOneAccount(Context context) {
@@ -125,14 +130,17 @@ public class ProfilePickerPresenter extends BasePresenter<ProfilePickerView> {
      * to the active Google TV profile (as tracked by the Hearth launcher), else the one named like the profile, else
      * the picker, which opens for it. Deep links never open the picker nor take the selected account away.
      *
-     * @return {@link #FOLLOW_NONE}, {@link #FOLLOW_SWITCHED}, {@link #FOLLOW_PICKER} or {@link #FOLLOW_KID}
+     * @return {@link #FOLLOW_NONE}, {@link #FOLLOW_SWITCHED}, {@link #FOLLOW_PICKER}, {@link #FOLLOW_KID} or
+     * {@link #FOLLOW_ASK_PARENT}
      */
     public int followGoogleTvProfile(Intent intent) {
         mLinkingProfile = null;
+        mParentChoice = false;
         Context context = getContext();
         ProfileLinkData links = ProfileLinkData.instance(context);
         List<Account> accounts = mSignInService.getAccounts();
         boolean oneAccount = usesOneAccount(context);
+        links.purgeKidsDataOnce(oneAccount);
 
         // Links are saved under the profile's lasting key; the name is for guessing and showing
         HearthProfile profile = oneAccount || links.isFollowEnabled() ? HearthProfile.query(context) : null;
@@ -150,6 +158,10 @@ public class ProfilePickerPresenter extends BasePresenter<ProfilePickerView> {
 
         if (decision.kind == ProfileFollowRule.Kind.STANDARD) {
             return FOLLOW_NONE;
+        }
+
+        if (decision.kind == ProfileFollowRule.Kind.ASK_PARENT) {
+            return FOLLOW_ASK_PARENT;
         }
 
         if (decision.kind == ProfileFollowRule.Kind.ASK) {
@@ -220,12 +232,13 @@ public class ProfilePickerPresenter extends BasePresenter<ProfilePickerView> {
         // HearthTube: kids stay on their account
         ParentGate.run(getContext(), () -> {
             mLinkingProfile = null; // a switch for now; the Google TV profile's link stays
+            mParentChoice = false;
             getViewManager().startView(ProfilePickerView.class);
         });
     }
 
     public void show() {
-        List<Account> accounts = getVisibleAccounts();
+        List<Account> accounts = mParentChoice ? new ArrayList<>() : getVisibleAccounts();
         GlideIconFetcher.fetchDrawables(getContext(),
                 Helpers.map(accounts, Account::getAvatarImageUrl),
                 icons -> createAndShowView(accounts, icons));
@@ -348,6 +361,19 @@ public class ProfilePickerPresenter extends BasePresenter<ProfilePickerView> {
     }
 
     public void onAddAccountPicked() {
+        List<Account> accounts = mSignInService.getAccounts();
+
+        // A kid's profile with accounts but none chosen: the parent, past the PIN, chooses instead of signing in again
+        if (mParentChoice && accounts != null && !accounts.isEmpty()) {
+            ParentGate.run(getContext(), () -> {
+                mParentChoice = false;
+                closeView();
+                Utils.postDelayed(() -> AccountSelectionPresenter.instance(getContext()).showParentChoice(
+                        () -> BrowsePresenter.instance(getContext()).updateSections()), PARENT_CHOICE_DELAY_MS);
+            });
+            return;
+        }
+
         // The picker stays until sign-in really starts (after the parent PIN in a kids profile), so cancelling
         // the PIN leaves the welcome up rather than a signed-out Home. YTSignInPresenter closes it.
         YTSignInPresenter.instance(getContext()).start();
@@ -376,9 +402,9 @@ public class ProfilePickerPresenter extends BasePresenter<ProfilePickerView> {
     }
 
     /**
-     * A kids profile with nobody signed in was asked for something (see {@link
-     * com.liskovsoft.smartyoutubetv2.common.utils.LaunchGate}): the welcome. A kid never gets a chooser: with an account
-     * signed in, it is simply selected.
+     * A kids profile with nobody signed in (or accounts and none chosen) was asked for something (see {@link
+     * com.liskovsoft.smartyoutubetv2.common.utils.LaunchGate}): the welcome. A kid never gets a chooser and the app
+     * picks no account for them: with accounts, the welcome's button leads a parent, past the PIN, to the choice.
      */
     public void askToSignIn() {
         List<Account> accounts = mSignInService.getAccounts();
@@ -386,8 +412,11 @@ public class ProfilePickerPresenter extends BasePresenter<ProfilePickerView> {
         if (accounts == null || accounts.isEmpty()) {
             showWelcomeIfNeeded();
         } else {
-            selectFirstIfNone(accounts);
-            BrowsePresenter.instance(getContext()).updateSections(); // the Home was only asking for a sign-in
+            mLinkingProfile = null;
+            mParentChoice = true;
+            if (getViewManager().getActivity(ProfilePickerView.class) != null) {
+                getViewManager().startView(ProfilePickerView.class);
+            }
         }
     }
 
@@ -403,7 +432,10 @@ public class ProfilePickerPresenter extends BasePresenter<ProfilePickerView> {
             return true;
         }
 
-        selectFirstIfNone(accounts);
+        // A kid's profile never gets an automatic account (a parent chooses)
+        if (!usesOneAccount(getContext())) {
+            selectFirstIfNone(accounts);
+        }
 
         return false;
     }

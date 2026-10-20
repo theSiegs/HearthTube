@@ -84,21 +84,23 @@ public class ProfileFollowRuleTest {
     }
 
     @Test
-    public void aKidWithTwoAccountsAndNoneSelectedGetsTheFirst() {
+    public void aKidWithTwoAccountsAndNoneSelectedIsLeftToAParent() {
         Decision decision = kid(list(SAM, ALEX), null);
 
-        assertEquals(Kind.USE_ACCOUNT, decision.kind);
-        assertSame(SAM, decision.account);
+        assertEquals(Kind.ASK_PARENT, decision.kind); // never the first, never a chooser
+        assertNull(decision.account);
         assertFalse(decision.link);
+        assertFalse(decision.deselect);
     }
 
     @Test
-    public void aKidWhoseSelectedAccountIsGoneGetsTheFirst() {
-        assertSame(SAM, kid(list(SAM, JORDAN), ALEX).account);
+    public void aKidWhoseSelectedAccountIsGoneIsLeftToAParentWithSeveralAndGetsTheOnlyOneOtherwise() {
+        assertEquals(Kind.ASK_PARENT, kid(list(SAM, JORDAN), ALEX).kind);
+        assertSame(SAM, kid(list(SAM), ALEX).account);
     }
 
     @Test
-    public void aKidIsNeverAskedNorLinkedWhateverHearthOrALinkSays() {
+    public void aKidIsNeverAskedAPickerNorLinkedWhateverHearthOrALinkSays() {
         // Hearth names a profile, a link from an older version exists, a link opened the app, following is off
         Decision decision = ProfileFollowRule.decide(true, false, "user:10", "Sam", ALEX, list(SAM, ALEX), SAM, true, list(ALEX));
 
