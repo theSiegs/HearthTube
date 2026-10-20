@@ -108,6 +108,8 @@ public class SubPillStrip extends HorizontalScrollView {
             text.setTextSize(13);
             text.setSingleLine(true);
             text.setPadding(dp(12), dp(6), dp(12), dp(6));
+            text.setMinHeight(dp(48)); // a finger's size, whatever the font size
+            text.setGravity(Gravity.CENTER);
             HearthLook.chip(text, false);
             text.setOnClickListener(v -> mGrid.selectRow(index));
             return text;

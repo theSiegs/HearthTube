@@ -90,6 +90,18 @@ public final class HearthLook {
         view.setTextColor(shown ? Color.BLACK : Color.WHITE);
     }
 
+    /** The floating bottom bar or side rail: one dark glass capsule with a faint outline */
+    public static void glassBar(View view) {
+        view.setBackground(pill(view.getContext(), GLASS, GLASS_OUTLINE, 1));
+    }
+
+    /** One destination on that bar: the shown one is a white capsule with dark icon and text, the others sit on the glass */
+    public static void navItem(View item, boolean shown) {
+        noFocusSquare(item);
+        item.setBackground(shown ? pill(item.getContext(), Color.WHITE, 0, 0) : null);
+        item.setSelected(shown);
+    }
+
     /** A channel's circle (Subscriptions): a ring in the accent when it is the one shown, a faint one otherwise */
     public static void circleRing(View ring, boolean shown) {
         Context context = ring.getContext();

@@ -11,6 +11,9 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.BrowseSection;
@@ -26,6 +29,7 @@ import com.liskovsoft.smartyoutubetv2.common.prefs.HearthTabsData;
 import com.liskovsoft.smartyoutubetv2.common.utils.ParentGate;
 import com.thesiegs.hearthtube.mobile.R;
 import com.thesiegs.hearthtube.mobile.parent.MobileParentMenu;
+import com.thesiegs.hearthtube.mobile.search.MobileSearchActivity;
 import com.thesiegs.hearthtube.mobile.ui.HearthActivity;
 import com.thesiegs.hearthtube.mobile.ui.HearthLook;
 import com.thesiegs.hearthtube.mobile.ui.KidGate;
@@ -37,29 +41,45 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * HearthTube Mobile's home screen: the sections as chips across the top and the current section's videos below. The
- * shared {@link BrowsePresenter} drives it exactly as it drives the TV's browse screen.
+ * HearthTube Mobile's home screen. Four destinations on a bottom bar (a side rail on a tablet): Home, Subscriptions,
+ * Library and Search. Home holds the TV's sections as chips across the top (the person's tabs first), Subscriptions
+ * the channels' circles, Library its lists (what was watched, Watch later, the queue and the playlists), and Search
+ * opens the search screen. Below the chips, the current section's videos. The shared {@link BrowsePresenter} drives it
+ * exactly as it drives the TV's browse screen; {@link NavRules} decides what is on the bar.
  * <p>
- * A kid who isn't signed in sees no videos at all, not only no playback: what YouTube lists signed out isn't supervised.
+ * A kid who isn't signed in sees no videos at all, not only no playback, and no bar: what YouTube lists signed out
+ * isn't supervised.
  */
 public class MobileBrowseActivity extends HearthActivity implements BrowseView {
-    /** The TV's own tabs: a play queue, notifications, blocked channels and its settings tab (a parent has the Parent button) */
+    /** The TV's own tabs: notifications, blocked channels and its settings tab (a parent has the Settings button) */
     private static final int[] HIDDEN_SECTIONS = {
-            MediaGroup.TYPE_PLAYBACK_QUEUE, MediaGroup.TYPE_NOTIFICATIONS, MediaGroup.TYPE_BLOCKED_CHANNELS, MediaGroup.TYPE_SETTINGS
+            MediaGroup.TYPE_NOTIFICATIONS, MediaGroup.TYPE_BLOCKED_CHANNELS, MediaGroup.TYPE_SETTINGS
     };
+    private static final String STATE_NAV = "nav";
+    /** From this width the destinations are a rail on the start edge, not a bar along the bottom */
+    private static final int RAIL_MIN_WIDTH_DP = 600;
+    private static final int BAR_MARGIN_DP = 12;
 
     private final List<BrowseSection> mSections = new ArrayList<>();
     private final List<TextView> mChips = new ArrayList<>();
+    /** The chips in the row at the top now (those of the destination on show) */
+    private List<TextView> mShownChips = new ArrayList<>();
 
     private BrowsePresenter mPresenter;
+    private FrameLayout mRoot;
     private HorizontalScrollView mChipScroll;
     private TextView mParentButton;
     private LinearLayout mChipBar;
-    /** The section pills and, under them, the sub-pills; it floats over the list and slides away on a phone as it scrolls */
+    /** The section chips and, under them, the sub-pills; it floats over the list and slides away on a phone as it scrolls */
     private LinearLayout mHeader;
-    private boolean mHeaderHidden;
+    private NavBar mNav;
+    private ScrollHide mScrollHide = new ScrollHide(false, 0);
+    private Insets mInsets = Insets.NONE;
     private VideoGrid mGrid;
     private boolean mGated;
+    private NavState mState = new NavState();
+    /** The section the saved state had on show: picked again once the presenter has listed the sections */
+    private int mRestoreSectionId = -1;
     /** A selection asked for before the chips were there (the presenter picks the start section first) */
     private int mPendingSelect = -1;
     private int mShownSectionId = -1;
@@ -68,11 +88,23 @@ public class MobileBrowseActivity extends HearthActivity implements BrowseView {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        if (savedInstanceState != null) {
+            mState = NavState.decode(savedInstanceState.getString(STATE_NAV));
+            mRestoreSectionId = mState.section();
+        }
+
         setContentView(createContent());
+        applyLayout();
 
         mPresenter = BrowsePresenter.instance(this);
         mPresenter.setView(this);
         mPresenter.onViewInitialized();
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putString(STATE_NAV, mState.encode());
     }
 
     /** A phone's and tablet's own density: the TV's fixed-width scaling would make everything too big or small */
@@ -96,10 +128,11 @@ public class MobileBrowseActivity extends HearthActivity implements BrowseView {
         // A parent signed in, or turned kids mode off, in the meantime: show what the presenter has
         if (mGated && !isGated()) {
             mGated = false;
-            mChipScroll.setVisibility(View.VISIBLE);
             mGrid.showMessage(null);
             mPresenter.refresh(false);
         }
+
+        updateNav();
     }
 
     @Override
@@ -118,23 +151,35 @@ public class MobileBrowseActivity extends HearthActivity implements BrowseView {
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
         mGrid.onConfigurationChanged();
+        applyLayout();
+    }
+
+    /** Back from Library or Subscriptions goes to Home; Back at Home leaves the app */
+    @Override
+    public void onBackPressed() {
+        if (!isGated() && NavRules.back(currentDestination()) == NavRules.Back.GO_HOME) {
+            openDestination(Destination.HOME);
+            return;
+        }
+
+        super.onBackPressed();
     }
 
     private View createContent() {
-        FrameLayout root = new FrameLayout(this);
+        mRoot = new FrameLayout(this);
 
         mChipScroll = new HorizontalScrollView(this);
         mChipScroll.setHorizontalScrollBarEnabled(false);
         mChipBar = new LinearLayout(this);
         mChipBar.setOrientation(LinearLayout.HORIZONTAL);
-        mChipBar.setPadding(dp(8), dp(8), dp(8), dp(8));
+        mChipBar.setGravity(Gravity.CENTER_VERTICAL);
+        mChipBar.setPadding(dp(8), dp(4), dp(8), dp(4));
         mChipScroll.addView(mChipBar);
 
         LinearLayout bar = new LinearLayout(this);
         bar.setOrientation(LinearLayout.HORIZONTAL);
         bar.setGravity(Gravity.CENTER_VERTICAL);
         bar.addView(mChipScroll, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
-        bar.addView(barButton(getString(R.string.search_button), v -> com.thesiegs.hearthtube.mobile.search.MobileSearchActivity.start(this)), barButtonParams());
         mParentButton = barButton(getString(R.string.parent_button), v -> MobileParentMenu.show(this));
         bar.addView(mParentButton, barButtonParams());
 
@@ -155,7 +200,7 @@ public class MobileBrowseActivity extends HearthActivity implements BrowseView {
             }
         });
 
-        // A section with several rows (Ambiance: Fireplace, Rain...) has a strip of sub-pills under the section pills; in
+        // A section with several rows (Ambiance: Fireplace, Rain...) has a strip of sub-pills under the section chips; in
         // Subscriptions a long press on a channel's circle opens its menu (a kid's own: open, unsubscribe)
         SubPillStrip strip = new SubPillStrip(this, mGrid, pill -> {
             if (!(pill.tag instanceof HearthSections.TitledGroup)) {
@@ -173,47 +218,145 @@ public class MobileBrowseActivity extends HearthActivity implements BrowseView {
         mHeader.addView(bar, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         mHeader.addView(strip, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
-        root.addView(mGrid, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        root.addView(mHeader, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        // The list starts below the header, whatever its height (with or without the strip)
-        mHeader.addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> mGrid.setTopInset(bottom - top));
+        mNav = new NavBar(this, this::openDestination);
+
+        mRoot.addView(mGrid, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        mRoot.addView(mHeader, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        mRoot.addView(mNav, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        // The list starts below the header and ends above the bar (or starts after the rail), whatever their size
+        mHeader.addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> mGrid.setTopInset(bottom));
+        mNav.addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
+            if (isCompact()) {
+                mGrid.setStartInset(0);
+                mGrid.setBottomInset(mNav.getVisibility() == View.VISIBLE ? mRoot.getHeight() - top : 0);
+            } else {
+                mGrid.setBottomInset(0);
+                mGrid.setStartInset(mNav.getVisibility() == View.VISIBLE ? right + dp(BAR_MARGIN_DP) / 2 : 0);
+            }
+        });
         mGrid.setScrollWatcher(this::onGridScrolled);
-        return root;
+
+        // Edge to edge: the bars keep clear of the status and navigation bars and of a camera cut-out
+        ViewCompat.setOnApplyWindowInsetsListener(mRoot, (v, insets) -> {
+            mInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
+            applyLayout();
+            return insets;
+        });
+        return mRoot;
     }
 
-    // Hide on scroll: on a phone the pills slide away as the list goes down and come back as it goes up, so the videos
-    // get the screen; a tablet has room to keep them
+    private boolean isCompact() {
+        return getResources().getConfiguration().screenWidthDp < RAIL_MIN_WIDTH_DP;
+    }
+
+    /** A bar on a phone, a rail on a tablet (or a phone turned sideways), and the room each needs around it */
+    private void applyLayout() {
+        boolean compact = isCompact();
+        int margin = dp(BAR_MARGIN_DP);
+
+        mNav.setRail(!compact);
+        FrameLayout.LayoutParams nav = (FrameLayout.LayoutParams) mNav.getLayoutParams();
+
+        if (compact) {
+            nav.width = ViewGroup.LayoutParams.MATCH_PARENT;
+            nav.gravity = Gravity.BOTTOM;
+            nav.setMargins(margin + mInsets.left, 0, margin + mInsets.right, margin + mInsets.bottom);
+        } else {
+            nav.width = ViewGroup.LayoutParams.WRAP_CONTENT;
+            nav.gravity = Gravity.START | Gravity.CENTER_VERTICAL;
+            nav.setMargins(margin + mInsets.left, mInsets.top, 0, mInsets.bottom);
+        }
+        mNav.setLayoutParams(nav);
+
+        FrameLayout.LayoutParams header = (FrameLayout.LayoutParams) mHeader.getLayoutParams();
+        header.setMargins(mInsets.left, mInsets.top, mInsets.right, 0);
+        mHeader.setLayoutParams(header);
+
+        // The bars hide while a phone scrolls; a rail never does (nothing else would be in its way)
+        mScrollHide = new ScrollHide(compact, dp(4));
+        mHeader.setTranslationY(0);
+        mNav.setTranslationY(0);
+        updateNav();
+    }
+
+    // Hide on scroll: on a phone the chips and the bar slide away as the list goes down and come back as it goes up, so
+    // the videos get the screen; a tablet has room to keep them
 
     private void onGridScrolled(int dy, boolean atTop) {
-        if (getResources().getConfiguration().smallestScreenWidthDp >= 600) {
+        if (!mScrollHide.onScrolled(dy, atTop)) {
             return;
         }
 
-        if (atTop || dy < -dp(4)) {
-            showHeader();
-        } else if (dy > dp(4)) {
-            hideHeader();
+        if (mScrollHide.isVisible()) {
+            slideBars(true);
+        } else {
+            slideBars(false);
         }
     }
 
-    private void hideHeader() {
-        if (!mHeaderHidden && mHeader.getHeight() > 0) {
-            mHeaderHidden = true;
-            mHeader.animate().translationY(-mHeader.getHeight()).setDuration(150).start();
+    private void showBars() {
+        if (mScrollHide.show()) {
+            slideBars(true);
         }
     }
 
-    private void showHeader() {
-        if (mHeaderHidden) {
-            mHeaderHidden = false;
-            mHeader.animate().translationY(0).setDuration(150).start();
+    private void slideBars(boolean visible) {
+        mHeader.animate().translationY(visible ? 0 : -mHeader.getBottom()).setDuration(150).start();
+        mNav.animate().translationY(visible ? 0 : mRoot.getHeight() - mNav.getTop()).setDuration(150).start();
+    }
+
+    /** A bar item was tapped: Search opens its screen; the destination on show scrolls to its top; another one opens */
+    private void openDestination(Destination destination) {
+        if (destination == Destination.SEARCH) {
+            MobileSearchActivity.start(this);
+            return;
         }
+
+        if (destination == currentDestination()) {
+            mGrid.scrollToTop();
+            showBars();
+            return;
+        }
+
+        int sectionId = NavRules.sectionFor(destination, isKid(), sectionIds(), tabIds(), mState.remembered(destination));
+
+        if (sectionId >= 0) {
+            showBars();
+            selectSection(indexOf(sectionId), false);
+        }
+    }
+
+    private Destination currentDestination() {
+        int id = mShownSectionId >= 0 ? mShownSectionId : mState.section();
+        return id >= 0 ? NavRules.destinationOf(id) : Destination.HOME;
+    }
+
+    private boolean isKid() {
+        return ParentGate.isKidsProfile(this);
+    }
+
+    private List<Integer> sectionIds() {
+        List<Integer> ids = new ArrayList<>();
+
+        for (BrowseSection section : mSections) {
+            ids.add(section.getId());
+        }
+
+        return ids;
+    }
+
+    private List<Integer> tabIds() {
+        return HearthTabsData.instance(this).getTabs();
     }
 
     private TextView barButton(String text, View.OnClickListener onClick) {
         TextView button = new TextView(this);
         button.setText(text);
         button.setTextSize(14);
+        button.setGravity(Gravity.CENTER);
+        button.setMinHeight(dp(48));
+        button.setMinWidth(dp(48));
         button.setPadding(dp(14), dp(8), dp(14), dp(8));
         HearthLook.accentButton(button);
         button.setOnClickListener(onClick);
@@ -222,12 +365,12 @@ public class MobileBrowseActivity extends HearthActivity implements BrowseView {
 
     private LinearLayout.LayoutParams barButtonParams() {
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        params.setMargins(dp(2), 0, dp(4), 0);
+        params.setMargins(dp(2), 0, dp(8), 0);
         return params;
     }
 
     private int dp(int dp) {
-        return (int) (dp * getResources().getDisplayMetrics().density + 0.5f);
+        return HearthLook.dp(this, dp);
     }
 
     /** What YouTube lists signed out isn't supervised: a kid who isn't signed in gets no videos, not just no playback */
@@ -239,8 +382,8 @@ public class MobileBrowseActivity extends HearthActivity implements BrowseView {
         mGated = true;
         mGrid.clear();
         mGrid.showProgress(false);
-        mChipScroll.setVisibility(View.INVISIBLE);
         mGrid.showMessage(getString(R.string.gated_title));
+        updateNav();
     }
 
     // BrowseView
@@ -257,18 +400,19 @@ public class MobileBrowseActivity extends HearthActivity implements BrowseView {
         TextView chip = new TextView(this);
         chip.setText(section.getTitle());
         chip.setTextSize(14);
+        chip.setGravity(Gravity.CENTER);
+        chip.setMinHeight(dp(48)); // a finger's size, whatever the font size
         chip.setPadding(dp(14), dp(8), dp(14), dp(8));
         HearthLook.chip(chip, false);
         chip.setOnClickListener(v -> selectSection(mSections.indexOf(section), false));
         mChips.add(at, chip);
-        arrangeChips();
 
         if (mPendingSelect >= 0 && mPendingSelect < mSections.size()) {
             int pending = mPendingSelect;
             mPendingSelect = -1;
             selectSection(pending, false);
         }
-        styleChips();
+        updateNav();
     }
 
     @Override
@@ -281,8 +425,7 @@ public class MobileBrowseActivity extends HearthActivity implements BrowseView {
 
         mSections.remove(at);
         mChips.remove(at);
-        arrangeChips();
-        styleChips();
+        updateNav();
     }
 
     @Override
@@ -290,12 +433,24 @@ public class MobileBrowseActivity extends HearthActivity implements BrowseView {
         mSections.clear();
         mChips.clear();
         mChipBar.removeAllViews();
+        mShownChips = new ArrayList<>();
         mShownSectionId = -1;
+        updateNav();
     }
 
     /** Unlike the TV's header list, nothing tells the presenter that a chip was picked: say so here */
     @Override
     public void selectSection(int index, boolean focusOnContent) {
+        // The section the saved state had on show wins over the presenter's start section, once it is there
+        if (mRestoreSectionId >= 0) {
+            int restored = indexOf(mRestoreSectionId);
+
+            if (restored >= 0) {
+                index = restored;
+                mRestoreSectionId = -1;
+            }
+        }
+
         if (index < 0) {
             return;
         }
@@ -312,8 +467,9 @@ public class MobileBrowseActivity extends HearthActivity implements BrowseView {
         }
 
         mShownSectionId = id;
+        mState.show(id);
         mPresenter.onSectionFocused(id);
-        styleChips();
+        updateNav();
     }
 
     @Override
@@ -329,9 +485,10 @@ public class MobileBrowseActivity extends HearthActivity implements BrowseView {
 
         if (group.getSection() != null) {
             mShownSectionId = group.getSection().getId();
+            mState.show(mShownSectionId);
         }
         mGrid.update(group);
-        styleChips();
+        updateNav();
     }
 
     /** Settings sections (the TV's settings tab) come with the phone's own settings screen */
@@ -415,23 +572,55 @@ public class MobileBrowseActivity extends HearthActivity implements BrowseView {
     }
 
     /**
-     * The pills are in the order of the TV's tabs (the person's choice: Home, Subscriptions, Music, Ambiance, Library...)
-     * and then the other sections; mSections and mChips stay in the presenter's order, which is what it counts by
+     * The bar (which destinations, which one is shown) and the chips of the shown destination. A kid with nobody signed
+     * in has neither: only the message and the Parent button. mSections and mChips stay in the presenter's order, which
+     * is what it counts by; {@link NavRules} orders what is shown.
      */
-    private void arrangeChips() {
-        List<Integer> ids = new ArrayList<>();
-
-        for (BrowseSection section : mSections) {
-            ids.add(section.getId());
+    private void updateNav() {
+        if (mNav == null) {
+            return;
         }
 
-        mChipBar.removeAllViews();
+        boolean gated = isGated();
+        boolean kid = isKid();
+        List<Integer> ids = sectionIds();
+        List<Destination> destinations = NavRules.bar(gated, kid, ids);
+        Destination current = currentDestination();
 
-        for (int at : SectionOrder.display(ids, HearthTabsData.instance(this).getTabs())) {
-            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-            params.setMargins(dp(4), 0, dp(4), 0);
-            mChipBar.addView(mChips.get(at), params);
+        mNav.setVisibility(destinations.isEmpty() ? View.GONE : View.VISIBLE);
+        mNav.setDestinations(destinations, current);
+
+        if (destinations.isEmpty()) { // a gone bar has no layout change to tell the list that it left
+            mGrid.setBottomInset(0);
+            mGrid.setStartInset(0);
         }
+
+        List<TextView> shown = new ArrayList<>();
+
+        if (!gated) {
+            List<Integer> chips = NavRules.chips(current, kid, ids, tabIds());
+
+            if (NavRules.showChips(chips.size())) {
+                for (int at : chips) {
+                    shown.add(mChips.get(at));
+                }
+            }
+        }
+
+        // Sections arrive one by one while loading: rebuild the row only when it is a different one
+        if (!shown.equals(mShownChips)) {
+            mShownChips = shown;
+            mChipBar.removeAllViews();
+
+            for (TextView chip : shown) {
+                LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                params.setMargins(dp(4), 0, dp(4), 0);
+                mChipBar.addView(chip, params);
+            }
+        }
+
+        mChipScroll.setVisibility(shown.isEmpty() ? View.INVISIBLE : View.VISIBLE);
+        styleChips();
     }
 
     /** The chip of the section the presenter is showing: it may pick one before the chips exist, or on its own */
@@ -439,12 +628,11 @@ public class MobileBrowseActivity extends HearthActivity implements BrowseView {
         int shown = indexOf(mShownSectionId);
 
         for (int i = 0; i < mChips.size(); i++) {
-            boolean selected = i == shown;
-            HearthLook.chip(mChips.get(i), selected);
+            HearthLook.chip(mChips.get(i), i == shown);
         }
 
         // The start section can be far along the row (Music is the sixth): bring its chip into view
-        if (shown >= 0 && shown < mChips.size()) {
+        if (shown >= 0 && shown < mChips.size() && mChips.get(shown).getParent() == mChipBar) {
             TextView chip = mChips.get(shown);
             mChipScroll.post(() -> mChipScroll.smoothScrollTo(Math.max(0, chip.getLeft() - dp(16)), 0));
         }
