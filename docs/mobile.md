@@ -22,12 +22,20 @@ the same way.
   About, in that order. The TV adds Cast from phone, General, Search and Backup/Restore. On the phone, Look and layout is
   the accent color and the wallpaper; Player is playback mode, video presets, buffer, speed, audio language and
   subtitles; Content and safety holds blocked words, the AI-channel label, Shorts, what to hide, SponsorBlock and
-  DeArrow; About names the day's picture and its photographer. Back from a page goes home (the TV goes back to its menu).
+  DeArrow; About names the day's picture and its photographer. A page opens over the Settings menu, and Back goes
+  back to it, as on the TV; Back again closes Settings.
+- **The section pills follow the TV's tabs.** The sections the person chose as tabs on the TV (Edit menu and tabs:
+  Home, Subscriptions, Music, Ambiance, Library by default) come first in that order, then the rest (Sports, Live,
+  News, Watch later, Podcasts). The start section's pill is brought into view.
 - **Sub-pills, like the TV's strip under its tabs.** A section with several rows (Ambiance: Fireplace, Rain…;
   Podcasts; Music) has a second row of pills under the section pills, one per row, and shows the picked row's videos.
-  In Subscriptions the strip is the channels' circles, and a long press on one opens the channel's menu (a parent's,
-  on a kid's device). On a phone both rows slide away as the list goes down and come back as it goes up; on a tablet
-  they stay.
+  A channel's page (Videos, Playlists, Live…) and a search with several shelves have the same strip under their top
+  bar. In Subscriptions the strip is the channels' circles, and a long press on one opens the channel's menu. On the
+  home screen on a phone both rows slide away as the list goes down and come back as it goes up; on a tablet they
+  stay.
+- **Home starts with "Continue watching"** (the most recent history), so a video is resumed from the first screen in
+  one or two taps. The TV's Home does not have the row (its Library has the history).
+- **A channel is one tap away.** The channel's name under a card opens the channel's page.
 
 ## Adults and kids
 
@@ -47,10 +55,12 @@ the same way.
   parent signs in and that leaves several accounts, the parent gets a list and picks; with several and none selected,
   the screens say "Ask a parent to sign in" until a parent picks one in Settings (behind the PIN).
 - **The parent PIN.** In kids mode the first parent to open the Parent menu chooses it. It protects that menu,
-  signing in, the PIN itself, and a video's long-press menu (subscribing, playlists, blocking channels and words).
-  Outside kids mode none of this asks for a PIN. Five wrong tries lock the PIN for a minute (as in Hearth). Known
-  gap: nothing forces the PIN on the very first launch, so on a device that is already in kids mode a child who opens
-  the Parent menu before any parent has done so could choose it. Set it up before handing the device over.
+  signing in, the PIN itself, and what a video's long-press menu holds beyond the TV's kid rule. A kid's long-press
+  menu has only "Open channel" and "Subscribe"/"Unsubscribe", as on the TV; blocking channels, playlists and blocked
+  words are behind "More (parent)" and the PIN. Outside kids mode none of this asks for a PIN. Five wrong tries lock
+  the PIN for a minute (as in Hearth). Known gap: nothing forces the PIN on the very first launch, so on a device that
+  is already in kids mode a child who opens the Parent menu before any parent has done so could choose it. Set it up
+  before handing the device over.
 - **Daily YouTube time.** A parent can set it on a kid's device (15 minutes to 2 hours). It counts what played and
   starts again at midnight. When Hearth is on the device, Hearth's limit takes its place. (The counting is unit
   tested; stopping a video at the limit hasn't been run on a device yet.)
@@ -113,10 +123,12 @@ How it is put together:
 | `MobileApplication` | Registers which screen shows each shared view (`ViewManager`) |
 | `MobileSplashActivity` | The launcher. The shared splash presenter starts the kids filters and reads the link or search the app was opened with. Nothing else may be the launcher |
 | `browse/`, `search/`, `channel/` | Touch screens on one shared `ui/VideoGrid` (one column on a phone, more on a tablet) |
-| `playback/MobilePlaybackActivity` | ExoPlayer's controls over the TV app's player engine and presenter |
-| `dialogs/MobileDialogActivity` | Draws every settings screen and menu the shared presenters build |
+| `playback/MobilePlaybackActivity` | ExoPlayer's controls over the TV app's player engine and presenter; pauses when headphones are unplugged |
+| `dialogs/MobileDialogActivity` | Draws every settings screen and menu the shared presenters build; a dialog opened from a dialog goes on its stack (Back returns to the page before) |
 | `parent/MobileParentMenu`, `signin/` | The parent's menu and the sign-in code screen |
 | `ui/KidGate` | "Kids mode and nobody signed in": every video screen asks it |
+| `ui/KidMenu` | A long-press menu: the TV's, or on a kid's phone only channel and subscribe (the rest behind the PIN) |
+| `ui/SubPillStrip` | The strip of sub-pills under a screen's top bar, one view for the home screen, channels and search |
 
 Shared pieces added for it in `common`: `KidsDecision` and `KidsMode` (is this a kids device), `LocalAllowance` (the
 daily limit without Hearth; the day never goes back or skips ahead when the phone's date is changed), the signed-out rule in `KidsRefused`, and `MotherActivity.initDpi()` made overridable

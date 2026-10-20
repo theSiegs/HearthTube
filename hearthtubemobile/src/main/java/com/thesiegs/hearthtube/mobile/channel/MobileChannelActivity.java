@@ -5,6 +5,7 @@ import com.liskovsoft.smartyoutubetv2.common.app.models.data.VideoGroup;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.ChannelPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.views.ChannelView;
 import com.thesiegs.hearthtube.mobile.ui.GridActivity;
+import com.thesiegs.hearthtube.mobile.ui.ViewTeardown;
 
 /** A channel's page: its videos, playlists and so on, as the shared {@link ChannelPresenter} loads them */
 public class MobileChannelActivity extends GridActivity implements ChannelView {
@@ -36,9 +37,7 @@ public class MobileChannelActivity extends GridActivity implements ChannelView {
     protected void onDestroy() {
         super.onDestroy();
 
-        if (mPresenter.getView() == this) {
-            mPresenter.onViewDestroyed();
-        }
+        ViewTeardown.destroyed(mPresenter, this);
     }
 
     /** Leaving by Back also forgets the channel, so the next one starts empty */

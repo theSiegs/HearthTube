@@ -5,6 +5,7 @@ import com.liskovsoft.smartyoutubetv2.common.app.models.data.VideoGroup;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.ChannelUploadsPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.views.ChannelUploadsView;
 import com.thesiegs.hearthtube.mobile.ui.GridActivity;
+import com.thesiegs.hearthtube.mobile.ui.ViewTeardown;
 
 /** All of one channel's uploads, as the shared {@link ChannelUploadsPresenter} loads them */
 public class MobileChannelUploadsActivity extends GridActivity implements ChannelUploadsView {
@@ -36,9 +37,7 @@ public class MobileChannelUploadsActivity extends GridActivity implements Channe
     protected void onDestroy() {
         super.onDestroy();
 
-        if (mPresenter.getView() == this) {
-            mPresenter.onViewDestroyed();
-        }
+        ViewTeardown.destroyed(mPresenter, this);
     }
 
     @Override

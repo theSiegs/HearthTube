@@ -127,7 +127,10 @@ public class ViewManager {
         Class<?> activityClass = mViewMapping.get(viewClass);
 
         if (activityClass != null) {
-            startActivity(activityClass);
+            // HearthTube Mobile: a dialog opened from a dialog goes on the open one's stack (the TV's is a singleInstance
+            // activity for the same reason), so Back returns to the page before; a second activity would hide it
+            boolean nestedDialog = viewClass == AppDialogView.class && KidsMode.isMobileBuild(mContext);
+            startActivity(activityClass, nestedDialog ? Intent.FLAG_ACTIVITY_SINGLE_TOP : 0);
         } else {
             Log.e(TAG, "Activity not registered for view " + viewClass.getSimpleName());
         }
@@ -187,10 +190,10 @@ public class ViewManager {
 
         Log.d(TAG, "Launching default activity: " + lastActivity.getSimpleName());
 
-        startActivity(lastActivity);
+        startActivity(lastActivity, 0);
     }
 
-    private void startActivity(Class<?> activityClass) {
+    private void startActivity(Class<?> activityClass, int extraFlags) {
         Log.d(TAG, "Launching activity: " + activityClass.getSimpleName());
 
         mPendingActivityMs = System.currentTimeMillis();
@@ -199,7 +202,7 @@ public class ViewManager {
         Intent intent = new Intent(mContext, activityClass);
 
         // Fix: Calling startActivity() from outside of an Activity  context requires the FLAG_ACTIVITY_NEW_TASK flag
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | extraFlags);
 
         safeStartActivity(mContext, intent);
     }

@@ -20,6 +20,7 @@ import com.liskovsoft.smartyoutubetv2.common.utils.ParentGate;
 import com.thesiegs.hearthtube.mobile.R;
 import com.thesiegs.hearthtube.mobile.ui.HearthActivity;
 import com.thesiegs.hearthtube.mobile.ui.HearthLook;
+import com.thesiegs.hearthtube.mobile.ui.ViewTeardown;
 
 /**
  * Signing in: the code to enter at YouTube's activation page (on a kid's phone, from a parent's own device). The
@@ -87,7 +88,8 @@ public class MobileSignInActivity extends HearthActivity implements SignInView {
         view.setTextColor(Color.WHITE);
         view.setTextSize(sp);
         view.setGravity(Gravity.CENTER);
-        view.setPadding(0, 16, 0, 16);
+        int gap = (int) (8 * getResources().getDisplayMetrics().density + 0.5f); // dp, not pixels
+        view.setPadding(0, gap, 0, gap);
         if (bold) {
             view.setTypeface(view.getTypeface(), Typeface.BOLD);
         }
@@ -98,9 +100,7 @@ public class MobileSignInActivity extends HearthActivity implements SignInView {
     protected void onDestroy() {
         super.onDestroy();
 
-        if (mPresenter.getView() == this) {
-            mPresenter.onViewDestroyed();
-        }
+        ViewTeardown.destroyed(mPresenter, this);
     }
 
     @Override

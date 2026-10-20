@@ -81,8 +81,11 @@ public class VideoMenuPresenter extends BaseMenuPresenter {
     private boolean mIsStreamReminderButtonEnabled;
     private boolean mIsMarkAsWatchedButtonEnabled;
     private VideoMenuCallback mCallback;
+    /** HearthTube Mobile: this menu is a kid's long-press, see {@link #limitNextMenuToKids} */
+    private boolean mKidsMenu;
     private List<PlaylistInfo> mPlaylistInfos;
     private final Map<Long, MenuAction> mMenuMapping = new HashMap<>();
+    private static boolean sLimitToKids;
 
     public interface VideoMenuCallback {
         int ACTION_UNDEFINED = 0;
@@ -148,11 +151,21 @@ public class VideoMenuPresenter extends BaseMenuPresenter {
         showMenu(video);
     }
 
+    /**
+     * HearthTube Mobile: on a kid's phone, until the call is undone, a menu opened by a long-press holds only what the
+     * TV lets a kid do on their own: open the channel, subscribe or unsubscribe. The rest (blocking, playlists, blocked
+     * words) is behind "More" and the parent PIN. Set it around the presenter call that opens the menu, and unset it.
+     */
+    public static void limitNextMenuToKids(boolean limit) {
+        sLimitToKids = limit;
+    }
+
     public void showMenu(Video video) {
         if (video == null) {
             return;
         }
 
+        mKidsMenu = sLimitToKids;
         mVideo = video;
         sVideoHolder = new WeakReference<>(video);
 
@@ -185,10 +198,12 @@ public class VideoMenuPresenter extends BaseMenuPresenter {
 
         for (Long menuItem : MainUIData.instance(getContext()).getMenuItemsOrdered()) {
             MenuAction menuAction = mMenuMapping.get(menuItem);
-            if (menuAction != null) {
+            if (menuAction != null && isInMenu(menuItem)) {
                 menuAction.run();
             }
         }
+
+        appendMoreForParentButton();
 
         if (!mDialogPresenter.isEmpty()) {
             String title = mVideo != null ? mVideo.getTitle() : null;
@@ -207,16 +222,43 @@ public class VideoMenuPresenter extends BaseMenuPresenter {
 
         for (Long menuItem : MainUIData.instance(getContext()).getMenuItemsOrdered()) {
             MenuAction menuAction = mMenuMapping.get(menuItem);
-            if (menuAction != null && !menuAction.isAuth()) {
+            if (menuAction != null && !menuAction.isAuth() && isInMenu(menuItem)) {
                 menuAction.run();
             }
         }
+
+        appendMoreForParentButton();
 
         if (!mDialogPresenter.isEmpty()) {
             String title = mVideo != null ? mVideo.getTitle() : null;
             com.liskovsoft.smartyoutubetv2.common.utils.HearthMenuIcons.apply(getContext(), mDialogPresenter);
             mDialogPresenter.showDialog(title);
         }
+    }
+
+    /** A kid's menu has only opening the channel and (un)subscribing; any other menu has everything that is switched on */
+    private boolean isInMenu(long menuItem) {
+        return !mKidsMenu || menuItem == MainUIData.MENU_ITEM_OPEN_CHANNEL || menuItem == MainUIData.MENU_ITEM_SUBSCRIBE;
+    }
+
+    /** The rest of the menu is a parent's: the PIN first, then the whole menu in place of this one */
+    private void appendMoreForParentButton() {
+        if (!mKidsMenu || mVideo == null) {
+            return;
+        }
+
+        Video video = mVideo;
+        VideoMenuCallback callback = mCallback;
+
+        mDialogPresenter.appendSingleButton(
+                UiOptionItem.from(getContext().getString(R.string.menu_more_parent), optionItem -> {
+                    mDialogPresenter.closeDialog();
+                    com.liskovsoft.smartyoutubetv2.common.utils.ParentGate.run(getContext(), () -> {
+                        VideoMenuPresenter full = VideoMenuPresenter.instance(getContext());
+                        full.mCallback = callback;
+                        full.showMenu(video);
+                    });
+                }));
     }
 
     private void appendAddToWatchLaterButton() {

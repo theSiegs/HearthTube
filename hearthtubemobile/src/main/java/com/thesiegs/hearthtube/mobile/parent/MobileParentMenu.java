@@ -64,12 +64,8 @@ public final class MobileParentMenu {
         }
 
         for (HearthSettings.Entry entry : HearthSettings.entries(context, true, () -> reopenScreens(context))) {
-            // The menu closes as the page opens (a second dialog over it would leave two screens showing the page), so
-            // Back from a page goes home, where the TV's goes back to its menu
-            dialog.appendSingleButton(UiOptionItem.from(entry.title, option -> {
-                dialog.closeDialog();
-                entry.open.run();
-            }));
+            // The page opens over the menu, so Back from it returns here, as on the TV
+            dialog.appendSingleButton(UiOptionItem.from(entry.title, option -> entry.open.run()));
         }
 
         dialog.showDialog(context.getString(ParentGate.isKidsProfile(context) ? R.string.parent_menu_title : R.string.settings_menu_title));

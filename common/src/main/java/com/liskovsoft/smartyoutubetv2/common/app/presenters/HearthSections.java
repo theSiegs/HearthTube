@@ -11,8 +11,10 @@ import com.liskovsoft.smartyoutubetv2.common.R;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.BrowseSection;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Playlist;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
+import com.liskovsoft.smartyoutubetv2.common.utils.KidsMode;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -84,6 +86,14 @@ public final class HearthSections {
         rows.put(TYPE_PODCASTS, searchRows(context, content, PODCASTS));
         rows.put(TYPE_LIBRARY, libraryRows(context, content));
 
+        // The phone opens on the first row of Home, so that is what was being watched (the TV's Home is stacked rows
+        // and keeps its own; its Library has the history)
+        Observable<List<MediaGroup>> home = rows.get(MediaGroup.TYPE_HOME);
+
+        if (home != null && KidsMode.isMobileBuild(context)) {
+            rows.put(MediaGroup.TYPE_HOME, Observable.concatEager(Arrays.asList(continueWatchingRow(context, content), home)));
+        }
+
         Video watchLater = new Video();
         watchLater.playlistId = "WL";
         watchLater.title = context.getString(R.string.header_watch_later);
@@ -105,6 +115,16 @@ public final class HearthSections {
         }
 
         return queued;
+    }
+
+    /** The most recent history, as a row of its own (nothing when signed out or empty): resume in a tap or two */
+    private static Observable<List<MediaGroup>> continueWatchingRow(Context context, ContentService content) {
+        String title = context.getString(R.string.continue_watching);
+
+        return content.getHistoryObserve()
+                .filter(group -> group.getMediaItems() != null && !group.getMediaItems().isEmpty())
+                .map(group -> Collections.singletonList((MediaGroup) TitledGroup.continuable(group, title)))
+                .onErrorResumeNext(Observable.empty());
     }
 
     /**

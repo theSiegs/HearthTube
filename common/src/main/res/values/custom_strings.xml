@@ -70,6 +70,8 @@
     <string name="credit_hearth">Designed to match the Hearth launcher</string>
     <string name="header_ambiance">Ambiance</string>
     <string name="header_library">Library</string>
+    <string name="continue_watching">Continue watching</string>
+    <string name="menu_more_parent">More (parent)</string>
     <string name="header_watch_later">Watch later</string>
     <string name="header_podcasts">Podcasts</string>
     <string name="header_live">Live</string>

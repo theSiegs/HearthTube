@@ -463,7 +463,8 @@ public class MotherActivity extends FragmentActivity {
         mIsBackPressed = false;
     }
 
-    private void initEdgeSlide() {
+    /** The TV app's slide-in-from-the-left "back" for touch screens; a phone's own screens leave it out (they scroll sideways) */
+    protected void initEdgeSlide() {
         if (VERSION.SDK_INT < 21 || !Helpers.isTouchSupported(this) || Utils.isSystemGestureArrowEnabled(this)) {
             return;
         }

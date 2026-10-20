@@ -15,7 +15,8 @@ import java.util.List;
 import org.junit.Test;
 
 public class VideoRowsTest {
-    private final VideoRows mRows = new VideoRows();
+    /** Video.getAuthor needs Android's TextUtils: the tests read the author field */
+    private final VideoRows mRows = new VideoRows(video -> video.author);
 
     private static Video video(String id) {
         Video video = new Video();
@@ -191,6 +192,80 @@ public class VideoRowsTest {
         assertEquals(Arrays.asList("All", "Other"), titles(mRows.pills()));
         assertEquals(0, mRows.selectedIndex());
         assertEquals(Arrays.asList("x"), ids(mRows.shown()));
+    }
+
+    @Test
+    public void aScreenWithoutAStripShowsEveryRowWithItsHeader() {
+        // A channel page: Videos, Playlists, Live. With no pills to pick from, one row alone would hide the others
+        mRows.update("g1", "Videos", VideoGroup.ACTION_APPEND, videos("a", "b"));
+        mRows.update("g2", "Playlists", VideoGroup.ACTION_APPEND, videos("c"));
+        mRows.update("g3", "Live", VideoGroup.ACTION_APPEND, videos("d"));
+
+        assertEquals(Arrays.asList("a", "b"), ids(mRows.shown(true)));
+        assertEquals(Arrays.asList("#Videos", "a", "b", "#Playlists", "c", "#Live", "d"), ids(mRows.shown(false)));
+    }
+
+    @Test
+    public void aScreenWithoutAStripShowsOneRowPlainly() {
+        mRows.update("g1", "Videos", VideoGroup.ACTION_APPEND, videos("a"));
+        assertEquals(Arrays.asList("a"), ids(mRows.shown(false)));
+    }
+
+    // A channel hidden or blocked from a card's menu
+
+    private static Video by(String id, String channelId, String author) {
+        Video video = video(id);
+        video.channelId = channelId;
+        video.author = author;
+        return video;
+    }
+
+    @Test
+    public void removeAuthorTakesTheChannelsVideosOutOfEveryRow() {
+        mRows.update("g1", "Home", VideoGroup.ACTION_APPEND, Arrays.asList(by("a", "UC1", "One"), by("b", "UC2", "Two")));
+        mRows.update("g2", "Music", VideoGroup.ACTION_APPEND, Arrays.asList(by("c", "UC1", "One"), by("d", "UC3", "Three")));
+
+        mRows.update("g1", "Home", VideoGroup.ACTION_REMOVE_AUTHOR, Arrays.asList(by("a", "UC1", "One")));
+
+        assertEquals(Arrays.asList("#Home", "b", "#Music", "d"), ids(mRows.items()));
+    }
+
+    @Test
+    public void removeAuthorMatchesByNameWhenACardHasNoChannelId() {
+        mRows.update("g", "Home", VideoGroup.ACTION_APPEND, Arrays.asList(by("a", null, "One"), by("b", "UC2", "Two"), by("c", "UC1", "One")));
+
+        mRows.update("g", "Home", VideoGroup.ACTION_REMOVE_AUTHOR, Arrays.asList(by("x", null, "One")));
+
+        assertEquals(Arrays.asList("b"), ids(mRows.items()));
+    }
+
+    @Test
+    public void removeAuthorDoesNotTouchAnotherChannelWithTheSameNameButAnotherId() {
+        mRows.update("g", "Home", VideoGroup.ACTION_APPEND, Arrays.asList(by("a", "UC1", "One"), by("b", "UC9", "One")));
+
+        mRows.update("g", "Home", VideoGroup.ACTION_REMOVE_AUTHOR, Arrays.asList(by("a", "UC1", "One")));
+
+        assertEquals(Arrays.asList("b"), ids(mRows.items()));
+    }
+
+    @Test
+    public void removeAuthorDropsARowLeftEmptyAndItsPill() {
+        mRows.update("g1", "Fireplace", VideoGroup.ACTION_APPEND, Arrays.asList(by("a", "UC1", "One")));
+        mRows.update("g2", "Rain", VideoGroup.ACTION_APPEND, Arrays.asList(by("b", "UC2", "Two")));
+        mRows.update("g3", "Snow", VideoGroup.ACTION_APPEND, Arrays.asList(by("c", "UC3", "Three")));
+        mRows.select(0);
+
+        mRows.update("g1", "Fireplace", VideoGroup.ACTION_REMOVE_AUTHOR, Arrays.asList(by("a", "UC1", "One")));
+
+        assertEquals(Arrays.asList("Rain", "Snow"), titles(mRows.pills()));
+        assertEquals(Arrays.asList("b"), ids(mRows.shown()));
+    }
+
+    @Test
+    public void removeAuthorWithNoVideoChangesNothing() {
+        mRows.update("g", "Home", VideoGroup.ACTION_APPEND, videos("a"));
+        mRows.update("g", "Home", VideoGroup.ACTION_REMOVE_AUTHOR, videos());
+        assertEquals(Arrays.asList("a"), ids(mRows.items()));
     }
 
     @Test

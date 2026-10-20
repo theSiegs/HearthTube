@@ -12,6 +12,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 /**
  * The groups a section arrives in (a grid is one; Home is a few rows, each with a title), kept in arrival order. With
@@ -21,6 +22,8 @@ import java.util.Map;
  */
 public class VideoRows {
     private final Map<Object, Row> mRows = new LinkedHashMap<>();
+    /** A video's channel name; a card from a feed has it in its subtitle, which Video reads (Android's TextUtils) */
+    private final Function<Video, String> mAuthorOf;
     /** The row on show when there is a strip; null is the first */
     private Object mSelectedKey;
 
@@ -48,6 +51,14 @@ public class VideoRows {
             this.iconUrl = iconUrl;
             this.tag = tag;
         }
+    }
+
+    public VideoRows() {
+        this(Video::getAuthor);
+    }
+
+    VideoRows(Function<Video, String> authorOf) {
+        mAuthorOf = authorOf;
     }
 
     public void clear() {
@@ -101,6 +112,12 @@ public class VideoRows {
                     }
                 }
                 break;
+            case VideoGroup.ACTION_REMOVE_AUTHOR:
+                // A channel was hidden, blocked or unsubscribed from a card's menu: all its videos go, from every row
+                if (!videos.isEmpty()) {
+                    removeAuthor(videos.get(0));
+                }
+                break;
             case VideoGroup.ACTION_SYNC:
                 // Nothing new to show: a card's watched progress changed
                 break;
@@ -123,6 +140,31 @@ public class VideoRows {
         row.tag = tag;
         mRows.put(key, row);
         return row;
+    }
+
+    /** Takes every video of this video's channel out of every row; a row left empty goes */
+    private void removeAuthor(Video sample) {
+        for (Iterator<Map.Entry<Object, Row>> it = mRows.entrySet().iterator(); it.hasNext(); ) {
+            Map.Entry<Object, Row> entry = it.next();
+            entry.getValue().videos.removeIf(video -> isSameAuthor(sample, video));
+
+            if (entry.getValue().videos.isEmpty()) {
+                if (entry.getKey().equals(mSelectedKey)) {
+                    mSelectedKey = null;
+                }
+                it.remove();
+            }
+        }
+    }
+
+    /** By channel id when both videos have one, else by the author's name (a card from a feed may have only the name) */
+    private boolean isSameAuthor(Video a, Video b) {
+        if (a.channelId != null && b.channelId != null) {
+            return a.channelId.equals(b.channelId);
+        }
+
+        String author = mAuthorOf.apply(a);
+        return author != null && author.equals(mAuthorOf.apply(b));
     }
 
     /** Which videos are a channel's */
@@ -195,7 +237,15 @@ public class VideoRows {
 
     /** What the list shows: the picked row's videos when there is a strip, else everything with headers */
     public List<Object> shown() {
-        if (!hasStrip()) {
+        return shown(true);
+    }
+
+    /**
+     * Like {@link #shown()}; a screen that draws no strip passes false and gets every row, with headers, instead of one
+     * row it could never leave
+     */
+    public List<Object> shown(boolean screenHasStrip) {
+        if (!screenHasStrip || !hasStrip()) {
             return items();
         }
 

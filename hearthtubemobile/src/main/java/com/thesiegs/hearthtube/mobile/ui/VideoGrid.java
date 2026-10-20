@@ -15,6 +15,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.VideoGroup;
+import com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager;
 
 /**
  * The phone's and tablet's list of videos, shared by every screen that shows some (home, search, a channel): cards in
@@ -66,6 +67,11 @@ public class VideoGrid extends FrameLayout {
             @Override
             public void onLongClick(Video video) {
                 listener.onLongClick(video);
+            }
+
+            @Override
+            public void onAuthorClick(Video video) {
+                MediaServiceManager.chooseChannelPresenter(context, video);
             }
         });
 
@@ -140,7 +146,7 @@ public class VideoGrid extends FrameLayout {
 
     /** What the list shows (the picked row with a strip, else everything), and the strip's pills */
     private void refresh() {
-        mAdapter.setItems(mRows.shown());
+        mAdapter.setItems(mRows.shown(mStripListener != null));
 
         if (mStripListener != null) {
             mStripListener.onStrip(mRows.hasStrip() ? mRows.pills() : java.util.Collections.emptyList(), mRows.selectedIndex());
