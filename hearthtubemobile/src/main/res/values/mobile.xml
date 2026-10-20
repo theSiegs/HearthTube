@@ -6,7 +6,10 @@
     <string name="settings_menu_title">Settings</string>
     <string name="sign_in_open">Open the sign-in page</string>
     <string name="search_button">Search</string>
-    <string name="search_hint">Search</string>
+    <string name="nav_home">Home</string>
+    <string name="nav_subscriptions">Subscriptions</string>
+    <string name="nav_library">Library</string>
+    <string name="nav_search">Search</string>    <string name="search_hint">Search</string>
     <string name="parent_menu_title">Parent</string>
     <string name="parent_kids_mode">Kids mode on this device</string>
     <string name="parent_daily_time">Daily YouTube time</string>

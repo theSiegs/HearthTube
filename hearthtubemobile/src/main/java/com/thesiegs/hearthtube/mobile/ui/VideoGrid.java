@@ -189,6 +189,26 @@ public class VideoGrid extends FrameLayout {
         }
     }
 
+    /** A floating bar over the bottom of the list (or the side rail over its start): the last card can scroll clear of it */
+    public void setBottomInset(int px) {
+        mList.setPadding(mList.getPaddingLeft(), mList.getPaddingTop(), mList.getPaddingRight(), dp(16) + px);
+    }
+
+    public void setStartInset(int px) {
+        mList.setPaddingRelative(dp(8) + px, mList.getPaddingTop(), dp(8), mList.getPaddingBottom());
+    }
+
+    /** Back to the first card (a second tap on the shown destination) */
+    public void scrollToTop() {
+        mList.stopScroll();
+
+        if (mLayout.findFirstVisibleItemPosition() > 12) { // a long way up: smooth scrolling would take seconds
+            mList.scrollToPosition(0);
+        } else {
+            mList.smoothScrollToPosition(0);
+        }
+    }
+
     public boolean isEmpty() {
         return mAdapter.getItemCount() == 0;
     }
