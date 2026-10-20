@@ -140,7 +140,7 @@ public class VideoGrid extends FrameLayout {
 
     /** What the list shows (the picked row with a strip, else everything), and the strip's pills */
     private void refresh() {
-        mAdapter.setItems(mRows.shown());
+        mAdapter.setItems(mRows.shown(mStripListener != null));
 
         if (mStripListener != null) {
             mStripListener.onStrip(mRows.hasStrip() ? mRows.pills() : java.util.Collections.emptyList(), mRows.selectedIndex());

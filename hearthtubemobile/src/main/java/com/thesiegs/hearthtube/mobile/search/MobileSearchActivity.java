@@ -23,7 +23,9 @@ import com.thesiegs.hearthtube.mobile.R;
 import com.thesiegs.hearthtube.mobile.ui.HearthActivity;
 import com.thesiegs.hearthtube.mobile.ui.HearthLook;
 import com.thesiegs.hearthtube.mobile.ui.KidGate;
+import com.thesiegs.hearthtube.mobile.ui.SubPillStrip;
 import com.thesiegs.hearthtube.mobile.ui.VideoGrid;
+import com.thesiegs.hearthtube.mobile.ui.ViewTeardown;
 
 /**
  * Search on the phone: a field with the keyboard's search key, the results below in the same grid as everywhere else.
@@ -84,6 +86,8 @@ public class MobileSearchActivity extends HearthActivity implements SearchView {
                 mPresenter.onScrollEnd(last);
             }
         });
+        // A search with several shelves (videos, playlists, channels) has pills to pick one, as on the home screen
+        root.addView(new SubPillStrip(this, mGrid, null), new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         root.addView(mGrid, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
         setContentView(root);
 
@@ -104,9 +108,7 @@ public class MobileSearchActivity extends HearthActivity implements SearchView {
     protected void onDestroy() {
         super.onDestroy();
 
-        if (mPresenter.getView() == this) {
-            mPresenter.onViewDestroyed();
-        }
+        ViewTeardown.destroyed(mPresenter, this);
     }
 
     /** Leaving by Back also ends the presenter's search, so the next one starts empty */

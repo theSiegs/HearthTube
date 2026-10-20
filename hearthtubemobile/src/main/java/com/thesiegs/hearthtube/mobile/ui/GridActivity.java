@@ -49,7 +49,9 @@ public abstract class GridActivity extends HearthActivity {
                 GridActivity.this.onScrollEnd(last);
             }
         });
-        root.addView(mGrid, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        // A channel has several shelves (Videos, Playlists, Live): pills to pick one, as on the home screen
+        root.addView(new SubPillStrip(this, mGrid, null), new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        root.addView(mGrid, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
         setContentView(root);
 
         onGridReady();

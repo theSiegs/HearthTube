@@ -33,6 +33,7 @@ import com.liskovsoft.smartyoutubetv2.common.misc.MotherActivity;
 
 import java.io.InputStream;
 import com.thesiegs.hearthtube.mobile.ui.HearthLook;
+import com.thesiegs.hearthtube.mobile.ui.ViewTeardown;
 
 import java.util.HashMap;
 import java.util.List;
@@ -156,9 +157,7 @@ public class MobilePlaybackActivity extends MotherActivity implements PlaybackVi
         super.onDestroy();
         releasePlayer();
 
-        if (mPresenter.getView() == this) {
-            mPresenter.onViewDestroyed();
-        }
+        ViewTeardown.destroyed(mPresenter, this);
     }
 
     @Override
