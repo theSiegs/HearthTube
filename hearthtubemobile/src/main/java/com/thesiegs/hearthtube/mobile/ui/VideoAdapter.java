@@ -18,6 +18,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
+import com.liskovsoft.smartyoutubetv2.common.app.presenters.ChannelPresenter;
 import com.liskovsoft.smartyoutubetv2.common.utils.AiSlopList;
 
 import java.util.ArrayList;
@@ -28,6 +29,8 @@ public class VideoAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
     public interface Listener {
         void onClick(Video video);
         void onLongClick(Video video);
+        /** The channel name under a card was tapped: its page */
+        void onAuthorClick(Video video);
     }
 
     private static final int TYPE_HEADER = 0;
@@ -134,7 +137,7 @@ public class VideoAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
         author.setTextSize(13);
         author.setMaxLines(1);
         author.setEllipsize(TextUtils.TruncateAt.END);
-        author.setPadding(dp(context, 2), 0, 0, 0);
+        author.setPadding(dp(context, 2), dp(context, 4), dp(context, 8), dp(context, 6));
         HearthLook.textShadow(author);
         card.addView(author);
 
@@ -154,6 +157,11 @@ public class VideoAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
         VideoHolder card = (VideoHolder) holder;
         card.title.setText(video.getTitle());
         card.author.setText(video.getAuthor());
+        // The channel's name opens the channel (a long press still belongs to the card: its menu)
+        boolean hasChannel = video.getAuthor() != null && ChannelPresenter.canOpenChannel(video);
+        card.author.setClickable(hasChannel);
+        card.author.setOnClickListener(hasChannel ? v -> mListener.onAuthorClick(video) : null);
+        card.author.setOnLongClickListener(hasChannel ? v -> card.itemView.performLongClick() : null);
         card.aiLabel.setVisibility(AiSlopList.isLabeled(video) ? View.VISIBLE : View.GONE);
         Glide.with(card.image).load(video.getCardImageUrl()).into(card.image);
         card.itemView.setOnClickListener(v -> mListener.onClick(video));

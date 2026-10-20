@@ -41,7 +41,7 @@ public abstract class GridActivity extends HearthActivity {
 
             @Override
             public void onLongClick(Video video) {
-                KidGate.parentOnly(GridActivity.this, () -> onVideoLongClicked(video));
+                KidMenu.longPress(GridActivity.this, () -> onVideoLongClicked(video));
             }
 
             @Override

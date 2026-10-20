@@ -23,6 +23,7 @@ import com.thesiegs.hearthtube.mobile.R;
 import com.thesiegs.hearthtube.mobile.ui.HearthActivity;
 import com.thesiegs.hearthtube.mobile.ui.HearthLook;
 import com.thesiegs.hearthtube.mobile.ui.KidGate;
+import com.thesiegs.hearthtube.mobile.ui.KidMenu;
 import com.thesiegs.hearthtube.mobile.ui.SubPillStrip;
 import com.thesiegs.hearthtube.mobile.ui.VideoGrid;
 import com.thesiegs.hearthtube.mobile.ui.ViewTeardown;
@@ -78,7 +79,7 @@ public class MobileSearchActivity extends HearthActivity implements SearchView {
 
             @Override
             public void onLongClick(Video video) {
-                KidGate.parentOnly(MobileSearchActivity.this, () -> mPresenter.onVideoItemLongClicked(video));
+                KidMenu.longPress(MobileSearchActivity.this, () -> mPresenter.onVideoItemLongClicked(video));
             }
 
             @Override

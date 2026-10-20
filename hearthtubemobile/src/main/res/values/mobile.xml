@@ -8,7 +8,6 @@
     <string name="search_button">Search</string>
     <string name="search_hint">Search</string>
     <string name="parent_menu_title">Parent</string>
-    <string name="parent_accounts">Accounts and parent PIN</string>
     <string name="parent_kids_mode">Kids mode on this device</string>
     <string name="parent_daily_time">Daily YouTube time</string>
     <string name="daily_time_none">No limit</string>

@@ -1,5 +1,6 @@
 package com.thesiegs.hearthtube.mobile.ui;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.text.TextUtils;
 import android.view.Gravity;
@@ -25,6 +26,7 @@ import java.util.List;
  * channel's circle in Subscriptions. The picked one is white (a circle has a ring in the accent) and the grid shows its
  * row. It is shown only while the grid has two or more rows. Every screen with a grid uses this one.
  */
+@SuppressLint("ViewConstructor") // made in code, with the grid it belongs to
 public class SubPillStrip extends HorizontalScrollView {
     /** A long press on a pill (a channel's circle opens its menu); true when it was handled */
     public interface LongPress {

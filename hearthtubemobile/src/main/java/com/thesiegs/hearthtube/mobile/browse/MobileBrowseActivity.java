@@ -22,12 +22,14 @@ import com.liskovsoft.smartyoutubetv2.common.app.presenters.BrowsePresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.HearthSections;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.menu.HearthChannelMenu;
 import com.liskovsoft.smartyoutubetv2.common.app.views.BrowseView;
+import com.liskovsoft.smartyoutubetv2.common.prefs.HearthTabsData;
 import com.liskovsoft.smartyoutubetv2.common.utils.ParentGate;
 import com.thesiegs.hearthtube.mobile.R;
 import com.thesiegs.hearthtube.mobile.parent.MobileParentMenu;
 import com.thesiegs.hearthtube.mobile.ui.HearthActivity;
 import com.thesiegs.hearthtube.mobile.ui.HearthLook;
 import com.thesiegs.hearthtube.mobile.ui.KidGate;
+import com.thesiegs.hearthtube.mobile.ui.KidMenu;
 import com.thesiegs.hearthtube.mobile.ui.SubPillStrip;
 import com.thesiegs.hearthtube.mobile.ui.VideoGrid;
 
@@ -144,7 +146,7 @@ public class MobileBrowseActivity extends HearthActivity implements BrowseView {
 
             @Override
             public void onLongClick(Video video) {
-                KidGate.parentOnly(MobileBrowseActivity.this, () -> mPresenter.onVideoItemLongClicked(video));
+                KidMenu.longPress(MobileBrowseActivity.this, () -> mPresenter.onVideoItemLongClicked(video));
             }
 
             @Override
@@ -154,13 +156,13 @@ public class MobileBrowseActivity extends HearthActivity implements BrowseView {
         });
 
         // A section with several rows (Ambiance: Fireplace, Rain...) has a strip of sub-pills under the section pills; in
-        // Subscriptions a long press on a channel's circle opens its menu (a parent's, on a kid's device)
+        // Subscriptions a long press on a channel's circle opens its menu (a kid's own: open, unsubscribe)
         SubPillStrip strip = new SubPillStrip(this, mGrid, pill -> {
             if (!(pill.tag instanceof HearthSections.TitledGroup)) {
                 return false;
             }
 
-            KidGate.parentOnly(this, () -> HearthChannelMenu.show(this, (HearthSections.TitledGroup) pill.tag,
+            KidMenu.longPress(this, () -> HearthChannelMenu.show(this, (HearthSections.TitledGroup) pill.tag,
                     channel -> mGrid.removeChannel(pill.tag, video -> HearthSections.isSameChannel(
                             channel.channelId, channel.title, video.channelId, video.getAuthor()))));
             return true;
@@ -258,10 +260,8 @@ public class MobileBrowseActivity extends HearthActivity implements BrowseView {
         chip.setPadding(dp(14), dp(8), dp(14), dp(8));
         HearthLook.chip(chip, false);
         chip.setOnClickListener(v -> selectSection(mSections.indexOf(section), false));
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        params.setMargins(dp(4), 0, dp(4), 0);
         mChips.add(at, chip);
-        mChipBar.addView(chip, at, params);
+        arrangeChips();
 
         if (mPendingSelect >= 0 && mPendingSelect < mSections.size()) {
             int pending = mPendingSelect;
@@ -280,7 +280,8 @@ public class MobileBrowseActivity extends HearthActivity implements BrowseView {
         }
 
         mSections.remove(at);
-        mChipBar.removeView(mChips.remove(at));
+        mChips.remove(at);
+        arrangeChips();
         styleChips();
     }
 
@@ -411,6 +412,26 @@ public class MobileBrowseActivity extends HearthActivity implements BrowseView {
         }
 
         return -1;
+    }
+
+    /**
+     * The pills are in the order of the TV's tabs (the person's choice: Home, Subscriptions, Music, Ambiance, Library...)
+     * and then the other sections; mSections and mChips stay in the presenter's order, which is what it counts by
+     */
+    private void arrangeChips() {
+        List<Integer> ids = new ArrayList<>();
+
+        for (BrowseSection section : mSections) {
+            ids.add(section.getId());
+        }
+
+        mChipBar.removeAllViews();
+
+        for (int at : SectionOrder.display(ids, HearthTabsData.instance(this).getTabs())) {
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            params.setMargins(dp(4), 0, dp(4), 0);
+            mChipBar.addView(mChips.get(at), params);
+        }
     }
 
     /** The chip of the section the presenter is showing: it may pick one before the chips exist, or on its own */
