@@ -18,6 +18,11 @@ the same way.
   the sections and buttons, the open one in white; rounded cards with the "Likely AI" label; and Hearth's accent color on
   the Search and Settings buttons, switches and the player's seek bar. Settings has **Look and layout** (accent color
   and wallpaper) and **About**, which names the day's picture and its photographer. The video itself stays on black.
+- **Sub-pills, like the TV's strip under its tabs.** A section with several rows (Ambiance: Fireplace, Rain…;
+  Podcasts; Music) has a second row of pills under the section pills, one per row, and shows the picked row's videos.
+  In Subscriptions the strip is the channels' circles, and a long press on one opens the channel's menu (a parent's,
+  on a kid's device). On a phone both rows slide away as the list goes down and come back as it goes up; on a tablet
+  they stay.
 
 ## Adults and kids
 
@@ -63,6 +68,10 @@ domains: `adb shell pm set-app-links-user-selection --user 0 --package <package>
 (Android 12 and up; the filter alone isn't enough, since Chrome and the YouTube app are verified for those domains).
 
 ## Updates
+
+Its version is the TV app's: a release date (2026.10.18.2) built on the same SmartTube, read from the same file
+(`smarttubetv/src/hearthtube/release_version.txt`, through `gradle/hearthtube_version.gradle`), so About shows the same
+line in both. The version code rises with every release, which is what an update needs.
 
 There is no update feed yet: the app is set to find none (it must never offer SmartTube's). Until there is one, a
 new version is installed the way the first one was. Android's developer verification (from 2026 in some countries,

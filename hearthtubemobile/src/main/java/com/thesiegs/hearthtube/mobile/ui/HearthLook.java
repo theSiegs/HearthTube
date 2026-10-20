@@ -90,6 +90,22 @@ public final class HearthLook {
         view.setTextColor(shown ? Color.BLACK : Color.WHITE);
     }
 
+    /** A channel's circle (Subscriptions): a ring in the accent when it is the one shown, a faint one otherwise */
+    public static void circleRing(View ring, boolean shown) {
+        Context context = ring.getContext();
+        GradientDrawable shape = new GradientDrawable();
+        shape.setShape(GradientDrawable.OVAL);
+        shape.setColor(Color.TRANSPARENT);
+
+        if (shown) {
+            shape.setStroke(dp(context, 3), accent(context));
+        } else {
+            shape.setStroke(Math.max(1, dp(context, 1)), GLASS_OUTLINE);
+        }
+
+        ring.setBackground(shape);
+    }
+
     /** A top button (Search, Settings): filled with Hearth's accent */
     public static void accentButton(TextView view) {
         Context context = view.getContext();

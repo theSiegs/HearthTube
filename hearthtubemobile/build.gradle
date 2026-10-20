@@ -1,6 +1,7 @@
 apply from: gradle.ext.sharedModulesConstants
 
 apply plugin: 'com.android.application'
+apply from: "$rootDir/gradle/hearthtube_version.gradle"
 
 // Release signing: the same key as Hearth and the TV app (one signing certificate, so Hearth's provider trusts this app
 // by package and certificate, and one key lineage to look after). keystore.properties (git-ignored, in the repository
@@ -49,8 +50,12 @@ android {
         // The kids check (ParentGate.isKidsProfile) answers "no" below API 24, and Family Link's tools need it anyway
         minSdkVersion 24
         targetSdkVersion project.properties.compileSdkVersion
-        versionCode 1
-        versionName "0.1.0"
+        // The same version as the TV app (a release date; its versionCode rises with every release), built on the same
+        // SmartTube, shown in About (common's smarttube_base_version). Only a higher versionCode is an update.
+        def hearthTubeVersion = readHearthTubeVersion(rootProject.file('smarttubetv/src/hearthtube/release_version.txt'))
+        versionCode hearthTubeVersion.code
+        versionName hearthTubeVersion.name
+        resValue 'string', 'smarttube_base_version', readSmartTubeVersion()
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
         // Take the libraries' ststable flavor, as the TV app's hearthtube flavor does

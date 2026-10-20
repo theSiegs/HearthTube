@@ -1,6 +1,8 @@
 package com.thesiegs.hearthtube.mobile.ui;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
@@ -100,5 +102,102 @@ public class VideoRowsTest {
         mRows.update("g", "Home", VideoGroup.ACTION_APPEND, videos("a"));
         mRows.clear();
         assertTrue(mRows.items().isEmpty());
+    }
+
+    // The strip of sub-pills
+
+    private static List<String> titles(List<VideoRows.Pill> pills) {
+        List<String> titles = new ArrayList<>();
+        for (VideoRows.Pill pill : pills) {
+            titles.add(pill.title);
+        }
+        return titles;
+    }
+
+    @Test
+    public void oneRowHasNoStrip() {
+        mRows.update("g", "Fireplace", VideoGroup.ACTION_APPEND, videos("a", "b"));
+        assertFalse(mRows.hasStrip());
+        assertEquals(Arrays.asList("a", "b"), ids(mRows.shown()));
+    }
+
+    @Test
+    public void twoTitledRowsMakeAStripOfTheirTitles() {
+        mRows.update("g1", "Fireplace", VideoGroup.ACTION_APPEND, videos("a"));
+        mRows.update("g2", "Rain", VideoGroup.ACTION_APPEND, videos("b"));
+        assertTrue(mRows.hasStrip());
+        assertEquals(Arrays.asList("Fireplace", "Rain"), titles(mRows.pills()));
+    }
+
+    @Test
+    public void theStripShowsOnlyTheFirstRowUntilAnotherIsPicked() {
+        mRows.update("g1", "Fireplace", VideoGroup.ACTION_APPEND, videos("a", "b"));
+        mRows.update("g2", "Rain", VideoGroup.ACTION_APPEND, videos("c"));
+        assertEquals(0, mRows.selectedIndex());
+        assertEquals(Arrays.asList("a", "b"), ids(mRows.shown()));
+
+        mRows.select(1);
+        assertEquals(1, mRows.selectedIndex());
+        assertEquals(Arrays.asList("c"), ids(mRows.shown()));
+    }
+
+    @Test
+    public void aPickedRowStaysPickedWhenItsNextPageArrives() {
+        mRows.update("g1", "Fireplace", VideoGroup.ACTION_APPEND, videos("a"));
+        mRows.update("g2", "Rain", VideoGroup.ACTION_APPEND, videos("c"));
+        mRows.select(1);
+        mRows.update("g2", "Rain", VideoGroup.ACTION_APPEND, videos("d"));
+        assertEquals(Arrays.asList("c", "d"), ids(mRows.shown()));
+    }
+
+    @Test
+    public void rowsStillLoadingAreNotPillsYet() {
+        mRows.update("g1", "Fireplace", VideoGroup.ACTION_APPEND, videos("a"));
+        mRows.update("g2", "Rain", VideoGroup.ACTION_APPEND, videos());
+        assertFalse(mRows.hasStrip());
+        assertEquals(Arrays.asList("Fireplace"), titles(mRows.pills()));
+    }
+
+    @Test
+    public void untitledRowsAreNotPills() {
+        mRows.update("g1", "Fireplace", VideoGroup.ACTION_APPEND, videos("a"));
+        mRows.update("g2", "", VideoGroup.ACTION_APPEND, videos("b"));
+        assertFalse(mRows.hasStrip());
+    }
+
+    @Test
+    public void clearingASectionForgetsThePickedRow() {
+        mRows.update("g1", "Fireplace", VideoGroup.ACTION_APPEND, videos("a"));
+        mRows.update("g2", "Rain", VideoGroup.ACTION_APPEND, videos("c"));
+        mRows.select(1);
+        mRows.clear();
+        mRows.update("g1", "Fireplace", VideoGroup.ACTION_APPEND, videos("a"));
+        mRows.update("g2", "Rain", VideoGroup.ACTION_APPEND, videos("c"));
+        assertEquals(0, mRows.selectedIndex());
+    }
+
+    @Test
+    public void aChannelThatLeavesTakesItsPillAndItsVideosFromTheOthers() {
+        Object channel = new Object();
+        List<Video> uploads = videos("u1");
+        mRows.update("all", "All", null, null, VideoGroup.ACTION_APPEND, videos("x"));
+        mRows.update("all", "All", null, null, VideoGroup.ACTION_APPEND, uploads);
+        mRows.update("ch", "Some Channel", "https://example.invalid/icon.png", channel, VideoGroup.ACTION_APPEND, uploads);
+        mRows.update("other", "Other", null, null, VideoGroup.ACTION_APPEND, videos("o"));
+        mRows.select(1);
+
+        mRows.removeChannel(channel, uploads::contains);
+
+        assertEquals(Arrays.asList("All", "Other"), titles(mRows.pills()));
+        assertEquals(0, mRows.selectedIndex());
+        assertEquals(Arrays.asList("x"), ids(mRows.shown()));
+    }
+
+    @Test
+    public void aChannelsPillCarriesItsPicture() {
+        mRows.update("all", "All", VideoGroup.ACTION_APPEND, videos("x"));
+        mRows.update("ch", "Some Channel", "https://example.invalid/icon.png", new Object(), VideoGroup.ACTION_APPEND, videos("y"));
+        assertNull(mRows.pills().get(0).iconUrl);
+        assertEquals("https://example.invalid/icon.png", mRows.pills().get(1).iconUrl);
     }
 }

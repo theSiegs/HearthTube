@@ -34,7 +34,19 @@ public class VideoGrid extends FrameLayout {
         void onScrollEnd(Video last);
     }
 
+    /** The sub-pills of the section on show changed (or its picked row did) */
+    public interface StripListener {
+        void onStrip(java.util.List<VideoRows.Pill> pills, int selected);
+    }
+
+    /** The list scrolled: dy is the way it went (positive is down the list); atTop when it is back at its start */
+    public interface ScrollWatcher {
+        void onScrolled(int dy, boolean atTop);
+    }
+
     private final VideoRows mRows = new VideoRows();
+    private StripListener mStripListener;
+    private ScrollWatcher mScrollWatcher;
     private final VideoAdapter mAdapter;
     private final GridLayoutManager mLayout;
     private final RecyclerView mList;
@@ -73,6 +85,10 @@ public class VideoGrid extends FrameLayout {
         mList.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+                if (mScrollWatcher != null) {
+                    mScrollWatcher.onScrolled(dy, !recyclerView.canScrollVertically(-1));
+                }
+
                 if (dy > 0 && mLayout.findLastVisibleItemPosition() >= mAdapter.getItemCount() - PAGE_AHEAD) {
                     Video last = mAdapter.lastVideo();
                     if (last != null) {
@@ -114,12 +130,57 @@ public class VideoGrid extends FrameLayout {
     public void update(VideoGroup group) {
         showMessage(null);
         mRows.update(group);
-        mAdapter.setItems(mRows.items());
+        refresh();
     }
 
     public void clear() {
         mRows.clear();
-        mAdapter.setItems(mRows.items());
+        refresh();
+    }
+
+    /** What the list shows (the picked row with a strip, else everything), and the strip's pills */
+    private void refresh() {
+        mAdapter.setItems(mRows.shown());
+
+        if (mStripListener != null) {
+            mStripListener.onStrip(mRows.hasStrip() ? mRows.pills() : java.util.Collections.emptyList(), mRows.selectedIndex());
+        }
+    }
+
+    public void setStripListener(StripListener listener) {
+        mStripListener = listener;
+    }
+
+    public void setScrollWatcher(ScrollWatcher watcher) {
+        mScrollWatcher = watcher;
+    }
+
+    /** A sub-pill was picked: its row, from its start */
+    public void selectRow(int index) {
+        mRows.select(index);
+        refresh();
+        mList.scrollToPosition(0);
+    }
+
+    /** A channel left Subscriptions: its pill goes, and its videos from the other rows */
+    public void removeChannel(Object tag, VideoRows.VideoMatcher channelVideos) {
+        mRows.removeChannel(tag, channelVideos);
+        refresh();
+    }
+
+    /** The header floats over the list: the list starts below it */
+    public void setTopInset(int px) {
+        if (mList.getPaddingTop() == px) {
+            return;
+        }
+
+        boolean atStart = !mList.canScrollVertically(-1);
+        mList.setPadding(mList.getPaddingLeft(), px, mList.getPaddingRight(), mList.getPaddingBottom());
+
+        // The first card stays where it was unless told: at the start of the list it moves down below the header
+        if (atStart) {
+            mList.post(() -> mList.scrollToPosition(0));
+        }
     }
 
     public boolean isEmpty() {

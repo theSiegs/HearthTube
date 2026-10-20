@@ -5,12 +5,16 @@ import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.RequestOptions;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.BrowseSection;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.SettingsGroup;
@@ -18,6 +22,8 @@ import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.VideoGroup;
 import com.liskovsoft.smartyoutubetv2.common.app.models.errors.ErrorFragmentData;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.BrowsePresenter;
+import com.liskovsoft.smartyoutubetv2.common.app.presenters.HearthSections;
+import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.menu.HearthChannelMenu;
 import com.liskovsoft.smartyoutubetv2.common.app.views.BrowseView;
 import com.liskovsoft.smartyoutubetv2.common.utils.ParentGate;
 import com.thesiegs.hearthtube.mobile.R;
@@ -26,6 +32,7 @@ import com.thesiegs.hearthtube.mobile.ui.HearthActivity;
 import com.thesiegs.hearthtube.mobile.ui.HearthLook;
 import com.thesiegs.hearthtube.mobile.ui.KidGate;
 import com.thesiegs.hearthtube.mobile.ui.VideoGrid;
+import com.thesiegs.hearthtube.mobile.ui.VideoRows;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -49,6 +56,13 @@ public class MobileBrowseActivity extends HearthActivity implements BrowseView {
     private HorizontalScrollView mChipScroll;
     private TextView mParentButton;
     private LinearLayout mChipBar;
+    /** The section pills and, under them, the sub-pills; it floats over the list and slides away on a phone as it scrolls */
+    private LinearLayout mHeader;
+    private HorizontalScrollView mStrip;
+    private LinearLayout mStripBar;
+    private final List<View> mStripViews = new ArrayList<>();
+    private String mStripSignature;
+    private boolean mHeaderHidden;
     private VideoGrid mGrid;
     private boolean mGated;
     /** A selection asked for before the chips were there (the presenter picks the start section first) */
@@ -112,8 +126,7 @@ public class MobileBrowseActivity extends HearthActivity implements BrowseView {
     }
 
     private View createContent() {
-        LinearLayout root = new LinearLayout(this);
-        root.setOrientation(LinearLayout.VERTICAL);
+        FrameLayout root = new FrameLayout(this);
 
         mChipScroll = new HorizontalScrollView(this);
         mChipScroll.setHorizontalScrollBarEnabled(false);
@@ -129,7 +142,21 @@ public class MobileBrowseActivity extends HearthActivity implements BrowseView {
         bar.addView(barButton(getString(R.string.search_button), v -> com.thesiegs.hearthtube.mobile.search.MobileSearchActivity.start(this)), barButtonParams());
         mParentButton = barButton(getString(R.string.parent_button), v -> MobileParentMenu.show(this));
         bar.addView(mParentButton, barButtonParams());
-        root.addView(bar, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        // A section with several rows (Ambiance: Fireplace, Rain...) has a strip of sub-pills under the section pills
+        mStripBar = new LinearLayout(this);
+        mStripBar.setOrientation(LinearLayout.HORIZONTAL);
+        mStripBar.setGravity(Gravity.CENTER_VERTICAL);
+        mStripBar.setPadding(dp(8), 0, dp(8), dp(8));
+        mStrip = new HorizontalScrollView(this);
+        mStrip.setHorizontalScrollBarEnabled(false);
+        mStrip.setVisibility(View.GONE);
+        mStrip.addView(mStripBar);
+
+        mHeader = new LinearLayout(this);
+        mHeader.setOrientation(LinearLayout.VERTICAL);
+        mHeader.addView(bar, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        mHeader.addView(mStrip, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         mGrid = new VideoGrid(this, new VideoGrid.Listener() {
             @Override
@@ -147,8 +174,144 @@ public class MobileBrowseActivity extends HearthActivity implements BrowseView {
                 mPresenter.onScrollEnd(last);
             }
         });
-        root.addView(mGrid, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
+        root.addView(mGrid, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        root.addView(mHeader, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        // The list starts below the header, whatever its height (with or without the strip)
+        mHeader.addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> mGrid.setTopInset(bottom - top));
+        mGrid.setStripListener(this::showStrip);
+        mGrid.setScrollWatcher(this::onGridScrolled);
         return root;
+    }
+
+    // The sub-pills
+
+    private void showStrip(List<VideoRows.Pill> pills, int selected) {
+        if (pills.isEmpty()) {
+            mStrip.setVisibility(View.GONE);
+            mStripBar.removeAllViews();
+            mStripViews.clear();
+            mStripSignature = null;
+            return;
+        }
+
+        StringBuilder signature = new StringBuilder();
+        for (VideoRows.Pill pill : pills) {
+            signature.append(pill.title).append('|').append(pill.iconUrl != null).append(';');
+        }
+
+        mStrip.setVisibility(View.VISIBLE);
+
+        // Rows arrive one after another while a section loads: rebuild only when the pills are different, and keep the place
+        if (!signature.toString().equals(mStripSignature)) {
+            mStripSignature = signature.toString();
+            int scrollX = mStrip.getScrollX();
+            mStripBar.removeAllViews();
+            mStripViews.clear();
+
+            for (int i = 0; i < pills.size(); i++) {
+                View view = createPill(pills.get(i), i);
+                LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                params.setMargins(dp(4), 0, dp(pills.get(i).iconUrl != null ? 8 : 4), 0);
+                mStripViews.add(view);
+                mStripBar.addView(view, params);
+            }
+
+            mStrip.post(() -> mStrip.scrollTo(scrollX, 0));
+        }
+
+        styleStrip(selected);
+    }
+
+    private View createPill(VideoRows.Pill pill, int index) {
+        if (pill.iconUrl == null) {
+            TextView text = new TextView(this);
+            text.setText(pill.title);
+            text.setTextSize(13);
+            text.setSingleLine(true);
+            text.setPadding(dp(12), dp(6), dp(12), dp(6));
+            HearthLook.chip(text, false);
+            text.setOnClickListener(v -> mGrid.selectRow(index));
+            return text;
+        }
+
+        // A channel in Subscriptions: its picture in a circle with its name, like the TV's circles
+        LinearLayout circle = new LinearLayout(this);
+        circle.setOrientation(LinearLayout.VERTICAL);
+        circle.setGravity(Gravity.CENTER_HORIZONTAL);
+
+        FrameLayout ring = new FrameLayout(this);
+        ring.setPadding(dp(3), dp(3), dp(3), dp(3));
+        ImageView image = new ImageView(this);
+        Glide.with(this).load(pill.iconUrl).apply(RequestOptions.circleCropTransform()).into(image);
+        ring.addView(image, new FrameLayout.LayoutParams(dp(48), dp(48)));
+        circle.addView(ring);
+
+        TextView name = new TextView(this);
+        name.setText(pill.title);
+        name.setTextSize(11);
+        name.setTextColor(android.graphics.Color.WHITE);
+        name.setSingleLine(true);
+        name.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        name.setGravity(Gravity.CENTER_HORIZONTAL);
+        name.setMaxWidth(dp(64));
+        HearthLook.textShadow(name);
+        circle.addView(name);
+
+        circle.setOnClickListener(v -> mGrid.selectRow(index));
+        // Long press: the channel's menu (open it, unsubscribe, block), a parent's on a kid's device
+        circle.setOnLongClickListener(v -> {
+            if (!(pill.tag instanceof HearthSections.TitledGroup)) {
+                return false;
+            }
+
+            KidGate.parentOnly(this, () -> HearthChannelMenu.show(this, (HearthSections.TitledGroup) pill.tag,
+                    channel -> mGrid.removeChannel(pill.tag, video -> HearthSections.isSameChannel(
+                            channel.channelId, channel.title, video.channelId, video.getAuthor()))));
+            return true;
+        });
+        return circle;
+    }
+
+    /** The picked sub-pill is white (a circle has a ring in the accent); the others are dark glass */
+    private void styleStrip(int selected) {
+        for (int i = 0; i < mStripViews.size(); i++) {
+            View view = mStripViews.get(i);
+
+            if (view instanceof TextView) {
+                HearthLook.chip((TextView) view, i == selected);
+            } else if (view instanceof LinearLayout) {
+                HearthLook.circleRing(((LinearLayout) view).getChildAt(0), i == selected);
+            }
+        }
+    }
+
+    // Hide on scroll: on a phone the pills slide away as the list goes down and come back as it goes up, so the videos
+    // get the screen; a tablet has room to keep them
+
+    private void onGridScrolled(int dy, boolean atTop) {
+        if (getResources().getConfiguration().smallestScreenWidthDp >= 600) {
+            return;
+        }
+
+        if (atTop || dy < -dp(4)) {
+            showHeader();
+        } else if (dy > dp(4)) {
+            hideHeader();
+        }
+    }
+
+    private void hideHeader() {
+        if (!mHeaderHidden && mHeader.getHeight() > 0) {
+            mHeaderHidden = true;
+            mHeader.animate().translationY(-mHeader.getHeight()).setDuration(150).start();
+        }
+    }
+
+    private void showHeader() {
+        if (mHeaderHidden) {
+            mHeaderHidden = false;
+            mHeader.animate().translationY(0).setDuration(150).start();
+        }
     }
 
     private TextView barButton(String text, View.OnClickListener onClick) {
