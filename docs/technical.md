@@ -63,6 +63,26 @@ profiles ask for the parent PIN first.
 adb shell am start -a com.thesiegs.hearthtube.action.OPEN_SETTINGS --es section blocked_words
 ```
 
+## Which account a launch uses
+
+Two situations, two rules (`ProfileFollowRule`, applied by `ProfilePickerPresenter.followGoogleTvProfile`):
+
+- **A kid's profile** (a Google TV profile that is its own Android user, or a supervised or kids-mode phone, decided
+  by `ParentGate.isKidsProfile`, with or without Hearth). One account is the normal case. HearthTube never shows a
+  chooser and writes no links: the selected account stays, else the first is selected. Nobody signed in is the
+  "Ask a parent to sign in" welcome. Adding or changing an account stays behind the parent PIN. More than one account
+  can still happen (a parent signs in twice, or one Google account has several channels, which YouTube lists as
+  accounts); the kid stays on the selected one and a parent changes it in the PIN-protected Accounts page.
+- **The TV owner's user**, shared by adults who each have their own Google TV profile. With Hearth, the profile is
+  linked to an account under Hearth's lasting profile key. No link: the account named like the profile's first name
+  (not one another profile is linked to), with a short message; else the picker, which offers the accounts no other
+  profile is linked to, plus "Sign in". A link or a cast never takes the selected account away. One login per
+  profile, and an account's own PIN (the lock), stay as they were. Without Hearth, or with following switched off, the
+  usual SmartTube launch applies (the account dialog at boot, if turned on).
+
+Links live in `hearth_profile_links` as `link:<key>`; removing an account clears the links to it. Older versions
+also saved `kids:<key>` flags and kids profiles' links; nothing reads them now and they are left as they are.
+
 ## Kids profiles
 
 - A Google TV kids profile is its own Android user, with its own copy of HearthTube and its own settings and
