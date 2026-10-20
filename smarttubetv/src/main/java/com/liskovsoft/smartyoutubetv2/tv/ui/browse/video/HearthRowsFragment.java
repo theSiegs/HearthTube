@@ -647,7 +647,9 @@ public class HearthRowsFragment extends VideoRowsFragment {
             image.setScaleType(android.widget.ImageView.ScaleType.CENTER);
         }
         ring.addView(image, new FrameLayout.LayoutParams(size, size));
-        circle.addView(ring);
+        // Explicit wrap: a vertical LinearLayout's default is full width, which stretched the ring into an oval
+        circle.addView(ring, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT));
 
         TextView name = new TextView(context);
         name.setText(title);
