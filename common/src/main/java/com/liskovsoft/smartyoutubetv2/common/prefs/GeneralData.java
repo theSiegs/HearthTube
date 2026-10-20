@@ -15,6 +15,8 @@ import java.util.Map;
 public class GeneralData implements ProfileChangeListener {
     public static final int SCREENSAVER_TIMEOUT_NEVER = 0;
     private static final String GENERAL_DATA = "general_data";
+    /** Days between automatic local backups; none unless asked for in Backup and restore */
+    public static final int DEFAULT_LOCAL_BACKUP_FREQ_DAYS = -1;
     public static final int EXIT_NONE = 0;
     public static final int EXIT_DOUBLE_BACK = 1;
     public static final int EXIT_SINGLE_BACK = 2;
@@ -653,7 +655,7 @@ public class GeneralData implements ProfileChangeListener {
         //mIsRemapPageDownToSpeedEnabled = Helpers.parseBoolean(split, 67, false);
         mSearchExitShortcut = Helpers.parseInt(split, 68, EXIT_SINGLE_BACK);
         mGDriveBackupFreqDays = Helpers.parseInt(split, 69, -1);
-        mLocalDriveBackupFreqDays = Helpers.parseInt(split, 70, 1);
+        mLocalDriveBackupFreqDays = Helpers.parseInt(split, 70, DEFAULT_LOCAL_BACKUP_FREQ_DAYS);
         //mIsRemapFastForwardToSpeedToggleEnabled = Helpers.parseBoolean(split, 71, false);
         mIsRemapSToSpeedToggleEnabled = Helpers.parseBoolean(split, 72, true);
     }

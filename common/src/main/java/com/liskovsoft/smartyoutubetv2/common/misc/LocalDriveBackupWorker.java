@@ -33,6 +33,11 @@ public class LocalDriveBackupWorker extends Worker {
         super(context, workerParams);
     }
 
+    /** HearthTube: no automatic copy unless asked for: it lands where file managers can read it */
+    public static boolean isEnabled(int freqDays) {
+        return freqDays > 0;
+    }
+
     public static void schedule(Context context) {
         if (VERSION.SDK_INT >= 23 && GeneralData.instance(context).getLocalDriveBackupFreqDays() > 0) {
             SafeWorkManager workManager = SafeWorkManager.getInstance(context);
@@ -68,6 +73,12 @@ public class LocalDriveBackupWorker extends Worker {
     @NonNull
     @Override
     public Result doWork() {
+        // Turned off (or never turned on) since this was scheduled: no copy, and no more runs
+        if (!isEnabled(GeneralData.instance(getApplicationContext()).getLocalDriveBackupFreqDays())) {
+            SafeWorkManager.getInstance(getApplicationContext()).cancelUniqueWork(WORK_NAME);
+            return Result.success();
+        }
+
         if (BackupSettingsPresenter.hasInstance()) {
             return Result.retry();
         }
