@@ -92,7 +92,12 @@ public final class HearthLook {
 
     /** The floating bottom bar or side rail: one dark glass capsule with a faint outline */
     public static void glassBar(View view) {
-        view.setBackground(pill(view.getContext(), GLASS, GLASS_OUTLINE, 1));
+        // More solid than a chip: videos scroll under the bar and their titles must not show through its labels
+        GradientDrawable shape = new GradientDrawable();
+        shape.setColor(0xF0141418);
+        shape.setCornerRadius(dp(view.getContext(), 32));
+        shape.setStroke(Math.max(1, dp(view.getContext(), 1)), GLASS_OUTLINE);
+        view.setBackground(shape);
     }
 
     /** One destination on that bar: the shown one is a white capsule with dark icon and text, the others sit on the glass */

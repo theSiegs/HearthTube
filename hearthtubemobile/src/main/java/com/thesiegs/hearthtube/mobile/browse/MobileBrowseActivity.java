@@ -11,9 +11,6 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
 
 import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.BrowseSection;
@@ -62,6 +59,8 @@ public class MobileBrowseActivity extends HearthActivity implements BrowseView {
 
     private final List<BrowseSection> mSections = new ArrayList<>();
     private final List<TextView> mChips = new ArrayList<>();
+    /** The number the presenter gave each section: it counts the sections this screen leaves out too, and picks by it */
+    private final List<Integer> mPresenterIndexes = new ArrayList<>();
     /** The chips in the row at the top now (those of the destination on show) */
     private List<TextView> mShownChips = new ArrayList<>();
 
@@ -74,7 +73,6 @@ public class MobileBrowseActivity extends HearthActivity implements BrowseView {
     private LinearLayout mHeader;
     private NavBar mNav;
     private ScrollHide mScrollHide = new ScrollHide(false, 0);
-    private Insets mInsets = Insets.NONE;
     private VideoGrid mGrid;
     private boolean mGated;
     private NavState mState = new NavState();
@@ -133,6 +131,7 @@ public class MobileBrowseActivity extends HearthActivity implements BrowseView {
         }
 
         updateNav();
+        showBars(); // back from a video or a page: the bars are there
     }
 
     @Override
@@ -227,6 +226,15 @@ public class MobileBrowseActivity extends HearthActivity implements BrowseView {
         // The list starts below the header and ends above the bar (or starts after the rail), whatever their size
         mHeader.addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> mGrid.setTopInset(bottom));
         mNav.addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
+            // The chips start after the rail, not over it
+            FrameLayout.LayoutParams header = (FrameLayout.LayoutParams) mHeader.getLayoutParams();
+            int headerStart = !isCompact() && mNav.getVisibility() == View.VISIBLE ? right : 0;
+
+            if (header.getMarginStart() != headerStart) {
+                header.setMarginStart(headerStart);
+                mHeader.setLayoutParams(header);
+            }
+
             if (isCompact()) {
                 mGrid.setStartInset(0);
                 mGrid.setBottomInset(mNav.getVisibility() == View.VISIBLE ? mRoot.getHeight() - top : 0);
@@ -236,13 +244,6 @@ public class MobileBrowseActivity extends HearthActivity implements BrowseView {
             }
         });
         mGrid.setScrollWatcher(this::onGridScrolled);
-
-        // Edge to edge: the bars keep clear of the status and navigation bars and of a camera cut-out
-        ViewCompat.setOnApplyWindowInsetsListener(mRoot, (v, insets) -> {
-            mInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
-            applyLayout();
-            return insets;
-        });
         return mRoot;
     }
 
@@ -261,17 +262,14 @@ public class MobileBrowseActivity extends HearthActivity implements BrowseView {
         if (compact) {
             nav.width = ViewGroup.LayoutParams.MATCH_PARENT;
             nav.gravity = Gravity.BOTTOM;
-            nav.setMargins(margin + mInsets.left, 0, margin + mInsets.right, margin + mInsets.bottom);
+            nav.setMargins(margin, 0, margin, margin);
         } else {
             nav.width = ViewGroup.LayoutParams.WRAP_CONTENT;
             nav.gravity = Gravity.START | Gravity.CENTER_VERTICAL;
-            nav.setMargins(margin + mInsets.left, mInsets.top, 0, mInsets.bottom);
+            nav.setMargins(margin, 0, 0, 0);
         }
         mNav.setLayoutParams(nav);
 
-        FrameLayout.LayoutParams header = (FrameLayout.LayoutParams) mHeader.getLayoutParams();
-        header.setMargins(mInsets.left, mInsets.top, mInsets.right, 0);
-        mHeader.setLayoutParams(header);
 
         // The bars hide while a phone scrolls; a rail never does (nothing else would be in its way)
         mScrollHide = new ScrollHide(compact, dp(4));
@@ -323,7 +321,7 @@ public class MobileBrowseActivity extends HearthActivity implements BrowseView {
 
         if (sectionId >= 0) {
             showBars();
-            selectSection(indexOf(sectionId), false);
+            selectAt(indexOf(sectionId));
         }
     }
 
@@ -396,6 +394,7 @@ public class MobileBrowseActivity extends HearthActivity implements BrowseView {
 
         int at = index < 0 || index > mSections.size() ? mSections.size() : index;
         mSections.add(at, section);
+        mPresenterIndexes.add(at, index);
 
         TextView chip = new TextView(this);
         chip.setText(section.getTitle());
@@ -404,10 +403,10 @@ public class MobileBrowseActivity extends HearthActivity implements BrowseView {
         chip.setMinHeight(dp(48)); // a finger's size, whatever the font size
         chip.setPadding(dp(14), dp(8), dp(14), dp(8));
         HearthLook.chip(chip, false);
-        chip.setOnClickListener(v -> selectSection(mSections.indexOf(section), false));
+        chip.setOnClickListener(v -> selectAt(mSections.indexOf(section)));
         mChips.add(at, chip);
 
-        if (mPendingSelect >= 0 && mPendingSelect < mSections.size()) {
+        if (mPendingSelect >= 0 && mPresenterIndexes.contains(mPendingSelect)) {
             int pending = mPendingSelect;
             mPendingSelect = -1;
             selectSection(pending, false);
@@ -424,6 +423,7 @@ public class MobileBrowseActivity extends HearthActivity implements BrowseView {
         }
 
         mSections.remove(at);
+        mPresenterIndexes.remove(at);
         mChips.remove(at);
         updateNav();
     }
@@ -431,6 +431,7 @@ public class MobileBrowseActivity extends HearthActivity implements BrowseView {
     @Override
     public void removeAllSections() {
         mSections.clear();
+        mPresenterIndexes.clear();
         mChips.clear();
         mChipBar.removeAllViews();
         mShownChips = new ArrayList<>();
@@ -446,8 +447,9 @@ public class MobileBrowseActivity extends HearthActivity implements BrowseView {
             int restored = indexOf(mRestoreSectionId);
 
             if (restored >= 0) {
-                index = restored;
                 mRestoreSectionId = -1;
+                selectAt(restored);
+                return;
             }
         }
 
@@ -455,8 +457,19 @@ public class MobileBrowseActivity extends HearthActivity implements BrowseView {
             return;
         }
 
-        if (index >= mSections.size()) {
+        int at = mPresenterIndexes.indexOf(index);
+
+        if (at < 0) {
             mPendingSelect = index; // applied as the chips arrive
+            return;
+        }
+
+        selectAt(at);
+    }
+
+    /** Shows the section at this position of the sections this screen has */
+    private void selectAt(int index) {
+        if (index < 0 || index >= mSections.size()) {
             return;
         }
 
@@ -593,6 +606,9 @@ public class MobileBrowseActivity extends HearthActivity implements BrowseView {
         if (destinations.isEmpty()) { // a gone bar has no layout change to tell the list that it left
             mGrid.setBottomInset(0);
             mGrid.setStartInset(0);
+            FrameLayout.LayoutParams header = (FrameLayout.LayoutParams) mHeader.getLayoutParams();
+            header.setMarginStart(0);
+            mHeader.setLayoutParams(header);
         }
 
         List<TextView> shown = new ArrayList<>();

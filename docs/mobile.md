@@ -24,15 +24,25 @@ the same way.
   subtitles; Content and safety holds blocked words, the AI-channel label, Shorts, what to hide, SponsorBlock and
   DeArrow; About names the day's picture and its photographer. A page opens over the Settings menu, and Back goes
   back to it, as on the TV; Back again closes Settings.
-- **The section pills follow the TV's tabs.** The sections the person chose as tabs on the TV (Edit menu and tabs:
-  Home, Subscriptions, Music, Ambiance, Library by default) come first in that order, then the rest (Sports, Live,
-  News, Watch later, Podcasts). The start section's pill is brought into view.
-- **Sub-pills, like the TV's strip under its tabs.** A section with several rows (Ambiance: Fireplace, Rain…;
-  Podcasts; Music) has a second row of pills under the section pills, one per row, and shows the picked row's videos.
-  A channel's page (Videos, Playlists, Live…) and a search with several shelves have the same strip under their top
-  bar. In Subscriptions the strip is the channels' circles, and a long press on one opens the channel's menu. On the
-  home screen on a phone both rows slide away as the list goes down and come back as it goes up; on a tablet they
-  stay.
+- **Four destinations on a bottom bar** (a side rail on the start edge from 600 dp of width, so on a tablet or a phone
+  turned sideways): Home, Subscriptions, Library and Search, as floating dark glass with the open one in white.
+  - **Home** holds the TV's sections as chips across the top: the sections the person chose as tabs on the TV (Edit menu
+    and tabs) first, in that order, then the rest (Sports, Live, News, Podcasts...).
+  - **Subscriptions** keeps the channels' circles; a long press on one opens the channel's menu.
+  - **Library** holds the library list (Continue watching is Home's first row; History and the playlists are rows
+    inside Library), Watch later and the play queue, as chips.
+  - **Search** opens the search screen with the keyboard up.
+  A destination remembers the chip last picked in it. A tap on the destination that is open scrolls to the top. Back
+  from Subscriptions or Library goes to Home; Back at Home leaves the app. The open destination and chips survive a
+  turn of the screen and the system stopping the app (they are in its saved state; not a swipe away from recents).
+- **The bars get out of the way.** On a phone the chips and the bar slide away as the list goes down, come back as it
+  goes up, and are always there at the top; a rail on a tablet stays. Every bar item and chip is at least 48 dp, has a
+  name for screen readers, and its text follows the system font size (the bar's labels shrink a little before they would
+  be cut).
+- **Sub-pills, like the TV's strip under its tabs.** A section with several rows (Ambiance: Fireplace, Rain...;
+  Podcasts; Music) has a second row of pills under the chips, one per row, and shows the picked row's videos.
+  A channel's page (Videos, Playlists, Live...) and a search with several shelves have the same strip under their top
+  bar. In Subscriptions the strip is the channels' circles.
 - **Home starts with "Continue watching"** (the most recent history), so a video is resumed from the first screen in
   one or two taps. The TV's Home does not have the row (its Library has the history).
 - **A channel is one tap away.** The channel's name under a card opens the channel's page.
@@ -49,11 +59,14 @@ the same way.
   until kids mode is switched on by hand. `adb shell dumpsys user | grep -i restrictions` on a supervised phone shows
   what Family Link sets.
 - **In kids mode, nobody signed in means nothing to see.** The home screen, search results and channel pages stay
-  empty ("Ask a parent to sign in"), and nothing plays, including a video opened from a link. What YouTube lists
+  empty ("Ask a parent to sign in"), the bottom bar is not drawn at all (only the Parent button is left), and nothing plays, including a video opened from a link. What YouTube lists
   signed out isn't supervised. The TV build follows the same rule now. A kid's phone never shows an account
   chooser and never picks one for the kid: the selected account stays, else the only account is selected. After a
   parent signs in and that leaves several accounts, the parent gets a list and picks; with several and none selected,
   the screens say "Ask a parent to sign in" until a parent picks one in Settings (behind the PIN).
+- **The bar follows the kid rules.** A destination with nothing for this person is left off the bar (a kid whose
+  account has no subscriptions section, say). A kid's Library has no play queue (adding to it is a parent's, behind
+  the PIN). Settings stays the Parent button behind the PIN.
 - **The parent PIN.** In kids mode the first parent to open the Parent menu chooses it. It protects that menu,
   signing in, the PIN itself, and what a video's long-press menu holds beyond the TV's kid rule. A kid's long-press
   menu has only "Open channel" and "Subscribe"/"Unsubscribe", as on the TV; blocking channels, playlists and blocked
@@ -128,6 +141,7 @@ How it is put together:
 | `parent/MobileParentMenu`, `signin/` | The parent's menu and the sign-in code screen |
 | `ui/KidGate` | "Kids mode and nobody signed in": every video screen asks it |
 | `ui/KidMenu` | A long-press menu: the TV's, or on a kid's phone only channel and subscribe (the rest behind the PIN) |
+| `browse/NavBar`, `NavRules`, `NavState`, `ScrollHide` | The bottom bar or rail, and the plain-Java rules behind it (which destinations a person gets, each one's chips, Back, the saved state, hide on scroll), unit tested |
 | `ui/SubPillStrip` | The strip of sub-pills under a screen's top bar, one view for the home screen, channels and search |
 
 Shared pieces added for it in `common`: `KidsDecision` and `KidsMode` (is this a kids device), `LocalAllowance` (the

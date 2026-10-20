@@ -35,6 +35,7 @@ final class NavBar extends LinearLayout {
         super(context);
         mListener = listener;
         setGravity(Gravity.CENTER);
+        setBaselineAligned(false); // the items' icons have no baseline: aligning on one adds a gap above them
         HearthLook.glassBar(this);
         setPadding(dp(6), dp(6), dp(6), dp(6));
         setClipToPadding(false);
@@ -102,6 +103,8 @@ final class NavBar extends LinearLayout {
         text.setText(label);
         text.setTextSize(12);
         text.setSingleLine(true);
+        // A big system font would cut "Subscriptions" short: let the label shrink a little, down to 9 sp, before it does
+        text.setAutoSizeTextTypeUniformWithConfiguration(9, 12, 1, android.util.TypedValue.COMPLEX_UNIT_SP);
         text.setEllipsize(TextUtils.TruncateAt.END);
         text.setGravity(Gravity.CENTER);
         text.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
