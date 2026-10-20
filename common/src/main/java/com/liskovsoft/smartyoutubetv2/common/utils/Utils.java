@@ -518,6 +518,47 @@ public class Utils {
         }
     }
 
+    /**
+     * The package of a web browser other than this app, or null. HearthTube itself claims youtube.com links, so on a TV
+     * with no browser a plain "open this link" request comes straight back to it (and shows "Can't process intent").
+     */
+    public static String findExternalBrowser(Context context) {
+        if (context == null) {
+            return null;
+        }
+
+        android.content.Intent probe = new android.content.Intent(android.content.Intent.ACTION_VIEW,
+                Uri.parse("https://example.com/"));
+        probe.addCategory(android.content.Intent.CATEGORY_BROWSABLE);
+
+        for (android.content.pm.ResolveInfo info : context.getPackageManager().queryIntentActivities(probe, 0)) {
+            if (info.activityInfo != null && !context.getPackageName().equals(info.activityInfo.packageName)) {
+                return info.activityInfo.packageName;
+            }
+        }
+
+        return null;
+    }
+
+    /** Opens the link in another app's browser (never this app); false when there is none */
+    public static boolean openInExternalBrowser(Context context, String url) {
+        String browser = findExternalBrowser(context);
+
+        if (browser == null || url == null) {
+            return false;
+        }
+
+        try {
+            android.content.Intent intent = new android.content.Intent(android.content.Intent.ACTION_VIEW, Uri.parse(url));
+            intent.setPackage(browser);
+            intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
+            context.startActivity(intent);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     public static void openLinkExt(Context context, String url) {
         try {
             openLinkInTabs(context, url);

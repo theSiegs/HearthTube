@@ -103,8 +103,10 @@ public class SignInFragment extends GuidedStepSupportFragment implements SignInV
                 .title(getString(R.string.login_from_browser))
                 .build();
         actions.add(login);
-        // HearthTube: a kid has no browser to sign in with (the phone hides it too)
-        if (!com.liskovsoft.smartyoutubetv2.common.utils.ParentGate.isKidsProfile(getContext())) {
+        // HearthTube: a kid has no browser to sign in with (the phone hides it too), and a TV with no browser can't
+        // offer it: the link would come back to this app
+        if (!com.liskovsoft.smartyoutubetv2.common.utils.ParentGate.isKidsProfile(getContext())
+                && Utils.findExternalBrowser(getContext()) != null) {
             actions.add(openBrowser);
         }
     }
@@ -115,7 +117,10 @@ public class SignInFragment extends GuidedStepSupportFragment implements SignInV
             mSignInPresenter.onActionClicked();
         } else if (action.getId() == OPEN_BROWSER) {
             if (mFullSignInUrl != null) {
-                Utils.openLinkExt(getContext(), mFullSignInUrl);
+                if (!Utils.openInExternalBrowser(getContext(), mFullSignInUrl)) {
+                    com.liskovsoft.sharedutils.helpers.MessageHelpers.showMessage(getContext(),
+                            "No browser on this TV. Scan the code with your phone instead.");
+                }
             }
         }
     }

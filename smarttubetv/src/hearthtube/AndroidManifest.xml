@@ -8,6 +8,12 @@
         <package android:name="com.thesiegs.hearth"/>
         <!-- Hearth's debug build, which a debug HearthTube also talks to -->
         <package android:name="com.thesiegs.hearth.debug"/>
+        <!-- Sign in with a browser on this TV: is there a browser other than this app? -->
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <category android:name="android.intent.category.BROWSABLE"/>
+            <data android:scheme="https"/>
+        </intent>
         <!-- Kids profile check (ParentGate): Google TV suspends the launcher apps a parent hasn't approved -->
         <intent>
             <action android:name="android.intent.action.MAIN"/>
