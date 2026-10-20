@@ -34,6 +34,41 @@ All files: [releases](https://github.com/theSiegs/HearthTube/releases).
 - Only the copy in the TV owner's profile checks for updates. When Hearth updates HearthTube, HearthTube leaves updating
   to Hearth, and Hearth's own "Include pre-releases" switch decides.
 
+## Updating a Google TV that has kids' profiles
+
+Read this before installing or updating anything (HearthTube, Hearth, any app) on a Google TV with a kid's profile. It
+has already cost a family their kid's apps once (2026-10-20); it will come up again.
+
+**What happens.** Google TV's home app (`com.google.android.apps.tv.launcherx`) keeps each kid's profile (an Android
+user, with Family Link supervision) matched to Google TV's own approved-apps list for that kid. It does this whenever
+any app is installed or updated in the owner's user, and at boot. Every non-system app in the kid's profile that is
+not on the list is uninstalled (a system app is disabled instead). In the log it reads
+`TvProfileHelper: UNINSTALLING package=... because it is NOT in target packagesForProfile`, followed by
+`deletePackageX` for that user. The Play Store, Family Link and Hearth don't do it.
+
+**Which apps are on the list.** The ones a parent approved in Google TV: owner profile → Settings → Accounts & Sign
+In → the kid → Manage apps. Apps the kid's profile installed from the Play Store opened inside that profile are
+**not** added, even when Family Link doesn't block them. HearthTube and Hearth stay because the TV owner's Hearth sets
+their block-uninstall flag in the kid's profile; that flag makes Google TV refuse the removal.
+
+**What triggers it.** Any install or update completing in user 0: `adb install -r` with or without `--user` (a plain
+one also installs the app into every user), the in-app updater, Play auto-updates of any app, and a reboot or many
+profile starts. Adding an app to the kid's user alone didn't (emulator). A stopped kid user is skipped, so the cleanup
+is only postponed. No install flag avoids it.
+
+**Before any update**
+1. For every profile, record `adb shell pm list packages -3 --user N` (users 0, 10, 11, ...), the disabled list
+   (`pm list packages -d --user N`) and `dumpsys activity users | grep mStartedUserArray`.
+2. Check that every non-system app in a running kid's profile is approved in Manage apps. If one isn't, don't update:
+   approve it first, or accept that it will be removed.
+3. Update with `adb install -r --user 0 <apk>`, never a plain `adb install -r`. The in-app updater is equally fine.
+4. Record the same lists afterwards and compare. Re-enable Hearth's services after a Hearth install.
+
+**Evidence and open points.** Reproduced on a Google TV emulator, and the Living Room TV log (17:12 on 2026-10-20)
+shows the same lines; the investigation and its logs are in the developer's `ht-work/tv-app-removal` folder (not in
+the repository). Not yet proven on a real TV: that approving the apps in Manage apps keeps them across an update.
+The phone app has no such mechanism (a child's phone has no Google TV home app).
+
 ## Signing
 
 Releases are signed with the same key as Hearth, rotated from the earlier development key, so existing installs update
