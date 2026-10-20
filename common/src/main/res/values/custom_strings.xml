@@ -2,7 +2,6 @@
 <!-- Profile picker, PIN entry and daily background. Kept apart from strings.xml so upstream merges don't collide. -->
 <resources>
     <string name="profile_picker_title">Who\'s watching?</string>
-    <string name="profile_guest">Guest</string>
     <string name="profile_add_account">Add account</string>
     <string name="profile_sign_in">Sign in</string>
     <string name="profile_welcome_title">Welcome to HearthTube</string>
@@ -105,10 +104,6 @@
     <string name="edit_menu_and_tabs">Edit menu and tabs</string>
     <string name="edit_tabs_at_top">Which of them are tabs at the top (the others are in the side menu)</string>
     <string name="edit_shown_sections">Sections to show</string>
-    <string name="notifications_bell">Notifications</string>
-    <string name="enable_guest_account">Enable guest account</string>
-    <string name="enable_guest_account_hint">Lets anyone watch signed out, without an account</string>
-    <string name="sign_in_needed">Sign in to watch. Guest viewing is off (Settings › Accounts).</string>
     <string name="more_videos">More</string>
     <string name="accent_color">Accent color</string>
     <string name="match_hearth">Match Hearth</string>
@@ -127,7 +122,6 @@
     <string name="accent_amber">Amber</string>
     <string name="accent_rose">Rose</string>
     <string name="accent_ice_blue">Ice Blue</string>
-    <string name="accent_restart">The new color shows as HearthTube restarts</string>
     <string name="wallpaper">Wallpaper</string>
     <string name="wallpaper_bing">Bing picture of the day</string>
     <string name="wallpaper_dark">Plain dark</string>

@@ -14,8 +14,6 @@ import com.liskovsoft.smartyoutubetv2.common.app.presenters.GoogleSignInPresente
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.base.BasePresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.service.SidebarService;
 import com.liskovsoft.smartyoutubetv2.common.misc.BackupAndRestoreManager;
-import com.liskovsoft.smartyoutubetv2.common.misc.GDriveBackupManager;
-import com.liskovsoft.smartyoutubetv2.common.misc.GDriveBackupWorker;
 import com.liskovsoft.smartyoutubetv2.common.misc.LocalDriveBackupWorker;
 import com.liskovsoft.smartyoutubetv2.common.prefs.GeneralData;
 import com.liskovsoft.smartyoutubetv2.common.utils.AppDialogUtil;
@@ -27,13 +25,11 @@ public class BackupSettingsPresenter extends BasePresenter<Void> {
     private static final String TAG = BackupSettingsPresenter.class.getSimpleName();
     @SuppressLint("StaticFieldLeak")
     private static BackupSettingsPresenter sInstance;
-    private final GDriveBackupManager mGDriveBackupManager;
     private final GeneralData mGeneralData;
     private final SidebarService mSidebarService;
 
     private BackupSettingsPresenter(Context context) {
         super(context);
-        mGDriveBackupManager = GDriveBackupManager.instance(context);
         mGeneralData = GeneralData.instance(context);
         mSidebarService = SidebarService.instance(context);
     }
