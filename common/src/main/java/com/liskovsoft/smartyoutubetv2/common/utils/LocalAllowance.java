@@ -5,7 +5,8 @@ import androidx.annotation.Nullable;
 /**
  * HearthTube: a daily YouTube limit a parent sets on the device itself, for a phone or tablet with no Hearth to give
  * one ({@link HearthAllowance} uses it only then: with Hearth the limit lives there, in one place). Counts what played
- * today and starts again each day. Plain Java, so it's unit-tested; the caller says which day it is.
+ * today and starts again each day (never for an earlier date than the last). Plain Java, so it's unit-tested; the caller says which
+ * day it is ({@link AllowanceDay} sees through a changed device date).
  */
 public final class LocalAllowance {
     private static final long MINUTE_MS = 60_000;
@@ -51,7 +52,8 @@ public final class LocalAllowance {
     }
 
     private void rollTo(String day) {
-        if (day != null && !day.equals(mDay)) {
+        // Only forward: an earlier date is the same day (the caller's AllowanceDay also sees through a changed date)
+        if (day != null && (mDay == null || day.compareTo(mDay) > 0)) {
             mDay = day;
             mPlayedMs = 0;
         }

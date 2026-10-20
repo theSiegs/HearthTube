@@ -54,6 +54,16 @@ public class LocalAllowanceTest {
     }
 
     @Test
+    public void anEarlierDateNeverResets() {
+        mAllowance.setLimitMinutes(30);
+        mAllowance.played(TUE, 30 * MINUTE);
+        assertFalse(mAllowance.mayPlay(MON));
+        mAllowance.played(MON, 0);
+        assertFalse(mAllowance.mayPlay(TUE));
+        assertEquals(Long.valueOf(0), mAllowance.msLeft(TUE));
+    }
+
+    @Test
     public void raisingTheLimitMidDayGivesTheDifference() {
         mAllowance.setLimitMinutes(30);
         mAllowance.played(MON, 30 * MINUTE);

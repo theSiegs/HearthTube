@@ -18,8 +18,10 @@ import java.util.concurrent.Executors;
  * HearthTube's side of Hearth's daily YouTube allowance (Hearth's provider contract 6): tells Hearth how long videos
  * actually played (not paused, buffering or in menus), and stops them when the allowance is used up or Home
  * Assistant's schedule is locked ({@link YouTubeAllowance} decides). The player (HearthAllowanceController) says when
- * playing starts and stops. Without a Hearth that can be relied on (missing, older than contract 6, or in a kids
- * profile whose Hearth agent isn't connected) there's no allowance, as before.
+ * playing starts and stops. When Hearth can't be relied on (older than contract 6, suspended, or in a kids profile
+ * whose Hearth agent isn't connected) the last allowance it gave is kept for the rest of the day and counted down here
+ * ({@link SilentHearthLimit}), and the time played meanwhile is kept for Hearth ({@link PlayTimer}). A kid Hearth never
+ * gave a limit for has none, unless a parent set one on the device ({@link LocalAllowance}).
  */
 public final class HearthAllowance {
     private static final String TAG = HearthAllowance.class.getSimpleName();
@@ -28,31 +30,27 @@ public final class HearthAllowance {
     private static final String PREFS = "hearth_allowance";
     private static final String PREF_HA_READ = "home_assistant_read";
     private static final String PREF_LOCAL = "local_allowance";
-    private static final Object sLock = new Object();
+    private static final String PREF_DAY = "allowance_day";
+    private static final String PREF_SILENT = "silent_hearth_limit";
     /** Reports go to Hearth one at a time, off the main thread (a kids profile's Hearth agent passes them on) */
     private static final ExecutorService sReporter = Executors.newSingleThreadExecutor();
     private static YouTubeAllowance sAllowance;
     private static LocalAllowance sLocal;
     private static String sSaved;
+    private static AllowanceDay sDay;
+    private static String sSavedDay;
+    private static SilentHearthLimit sSilent;
+    private static String sSavedSilent;
     private static YouTubeAllowance.Verdict sLastVerdict;
-    /** When the current stretch of playing started (SystemClock.elapsedRealtime), -1 while not playing */
-    private static long sPlayingSince = -1;
-    /** Played and not taken by Hearth yet; at most a report's worth (older time is let go) */
-    private static long sUnreportedMs;
+    /** The playing clock (SystemClock.elapsedRealtime) and what Hearth hasn't taken: a missed stop counts at most one report */
+    private static final PlayTimer sTimer = new PlayTimer(HearthProfile.MAX_REPORT_MS, HearthProfile.MAX_REPORT_MS);
 
     private HearthAllowance() {
     }
 
     /** A video started playing. True when it wasn't playing a moment ago. */
     public static boolean onPlaying() {
-        synchronized (sLock) {
-            if (sPlayingSince != -1) {
-                return false;
-            }
-
-            sPlayingSince = SystemClock.elapsedRealtime();
-            return true;
-        }
+        return sTimer.start(SystemClock.elapsedRealtime());
     }
 
     /** It's waiting (buffering): the time so far counts, and goes with the next report */
@@ -73,9 +71,7 @@ public final class HearthAllowance {
     }
 
     public static boolean isPlaying() {
-        synchronized (sLock) {
-            return sPlayingSince != -1;
-        }
+        return sTimer.isPlaying();
     }
 
     /**
@@ -124,29 +120,23 @@ public final class HearthAllowance {
         HearthProfile hearth = HearthProfile.isHearthSuspended(context) ? null
                 : HearthProfile.live(context, HearthProfile.queryHearth(context));
 
-        // Mid-switch the row may still be the last profile's: the next check decides
-        if (hearth != null && Boolean.FALSE.equals(hearth.profileReady)) {
-            return YouTubeAllowance.Decision.NO_LIMIT;
-        }
-
         // Time limits and bedtimes are for kids: an adult's profile plays, whatever Hearth's row says
         if (!ParentGate.isKidsProfile(context)) {
             return YouTubeAllowance.Decision.NO_LIMIT;
         }
 
-        // No Hearth to give a limit (a phone or tablet): the one a parent set on the device itself, if any
-        if (hearth == null) {
-            Long left = local(context).msLeft(today());
-            return left != null && left <= 0
-                    ? new YouTubeAllowance.Decision(YouTubeAllowance.Verdict.USED_UP, null, 0L)
-                    : new YouTubeAllowance.Decision(YouTubeAllowance.Verdict.PLAY, null, left);
+        // No Hearth to ask (a phone or tablet, or Hearth is silent), or mid-switch, when its row may still be the last
+        // profile's: what it last gave counts down here, and a limit a parent set on the device itself
+        if (hearth == null || Boolean.FALSE.equals(hearth.profileReady)) {
+            return silentDecision(context);
         }
 
-        YouTubeAllowance.Row row = hearth == null ? null : new YouTubeAllowance.Row(hearth.contractVersion, hearth.key(),
+        YouTubeAllowance.Row row = new YouTubeAllowance.Row(hearth.contractVersion, hearth.key(),
                 hearth.youtubeMinutesLeft, hearth.scheduleLocked, hearth.allowanceMessage, hearth.allowanceSource,
                 hearth.allowanceCheckedAt);
         YouTubeAllowance.Decision decision = allowance(context).decide(row, System.currentTimeMillis());
         save(context);
+        rememberForSilence(context, hearth.key(), decision);
 
         if (decision.verdict != sLastVerdict) {
             sLastVerdict = decision.verdict;
@@ -158,26 +148,45 @@ public final class HearthAllowance {
         return decision;
     }
 
+    /** Hearth can't be asked: what it last gave for today, less what's played since, and the device's own limit */
+    private static YouTubeAllowance.Decision silentDecision(Context context) {
+        String today = today(context);
+        Long left = silent(context).msLeft(today);
+        Long local = local(context).msLeft(today);
+
+        if (left == null || (local != null && local < left)) {
+            left = local;
+        }
+
+        return left != null && left <= 0
+                ? new YouTubeAllowance.Decision(YouTubeAllowance.Verdict.USED_UP, null, 0L)
+                : new YouTubeAllowance.Decision(YouTubeAllowance.Verdict.PLAY, null, left);
+    }
+
+    /** Keeps what Hearth just gave, for when it goes silent. A bedtime lock lapses with Hearth, so it isn't kept. */
+    private static void rememberForSilence(Context context, String profileKey, YouTubeAllowance.Decision decision) {
+        if (decision.verdict == YouTubeAllowance.Verdict.LOCKED) {
+            return;
+        }
+
+        silent(context).remember(profileKey, decision.msLeft, today(context), System.currentTimeMillis());
+        saveSilent(context);
+    }
+
     /** Counts the playing since the last time (and goes on counting when {@code stillPlaying}) */
     private static void take(Context context, boolean stillPlaying) {
-        long ms;
+        long ms = sTimer.take(SystemClock.elapsedRealtime(), stillPlaying);
 
-        synchronized (sLock) {
-            if (sPlayingSince == -1) {
-                return;
-            }
-
-            long now = SystemClock.elapsedRealtime();
-            // Counted every half minute while playing: anything longer was a missed stop
-            ms = Math.min(now - sPlayingSince, HearthProfile.MAX_REPORT_MS);
-            sPlayingSince = stillPlaying ? now : -1;
-            sUnreportedMs = Math.min(sUnreportedMs + ms, HearthProfile.MAX_REPORT_MS);
+        if (ms <= 0) {
+            return;
         }
 
         allowance(context).played(ms, System.currentTimeMillis());
         save(context);
-        local(context).played(today(), ms);
+        local(context).played(today(context), ms);
         saveLocal(context);
+        silent(context).played(ms);
+        saveSilent(context);
     }
 
     /** The daily limit a parent set on this device (minutes); 0 is none. Used only without a Hearth. */
@@ -203,8 +212,50 @@ public final class HearthAllowance {
         prefs(context).edit().putString(PREF_LOCAL, local(context).save()).apply();
     }
 
-    private static String today() {
-        return new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(new java.util.Date());
+    /** Today's date for the allowances, which a changed device date doesn't move back or skip ahead ({@link AllowanceDay}) */
+    private static synchronized String today(Context context) {
+        if (sDay == null) {
+            sDay = new AllowanceDay();
+            sSavedDay = prefs(context).getString(PREF_DAY, null);
+            sDay.restore(sSavedDay);
+        }
+
+        String day = sDay.today(System.currentTimeMillis(), SystemClock.elapsedRealtime(), bootCount(context));
+        String saved = sDay.save();
+
+        if (!saved.equals(sSavedDay)) {
+            sSavedDay = saved;
+            prefs(context).edit().putString(PREF_DAY, saved).apply();
+        }
+
+        return day;
+    }
+
+    private static long bootCount(Context context) {
+        try {
+            return android.provider.Settings.Global.getInt(context.getContentResolver(), "boot_count", -1);
+        } catch (RuntimeException e) {
+            return -1;
+        }
+    }
+
+    private static synchronized SilentHearthLimit silent(Context context) {
+        if (sSilent == null) {
+            sSilent = new SilentHearthLimit();
+            sSavedSilent = prefs(context).getString(PREF_SILENT, null);
+            sSilent.restore(sSavedSilent);
+        }
+
+        return sSilent;
+    }
+
+    private static synchronized void saveSilent(Context context) {
+        String saved = silent(context).save();
+
+        if (!java.util.Objects.equals(saved, sSavedSilent)) {
+            sSavedSilent = saved;
+            prefs(context).edit().putString(PREF_SILENT, saved).apply();
+        }
     }
 
     /** Hands the time Hearth hasn't had yet to it, off the main thread; what it doesn't take waits for the next time */
@@ -212,27 +263,19 @@ public final class HearthAllowance {
         Context app = context.getApplicationContext();
 
         sReporter.execute(() -> {
+            // In a Google TV profile, only while Hearth's agent there is connected (it passes the time on to Hearth);
+            // one report's worth at a time, so a long wait is handed over in as many reports as it takes
+            boolean live = sTimer.unreportedMs() >= MIN_REPORT_MS && HearthProfile.live(app, HearthProfile.queryHearth(app)) != null;
             long ms;
 
-            synchronized (sLock) {
-                if (sUnreportedMs < MIN_REPORT_MS) {
+            while (live && (ms = sTimer.nextReport(MIN_REPORT_MS)) > 0) {
+                if (HearthProfile.reportPlaying(app, ms)) {
+                    Log.d(TAG, "Reported %s ms of playing to Hearth", ms);
+                } else {
+                    sTimer.giveBack(ms);
+                    Log.d(TAG, "Hearth didn't take %s ms of playing: kept for the next report", ms);
                     return;
                 }
-
-                ms = sUnreportedMs;
-                sUnreportedMs = 0;
-            }
-
-            // In a Google TV profile, only while Hearth's agent there is connected (it passes the time on to Hearth)
-            boolean taken = HearthProfile.live(app, HearthProfile.queryHearth(app)) != null && HearthProfile.reportPlaying(app, ms);
-
-            if (taken) {
-                Log.d(TAG, "Reported %s ms of playing to Hearth", ms);
-            } else {
-                synchronized (sLock) {
-                    sUnreportedMs = Math.min(sUnreportedMs + ms, HearthProfile.MAX_REPORT_MS);
-                }
-                Log.d(TAG, "Hearth didn't take %s ms of playing: kept for the next report", ms);
             }
         });
     }

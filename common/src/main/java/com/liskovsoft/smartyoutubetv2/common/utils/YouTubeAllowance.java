@@ -20,7 +20,8 @@ import java.util.ArrayDeque;
  * countdown), so Home Assistant's say keeps counting down without it. What's played after the read can't be in
  * Home Assistant's figure yet, so nothing counts twice.</li>
  * <li>Home Assistant's schedule lock counts while that read is fresh ({@link #STALE_AFTER_MS}); a stale one lapses.</li>
- * <li>No Hearth, or one older than contract 6: no allowance (the caller passes no row).</li>
+ * <li>One older than contract 6: no allowance. No row (Hearth silent): the caller counts down what Hearth last gave,
+ * see {@link SilentHearthLimit}.</li>
  * </ul>
  */
 public final class YouTubeAllowance {
