@@ -16,8 +16,13 @@ the same way.
 - **It looks like HearthTube on the TV.** The same wallpaper behind every screen (Bing's picture of the day, or
   Hearth's own when Hearth is on the device), under a shade that is darker at the top and bottom; dark glass pills for
   the sections and buttons, the open one in white; rounded cards with the "Likely AI" label; and Hearth's accent color on
-  the Search and Settings buttons, switches and the player's seek bar. Settings has **Look and layout** (accent color
-  and wallpaper) and **About**, which names the day's picture and its photographer. The video itself stays on black.
+  the Search and Settings buttons, switches and the player's seek bar. The video itself stays on black.
+- **The same settings as the TV app, by the same names.** Both apps make their Settings menu from one list
+  (`HearthSettings`): Accounts, Look and layout, Player, Content and safety, Language/Country (only without Hearth) and
+  About, in that order. The TV adds Cast from phone, General, Search and Backup/Restore. On the phone, Look and layout is
+  the accent color and the wallpaper; Player is playback mode, video presets, buffer, speed, audio language and
+  subtitles; Content and safety holds blocked words, the AI-channel label, Shorts, what to hide, SponsorBlock and
+  DeArrow; About names the day's picture and its photographer. Back from a page goes home (the TV goes back to its menu).
 - **Sub-pills, like the TV's strip under its tabs.** A section with several rows (Ambiance: Fireplace, Rain…;
   Podcasts; Music) has a second row of pills under the section pills, one per row, and shows the picked row's videos.
   In Subscriptions the strip is the channels' circles, and a long press on one opens the channel's menu (a parent's,
@@ -27,7 +32,7 @@ the same way.
 ## Adults and kids
 
 - **Anyone else's device works as a normal YouTube client.** Sign in from the Sign in button wherever a screen needs an
-  account (it can open the sign-in page right on the phone). Settings holds accounts, blocked words and a switch for
+  account (it can open the sign-in page right on the phone). Settings holds accounts, content and safety (blocked words among it) and a switch for
   kids mode.
 - **A Family Link device starts in kids mode.** The app looks for the restrictions Family Link puts on a supervised
   user, and treats the device as a kid's when it finds them. Whoever sets the device up can also switch kids mode on

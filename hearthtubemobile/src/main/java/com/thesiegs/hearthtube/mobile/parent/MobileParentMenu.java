@@ -6,10 +6,7 @@ import android.content.Intent;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.OptionItem;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.UiOptionItem;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.AppDialogPresenter;
-import com.liskovsoft.smartyoutubetv2.common.app.presenters.settings.AboutSimpleSettingsPresenter;
-import com.liskovsoft.smartyoutubetv2.common.app.presenters.settings.AccountSettingsPresenter;
-import com.liskovsoft.smartyoutubetv2.common.app.presenters.settings.BlockedWordsPresenter;
-import com.liskovsoft.smartyoutubetv2.common.app.presenters.settings.MainUISettingsPresenter;
+import com.liskovsoft.smartyoutubetv2.common.app.presenters.settings.HearthSettings;
 import com.liskovsoft.smartyoutubetv2.common.utils.HearthAllowance;
 import com.liskovsoft.smartyoutubetv2.common.utils.KidsMode;
 import com.liskovsoft.smartyoutubetv2.common.utils.ParentGate;
@@ -20,8 +17,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The parent's way in on a kid's phone: behind the parent PIN (the first parent to open it chooses one), a short menu
- * of what a parent needs here. Everything else a kid could change stays out of reach.
+ * Settings on the phone, and on a kid's phone the parent's way in: behind the parent PIN (the first parent to open it
+ * chooses one). The pages are the TV app's list (HearthSettings), with the same names in the same order, less the ones
+ * about a remote control or a TV; what is only a phone's, kids mode and the daily time, is at the top.
  */
 public final class MobileParentMenu {
     private MobileParentMenu() {
@@ -47,7 +45,7 @@ public final class MobileParentMenu {
         dialog.appendRadioCategory(context.getString(R.string.parent_daily_time), options);
     }
 
-    /** A new accent color or wallpaper: open the screens again from the start, as they read their look when they open */
+    /** A new accent color, wallpaper or Shorts setting: open the screens again from the start, as they read it when they open */
     private static void reopenScreens(Context context) {
         Intent intent = new Intent(context, MobileSplashActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
@@ -57,10 +55,6 @@ public final class MobileParentMenu {
     private static void showMenu(Context context) {
         AppDialogPresenter dialog = AppDialogPresenter.instance(context);
 
-        dialog.appendSingleButton(UiOptionItem.from(context.getString(R.string.parent_accounts), option -> {
-            dialog.closeDialog();
-            AccountSettingsPresenter.instance(context).show();
-        }));
         dialog.appendSingleSwitch(UiOptionItem.from(context.getString(R.string.parent_kids_mode),
                 option -> KidsMode.setExplicit(context, option.isSelected()),
                 ParentGate.isKidsProfile(context)));
@@ -68,16 +62,15 @@ public final class MobileParentMenu {
         if (ParentGate.isKidsProfile(context)) {
             appendDailyTime(context, dialog);
         }
-        BlockedWordsPresenter.appendSettingsButton(context, dialog);
-        // Accent color and wallpaper, as in the TV app's Look and layout; About has the wallpaper's credit
-        dialog.appendSingleButton(UiOptionItem.from(context.getString(com.liskovsoft.smartyoutubetv2.common.R.string.settings_look_and_layout), option -> {
-            dialog.closeDialog();
-            MainUISettingsPresenter.instance(context).showLook(() -> reopenScreens(context));
-        }));
-        dialog.appendSingleButton(UiOptionItem.from(context.getString(com.liskovsoft.smartyoutubetv2.common.R.string.settings_about), option -> {
-            dialog.closeDialog();
-            AboutSimpleSettingsPresenter.instance(context).showCredits();
-        }));
+
+        for (HearthSettings.Entry entry : HearthSettings.entries(context, true, () -> reopenScreens(context))) {
+            // The menu closes as the page opens (a second dialog over it would leave two screens showing the page), so
+            // Back from a page goes home, where the TV's goes back to its menu
+            dialog.appendSingleButton(UiOptionItem.from(entry.title, option -> {
+                dialog.closeDialog();
+                entry.open.run();
+            }));
+        }
 
         dialog.showDialog(context.getString(ParentGate.isKidsProfile(context) ? R.string.parent_menu_title : R.string.settings_menu_title));
     }
