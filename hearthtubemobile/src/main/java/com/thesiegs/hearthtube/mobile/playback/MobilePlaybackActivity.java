@@ -1,6 +1,11 @@
 package com.thesiegs.hearthtube.mobile.playback;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.res.Configuration;
+import android.media.AudioManager;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.view.Gravity;
@@ -58,6 +63,16 @@ public class MobilePlaybackActivity extends MotherActivity implements PlaybackVi
     private boolean mEngineBlocked;
     private boolean mControlsShown;
     private boolean mFinishing;
+    private boolean mNoisyRegistered;
+    /** Headphones unplugged (or a Bluetooth speaker gone): pause instead of playing on through the phone's speaker */
+    private final BroadcastReceiver mBecomingNoisy = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (mPlayer != null && mEngine != null) {
+                mEngine.setPlayWhenReady(false);
+            }
+        }
+    };
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -80,6 +95,11 @@ public class MobilePlaybackActivity extends MotherActivity implements PlaybackVi
 
     @Override
     protected void initTheme() {
+    }
+
+    /** A swipe near the left edge is the player's own (seeking, the system's back gesture), not the TV app's slide-to-close */
+    @Override
+    protected void initEdgeSlide() {
     }
 
     private View createContent() {
@@ -198,6 +218,12 @@ public class MobilePlaybackActivity extends MotherActivity implements PlaybackVi
 
         mPresenter.setView(this);
         mPresenter.onEngineInitialized();
+
+        // This ExoPlayer is too old to have setHandleAudioBecomingNoisy
+        if (!mNoisyRegistered) {
+            registerReceiver(mBecomingNoisy, new IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY));
+            mNoisyRegistered = true;
+        }
     }
 
     private void maybeReleasePlayer() {
@@ -209,6 +235,11 @@ public class MobilePlaybackActivity extends MotherActivity implements PlaybackVi
     private void releasePlayer() {
         if (mPlayer == null) {
             return;
+        }
+
+        if (mNoisyRegistered) {
+            unregisterReceiver(mBecomingNoisy);
+            mNoisyRegistered = false;
         }
 
         mPresenter.onEngineReleased();

@@ -19,6 +19,11 @@ public abstract class HearthActivity extends MotherActivity {
         mBackdrop = new HearthLook.Backdrop(this);
     }
 
+    /** The pill bars scroll sideways: a drag that starts near the left edge must not go back (the system's back does) */
+    @Override
+    protected void initEdgeSlide() {
+    }
+
     @Override
     protected void onStart() {
         super.onStart();

@@ -88,7 +88,8 @@ public class MobileSignInActivity extends HearthActivity implements SignInView {
         view.setTextColor(Color.WHITE);
         view.setTextSize(sp);
         view.setGravity(Gravity.CENTER);
-        view.setPadding(0, 16, 0, 16);
+        int gap = (int) (8 * getResources().getDisplayMetrics().density + 0.5f); // dp, not pixels
+        view.setPadding(0, gap, 0, gap);
         if (bold) {
             view.setTypeface(view.getTypeface(), Typeface.BOLD);
         }
