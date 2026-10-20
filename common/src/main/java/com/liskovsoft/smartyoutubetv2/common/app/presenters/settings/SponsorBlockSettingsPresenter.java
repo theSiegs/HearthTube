@@ -153,11 +153,6 @@ public class SponsorBlockSettingsPresenter extends BasePresenter<Void> {
                 optionItem -> mSponsorBlockData.setDontSkipSegmentAgainEnabled(optionItem.isSelected()),
                 mSponsorBlockData.isDontSkipSegmentAgainEnabled()));
 
-        options.add(UiOptionItem.from(getContext().getString(R.string.content_block_alt_server),
-                getContext().getString(R.string.content_block_alt_server_desc),
-                optionItem -> mSponsorBlockData.enableAltServer(optionItem.isSelected()),
-                mSponsorBlockData.isAltServerEnabled()));
-
         settingsPresenter.appendCheckedCategory(getContext().getString(R.string.player_other), options);
     }
 
