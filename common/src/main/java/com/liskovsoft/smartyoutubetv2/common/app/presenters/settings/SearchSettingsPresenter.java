@@ -64,14 +64,6 @@ public class SearchSettingsPresenter extends BasePresenter<Void> {
         //        option -> mSearchData.disablePopularSearches(option.isSelected()),
         //        mSearchData.isPopularSearchesDisabled()));
 
-        options.add(UiOptionItem.from(getContext().getString(R.string.typing_corrections),
-                option -> mSearchData.setTypingCorrectionDisabled(option.isSelected()),
-                mSearchData.isTypingCorrectionDisabled()));
-
-        options.add(UiOptionItem.from(getContext().getString(R.string.search_exit_shortcut) + ": " + getContext().getString(R.string.app_double_back_exit),
-                option -> mGeneralData.setSearchExitShortcut(option.isSelected() ? GeneralData.EXIT_DOUBLE_BACK : GeneralData.EXIT_SINGLE_BACK),
-                mGeneralData.getSearchExitShortcut() == GeneralData.EXIT_DOUBLE_BACK));
-
         options.add(UiOptionItem.from(getContext().getString(R.string.disable_search_history),
                 option -> mSearchData.setSearchHistoryDisabled(option.isSelected()),
                 mSearchData.isSearchHistoryDisabled()));
@@ -91,10 +83,6 @@ public class SearchSettingsPresenter extends BasePresenter<Void> {
         options.add(UiOptionItem.from(getContext().getString(R.string.keyboard_auto_show),
                 option -> mSearchData.setKeyboardAutoShowEnabled(option.isSelected()),
                 mSearchData.isKeyboardAutoShowEnabled()));
-
-        options.add(UiOptionItem.from(getContext().getString(R.string.keyboard_fix),
-                option -> mSearchData.setKeyboardFixEnabled(option.isSelected()),
-                mSearchData.isKeyboardFixEnabled()));
 
         settingsPresenter.appendCheckedCategory(getContext().getString(R.string.player_other), options);
     }

@@ -96,9 +96,10 @@
     <string name="podcasts_sports">Sports talk</string>
     <string name="podcasts_sports_query" translatable="false">sports podcast full episode</string>
     <string name="side_menu_who">%s · Switch account</string>
+    <string name="settings_content_and_safety">Content and safety</string>
     <string name="edit_menu_and_tabs">Edit menu and tabs</string>
-    <string name="edit_tabs_at_top">Tabs at the top</string>
-    <string name="edit_shown_sections">Tabs at the top (the rest are in the side menu)</string>
+    <string name="edit_tabs_at_top">Which of them are tabs at the top (the others are in the side menu)</string>
+    <string name="edit_shown_sections">Sections to show</string>
     <string name="notifications_bell">Notifications</string>
     <string name="enable_guest_account">Enable guest account</string>
     <string name="enable_guest_account_hint">Lets anyone watch signed out, without an account</string>
