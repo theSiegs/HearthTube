@@ -31,6 +31,7 @@ public class AccountSelectionPresenter extends BasePresenter<Void> {
     @SuppressLint("StaticFieldLeak")
     private static AccountSelectionPresenter sInstance;
     private final SignInService mSignInService;
+    private Runnable mOnPicked;
 
     public AccountSelectionPresenter(Context context) {
         super(context);
@@ -67,6 +68,15 @@ public class AccountSelectionPresenter extends BasePresenter<Void> {
         }
 
         showUnlocked(force);
+    }
+
+    /**
+     * HearthTube: the accounts as a list for a parent who is past the PIN already (right after signing a kid in, or from
+     * the kid's welcome). Whatever they pick is selected; {@code onPicked} then runs.
+     */
+    public void showParentChoice(Runnable onPicked) {
+        mOnPicked = onPicked;
+        showUnlocked(true);
     }
 
     private void showUnlocked(boolean force) {
@@ -110,6 +120,11 @@ public class AccountSelectionPresenter extends BasePresenter<Void> {
                     TextUtils.concat(icon, " ", formatAccount(account)), option -> {
                         selectAccount(account);
                         settingsPresenter.closeDialog();
+                        if (mOnPicked != null) {
+                            Runnable onPicked = mOnPicked;
+                            mOnPicked = null;
+                            onPicked.run();
+                        }
                     }, account.isSelected()
             ));
         }

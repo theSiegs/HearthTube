@@ -62,35 +62,67 @@ public class ProfileLinkDataTest {
     }
 
     @Test
-    public void adultAccountIsOneLinkedFromAnAdultsProfile() {
+    public void removingAnAccountClearsEveryLinkToItAndNoOther() {
         Map<String, Object> saved = new HashMap<>();
-        saved.put("link:Alex", "Alex Rivera");
-        saved.put("kids:Alex", false);
-        saved.put("link:Sam", "Sam Rivera");
-        saved.put("kids:Sam", true);
+        saved.put("link:user:10", "Alex Rivera");
+        saved.put("link:user:11", "Sam Rivera");
+        saved.put("link:user:12", "Alex Rivera");
+        saved.put("kids:user:11", true); // an older version's flag: never touched
 
-        assertTrue(ProfileLinkData.isAdult(saved, "Alex Rivera"));
-        assertFalse(ProfileLinkData.isAdult(saved, "Sam Rivera"));
+        List<String> keys = ProfileLinkData.linksTo(saved, "Alex Rivera");
+
+        assertTrue(keys.contains("link:user:10"));
+        assertTrue(keys.contains("link:user:12"));
+        assertFalse(keys.contains("link:user:11"));
+        assertTrue(keys.size() == 2);
     }
 
     @Test
-    public void unknownAccountsAreNotAdultsButTheGuestIs() {
+    public void thePurgeRemovesEveryKidsFlagAndTheLinksOfKidsProfiles() {
         Map<String, Object> saved = new HashMap<>();
-        saved.put("link:Alex", "Alex Rivera"); // kids flag never seen
+        saved.put("link:user:10", "Alex Rivera");
+        saved.put("kids:user:10", false); // an adult's profile: its link stays
+        saved.put("link:user:11", "Sam Rivera");
+        saved.put("kids:user:11", true);
+        saved.put("link:user:12", "Jordan Smith"); // kids flag never seen: stays
+        saved.put("name:user:10", "Alex");
 
-        assertFalse(ProfileLinkData.isAdult(saved, "Alex Rivera"));
-        assertFalse(ProfileLinkData.isAdult(saved, "Jordan Rivera"));
-        assertTrue(ProfileLinkData.isAdult(saved, null));
+        List<String> keys = ProfileLinkData.obsoleteKeys(saved, false);
+
+        assertTrue(keys.contains("kids:user:10"));
+        assertTrue(keys.contains("kids:user:11"));
+        assertTrue(keys.contains("link:user:11"));
+        assertFalse(keys.contains("link:user:10"));
+        assertFalse(keys.contains("link:user:12"));
+        assertFalse(keys.contains("name:user:10"));
+        assertTrue(keys.size() == 3);
     }
 
     @Test
-    public void anAccountSharedWithAnAdultsProfileIsAnAdults() {
+    public void inAKidsOwnCopyThePurgeRemovesEveryLinkAndName() {
         Map<String, Object> saved = new HashMap<>();
-        saved.put("link:Sam", "Alex Rivera");
-        saved.put("kids:Sam", true);
-        saved.put("link:Living room", "Alex Rivera");
-        saved.put("kids:Living room", false);
+        saved.put("link:user:10", "Sam Rivera");
+        saved.put("name:user:10", "Sam");
+        saved.put("follow_google_tv_profile", true);
+        saved.put("parent_pin", "sha256:00");
 
-        assertTrue(ProfileLinkData.isAdult(saved, "Alex Rivera"));
+        List<String> keys = ProfileLinkData.obsoleteKeys(saved, true);
+
+        assertTrue(keys.contains("link:user:10"));
+        assertTrue(keys.contains("name:user:10"));
+        assertFalse(keys.contains("follow_google_tv_profile"));
+        assertFalse(keys.contains("parent_pin")); // the PIN is never touched
+        assertTrue(keys.size() == 2);
+    }
+
+    @Test
+    public void thePurgeOnNothingOrTwiceFindsNothing() {
+        assertTrue(ProfileLinkData.obsoleteKeys(new HashMap<String, Object>(), false).isEmpty());
+        assertTrue(ProfileLinkData.obsoleteKeys(new HashMap<String, Object>(), true).isEmpty());
+
+        Map<String, Object> saved = new HashMap<>();
+        saved.put("link:user:10", "Alex Rivera");
+        saved.put("name:user:10", "Alex");
+        assertTrue(ProfileLinkData.obsoleteKeys(saved, false).isEmpty()); // after a first run, nothing is left
     }
 }

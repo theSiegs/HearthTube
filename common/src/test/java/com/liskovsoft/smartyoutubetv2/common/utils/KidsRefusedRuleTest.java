@@ -16,9 +16,9 @@ public class KidsRefusedRuleTest {
     }
 
     @Test
-    public void aSignedOutKidOnTheTvPlaysAsBefore() {
-        assertFalse(KidsRefused.isNotAllowed(false, false, true, false));
-        assertFalse(KidsRefused.isNotAllowed(false, false, false, false));
+    public void aSignedOutKidOnTheTvPlaysNothingEither() {
+        assertTrue(KidsRefused.isNotAllowed(false, false, true, false));
+        assertTrue(KidsRefused.isNotAllowed(false, false, false, false));
     }
 
     @Test

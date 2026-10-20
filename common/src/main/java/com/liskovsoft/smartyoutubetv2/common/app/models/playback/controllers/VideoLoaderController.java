@@ -315,12 +315,19 @@ public class VideoLoaderController extends BasePlayerController {
                 return;
             }
 
+            // Nobody signed in: nothing was refused to the kid, so the card stays and nothing is said (the welcome asks)
+            if (!com.liskovsoft.smartyoutubetv2.common.utils.KidsRefused.isSignedIn()) {
+                player.showProgressBar(false);
+                player.finishReally();
+                return;
+            }
+
             refuseQuietly(R.string.kids_not_allowed);
             return;
         }
 
         // HearthTube: a Short doesn't play in a kids profile, however it got here (search, link, cast, autoplay)
-        if (com.liskovsoft.smartyoutubetv2.common.utils.KidsShorts.isBlockedFormat(formatInfo, getVideo().title, getVideo().author)) {
+        if (com.liskovsoft.smartyoutubetv2.common.utils.KidsShorts.isBlockedFormat(getContext(), formatInfo, getVideo().title, getVideo().author)) {
             refuseQuietly(R.string.kids_no_shorts);
             return;
         }
@@ -609,7 +616,7 @@ public class VideoLoaderController extends BasePlayerController {
         Video video = getVideo();
 
         if (player == null || video == null || video.isLive
-                || !com.liskovsoft.smartyoutubetv2.common.utils.KidsShorts.isBlockedClip(video.title, video.author)) {
+                || !com.liskovsoft.smartyoutubetv2.common.utils.KidsShorts.isBlockedClip(getContext(), video.title, video.author)) {
             return false;
         }
 

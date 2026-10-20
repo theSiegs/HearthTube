@@ -19,6 +19,8 @@ import java.util.Locale;
  * Which YouTube account each Google TV profile watches with. Keys are Google TV profile names
  * (from {@link com.liskovsoft.smartyoutubetv2.common.utils.HearthProfile}), values are account names
  * (the same key {@link AccountsData} uses for PINs). Nobody watches signed out: there's no guest.
+ * Only the owner's user (shared by adults) keeps links; a kid's profile has one account and no links
+ * (see {@link com.liskovsoft.smartyoutubetv2.common.utils.ProfileFollowRule}).
  */
 public class ProfileLinkData {
     private static final String PREFS_NAME = "hearth_profile_links";
@@ -32,8 +34,10 @@ public class ProfileLinkData {
     private static final String USING_HEARTH_PIN_KEY = "using_hearth_pin";
     /** Gone: HearthTube has no guest. Removed from older installs. */
     private static final String GUEST_ENABLED_KEY = "guest_enabled";
-    /** "kids:<profile>" = true for a Google TV kids profile, false for an adult's (as last seen) */
-    private static final String KIDS_PREFIX = "kids:";
+    /** Older versions saved "kids:<profile>" = true/false here. Nothing reads it; {@link #purgeKidsDataOnce} removes it. */
+    private static final String LEGACY_KIDS_PREFIX = "kids:";
+    private static final String MIGRATIONS_PREFS = "hearthtube_migrations";
+    private static final String KIDS_DATA_PURGED_KEY = "kids_profile_links_purged";
     /** "name:<key>" = the profile's name when last seen (links are saved under Hearth's lasting profile key) */
     private static final String NAME_PREFIX = "name:";
     /** A link to the guest, saved by older versions: treated as no link */
@@ -192,50 +196,85 @@ public class ProfileLinkData {
         mPrefs.edit().putString(LINK_PREFIX + profileName, account.getName()).apply();
     }
 
-    /** Note whether this Google TV profile is a kids profile (it was the active one just now) */
-    public void setKidsProfile(String profileName, boolean kids) {
-        if (profileName != null && mPrefs.getBoolean(KIDS_PREFIX + profileName, !kids) != kids) {
-            mPrefs.edit().putBoolean(KIDS_PREFIX + profileName, kids).apply();
-        }
-    }
-
-    /**
-     * The account is an adult's: some profile seen as not a kids profile watches with it. Signed out (no account)
-     * counts too: nothing is filtered.
-     */
-    public boolean isAdultAccount(@Nullable Account account) {
-        return isAdult(mPrefs.getAll(), account != null ? account.getName() : null);
-    }
-
-    /** {@link #isAdultAccount} over the saved links ("link:<profile>" = account, "kids:<profile>" = kids flag) */
-    static boolean isAdult(java.util.Map<String, ?> saved, @Nullable String accountName) {
-        if (accountName == null) {
-            return true;
-        }
-
-        for (java.util.Map.Entry<String, ?> entry : saved.entrySet()) {
-            String key = entry.getKey();
-
-            if (key.startsWith(LINK_PREFIX) && accountName.equals(entry.getValue())) {
-                Object kids = saved.get(KIDS_PREFIX + key.substring(LINK_PREFIX.length()));
-
-                if (Boolean.FALSE.equals(kids)) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
     public void removeLink(String profileName) {
         mPrefs.edit().remove(LINK_PREFIX + profileName).apply();
     }
 
     /**
+     * Once: removes what older versions kept for kids profiles, so no dead data stays. Safe on a fresh install and
+     * when run twice (the second run finds the flag in the migration prefs).
+     *
+     * @param oneAccountProfile this copy of the app is a kid's profile, where no link is used at all
+     */
+    public void purgeKidsDataOnce(boolean oneAccountProfile) {
+        SharedPreferences migrations = mContext.getSharedPreferences(MIGRATIONS_PREFS, Context.MODE_PRIVATE);
+
+        if (migrations.getBoolean(KIDS_DATA_PURGED_KEY, false)) {
+            return;
+        }
+
+        SharedPreferences.Editor editor = mPrefs.edit();
+        for (String key : obsoleteKeys(mPrefs.getAll(), oneAccountProfile)) {
+            editor.remove(key);
+        }
+        editor.apply();
+
+        migrations.edit().putBoolean(KIDS_DATA_PURGED_KEY, true).apply();
+    }
+
+    /**
+     * The saved keys nothing reads any more: every "kids:" flag, the links of profiles flagged as kids profiles, and,
+     * in a kid's own copy, every link and remembered name.
+     */
+    static List<String> obsoleteKeys(java.util.Map<String, ?> saved, boolean oneAccountProfile) {
+        List<String> keys = new ArrayList<>();
+
+        for (java.util.Map.Entry<String, ?> entry : saved.entrySet()) {
+            String key = entry.getKey();
+
+            if (key.startsWith(LEGACY_KIDS_PREFIX)) {
+                keys.add(key);
+            } else if (key.startsWith(LINK_PREFIX)
+                    && (oneAccountProfile || Boolean.TRUE.equals(saved.get(LEGACY_KIDS_PREFIX + key.substring(LINK_PREFIX.length()))))) {
+                keys.add(key);
+            } else if (oneAccountProfile && key.startsWith(NAME_PREFIX)) {
+                keys.add(key);
+            }
+        }
+
+        return keys;
+    }
+
+    /** The account was removed from the app: every profile linked to it has no link now */
+    public void removeLinksTo(@Nullable Account account) {
+        if (account == null || account.getName() == null) {
+            return;
+        }
+
+        SharedPreferences.Editor editor = mPrefs.edit();
+        for (String key : linksTo(mPrefs.getAll(), account.getName())) {
+            editor.remove(key);
+        }
+        editor.apply();
+    }
+
+    /** The "link:<profile>" keys that hold this account's name */
+    static List<String> linksTo(java.util.Map<String, ?> saved, String accountName) {
+        List<String> keys = new ArrayList<>();
+
+        for (java.util.Map.Entry<String, ?> entry : saved.entrySet()) {
+            if (entry.getKey().startsWith(LINK_PREFIX) && accountName.equals(entry.getValue())) {
+                keys.add(entry.getKey());
+            }
+        }
+
+        return keys;
+    }
+
+    /**
      * Links are saved under Hearth's lasting profile key ("user:11", {@link
      * com.liskovsoft.smartyoutubetv2.common.utils.HearthProfile#key}), so a renamed Google TV profile keeps its
-     * account. Remembers the profile's current name for showing, and moves a link (and kids flag) saved under
+     * account. Remembers the profile's current name for showing, and moves a link saved under
      * that name, from before Hearth had keys, to the key.
      */
     public void adoptName(String key, @Nullable String name) {
@@ -252,11 +291,8 @@ public class ProfileLinkData {
         if (oldLink != null) {
             if (!mPrefs.contains(LINK_PREFIX + key)) {
                 editor.putString(LINK_PREFIX + key, oldLink);
-                if (mPrefs.contains(KIDS_PREFIX + name)) {
-                    editor.putBoolean(KIDS_PREFIX + key, mPrefs.getBoolean(KIDS_PREFIX + name, false));
-                }
             }
-            editor.remove(LINK_PREFIX + name).remove(KIDS_PREFIX + name);
+            editor.remove(LINK_PREFIX + name);
         }
         editor.apply();
     }

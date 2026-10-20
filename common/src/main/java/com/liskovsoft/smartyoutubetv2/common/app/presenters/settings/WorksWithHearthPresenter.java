@@ -5,6 +5,7 @@ import android.content.Context;
 import com.liskovsoft.smartyoutubetv2.common.R;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.UiOptionItem;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.AppDialogPresenter;
+import com.liskovsoft.smartyoutubetv2.common.app.presenters.ProfilePickerPresenter;
 import com.liskovsoft.smartyoutubetv2.common.prefs.HearthLinkData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.ProfileLinkData;
 import com.liskovsoft.smartyoutubetv2.common.utils.HearthLook;
@@ -23,9 +24,12 @@ public class WorksWithHearthPresenter {
         HearthLinkData data = HearthLinkData.instance(context);
         HearthProfile hearth = HearthProfile.queryHearth(context);
 
-        ProfileLinkData links = ProfileLinkData.instance(context);
-        dialog.appendSingleSwitch(UiOptionItem.from(context.getString(R.string.hearth_follow_profile),
-                option -> links.setFollowEnabled(option.isSelected()), links.isFollowEnabled()));
+        // A kid's profile has its one account: nothing to follow
+        if (!ProfilePickerPresenter.usesOneAccount(context)) {
+            ProfileLinkData links = ProfileLinkData.instance(context);
+            dialog.appendSingleSwitch(UiOptionItem.from(context.getString(R.string.hearth_follow_profile),
+                    option -> links.setFollowEnabled(option.isSelected()), links.isFollowEnabled()));
+        }
 
         dialog.appendSingleSwitch(UiOptionItem.from(context.getString(R.string.hearth_continue_watching), option -> {
             data.setContinueWatchingEnabled(option.isSelected());

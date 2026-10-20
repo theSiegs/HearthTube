@@ -140,7 +140,7 @@ public class ChannelUploadsPresenter extends BasePresenter<ChannelUploadsView> i
 
     public void openChannel(Video item) {
         // Working with uploads or playlists
-        if (item == null || (!item.hasNestedItems() && !item.hasPlaylist())) {
+        if (item == null || (!item.hasNestedItems() && !item.hasPlaylist()) || com.liskovsoft.smartyoutubetv2.common.utils.LaunchGate.refuse(getContext())) {
             return;
         }
 
