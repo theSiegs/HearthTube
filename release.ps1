@@ -187,7 +187,7 @@ try {
         if (-not (Test-Path $apk -PathType Leaf)) { throw "Not built: $apk" }
         $signed = "$dist\hearthtube_$abi.apk"
 
-        # Oldest signer first (v1/v2, Android 8 and older), then Hearth's key with the lineage (v3, Android 9+)
+        # Oldest signer first (v2, Android 8), then Hearth's key with the lineage (v3, Android 9+)
         & $apksigner sign --in $apk --out $signed --v4-signing-enabled false `
             --ks $debugKeystore --ks-key-alias androiddebugkey `
             --ks-pass env:HEARTHTUBE_DEBUG_KEY_PASS --key-pass env:HEARTHTUBE_DEBUG_KEY_PASS `
@@ -196,10 +196,11 @@ try {
             --lineage $lineage --rotation-min-sdk-version $rotationMinSdk
         if ($LASTEXITCODE -ne 0) { throw "Signing failed: $apk" }
 
-        # Android 9+ must see Hearth's key with the whole lineage (v3); Android 8 and older the debug key (v1/v2)
+        # Android 9+ must see Hearth's key with the whole lineage (v3); Android 8 and older the debug key (v2)
         $verified = & $apksigner verify -v $signed
         if ($LASTEXITCODE -ne 0) { throw "Doesn't verify: $signed" }
-        $schemes = 'v1 scheme (JAR signing): true', 'v2 scheme (APK Signature Scheme v2): true', 'v3 scheme (APK Signature Scheme v3): true'
+        # No v1 (JAR): the apps need Android 8+, which checks v2 and v3
+        $schemes = 'v2 scheme (APK Signature Scheme v2): true', 'v3 scheme (APK Signature Scheme v3): true'
         foreach ($scheme in $schemes) {
             if (-not ($verified -match [regex]::Escape("Verified using $scheme"))) { throw "Not signed with ${scheme}: $signed" }
         }
