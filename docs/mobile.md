@@ -44,7 +44,7 @@ the same way.
   A channel's page (Videos, Playlists, Live...) and a search with several shelves have the same strip under their top
   bar. In Subscriptions the strip is the channels' circles.
 - **Home starts with "Continue watching"** (the most recent history), so a video is resumed from the first screen in
-  one or two taps. The TV's Home does not have the row (its Library has the history).
+  one or two taps. The TV's Home has the same row.
 - **A channel is one tap away.** The channel's name under a card opens the channel's page.
 
 ## Adults and kids

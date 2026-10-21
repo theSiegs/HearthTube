@@ -11,7 +11,6 @@ import com.liskovsoft.smartyoutubetv2.common.R;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.BrowseSection;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Playlist;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
-import com.liskovsoft.smartyoutubetv2.common.utils.KidsMode;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -86,11 +85,10 @@ public final class HearthSections {
         rows.put(TYPE_PODCASTS, searchRows(context, content, PODCASTS));
         rows.put(TYPE_LIBRARY, libraryRows(context, content));
 
-        // The phone opens on the first row of Home, so that is what was being watched (the TV's Home is stacked rows
-        // and keeps its own; its Library has the history)
+        // Home starts with what was being watched, on the phone and the TV
         Observable<List<MediaGroup>> home = rows.get(MediaGroup.TYPE_HOME);
 
-        if (home != null && KidsMode.isMobileBuild(context)) {
+        if (home != null) {
             rows.put(MediaGroup.TYPE_HOME, Observable.concatEager(Arrays.asList(continueWatchingRow(context, content), home)));
         }
 
