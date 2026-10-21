@@ -125,7 +125,8 @@ public class SubPillStrip extends HorizontalScrollView {
         ImageView image = new ImageView(getContext());
         Glide.with(getContext()).load(pill.iconUrl).apply(RequestOptions.circleCropTransform()).into(image);
         ring.addView(image, new FrameLayout.LayoutParams(dp(48), dp(48)));
-        circle.addView(ring);
+        // Sized: a vertical list stretches a view added without a size to its full width, and the ring turns oval
+        circle.addView(ring, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         TextView name = new TextView(getContext());
         name.setText(pill.title);
