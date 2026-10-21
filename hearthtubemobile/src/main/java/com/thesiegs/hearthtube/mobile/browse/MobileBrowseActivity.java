@@ -312,6 +312,15 @@ public class MobileBrowseActivity extends HearthActivity implements BrowseView {
         }
 
         if (destination == currentDestination()) {
+            // Home has no chip of its own (the bar has Home): Home again, from Music or News, is the Home section
+            int homeAt = indexOf(MediaGroup.TYPE_HOME);
+
+            if (destination == Destination.HOME && homeAt >= 0 && mShownSectionId != MediaGroup.TYPE_HOME) {
+                showBars();
+                selectAt(homeAt);
+                return;
+            }
+
             mGrid.scrollToTop();
             showBars();
             return;
@@ -618,7 +627,10 @@ public class MobileBrowseActivity extends HearthActivity implements BrowseView {
 
             if (NavRules.showChips(chips.size())) {
                 for (int at : chips) {
-                    shown.add(mChips.get(at));
+                    // The bar's Home is Home's own chip
+                    if (!(current == Destination.HOME && ids.get(at) == MediaGroup.TYPE_HOME)) {
+                        shown.add(mChips.get(at));
+                    }
                 }
             }
         }
