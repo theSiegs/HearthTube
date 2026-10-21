@@ -47,6 +47,7 @@ public class VideoGrid extends FrameLayout {
 
     private final VideoRows mRows = new VideoRows();
     private StripListener mStripListener;
+    private boolean mShelves;
     private ScrollWatcher mScrollWatcher;
     private final VideoAdapter mAdapter;
     private final GridLayoutManager mLayout;
@@ -73,13 +74,20 @@ public class VideoGrid extends FrameLayout {
             public void onAuthorClick(Video video) {
                 MediaServiceManager.chooseChannelPresenter(context, video);
             }
+
+            @Override
+            public void onMore(VideoRows.Shelf shelf) {
+                mRows.expand(shelf.key);
+                refresh();
+                mList.scrollToPosition(0);
+            }
         });
 
         mLayout = new GridLayoutManager(context, columns());
         mLayout.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
             @Override
             public int getSpanSize(int position) {
-                return mAdapter.isHeader(position) ? mLayout.getSpanCount() : 1;
+                return mAdapter.isFullWidth(position) ? mLayout.getSpanCount() : 1;
             }
         });
 
@@ -146,11 +154,30 @@ public class VideoGrid extends FrameLayout {
 
     /** What the list shows (the picked row with a strip, else everything), and the strip's pills */
     private void refresh() {
-        mAdapter.setItems(mRows.shown(mStripListener != null));
+        boolean shelves = mShelves && !mRows.hasCircleStrip();
+        mAdapter.setItems(shelves ? mRows.shelves() : mRows.shown(mStripListener != null));
 
         if (mStripListener != null) {
-            mStripListener.onStrip(mRows.hasStrip() ? mRows.pills() : java.util.Collections.emptyList(), mRows.selectedIndex());
+            // Shelves replace the sub-pills (channels' circles stay a strip)
+            boolean strip = mRows.hasStrip() && !shelves;
+            mStripListener.onStrip(strip ? mRows.pills() : java.util.Collections.emptyList(), mRows.selectedIndex());
         }
+    }
+
+    /** A section with several rows is shelves (larger cards that scroll sideways, "See more") instead of sub-pills */
+    public void setShelves(boolean shelves) {
+        mShelves = shelves;
+    }
+
+    /** Back from a row opened with "See more" to the shelves; false when none was open */
+    public boolean collapse() {
+        if (!mRows.collapse()) {
+            return false;
+        }
+
+        refresh();
+        mList.scrollToPosition(0);
+        return true;
     }
 
     public void setStripListener(StripListener listener) {

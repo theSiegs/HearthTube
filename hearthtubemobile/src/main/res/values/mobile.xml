@@ -3,6 +3,7 @@
     <string name="app_name">HearthTube</string>
     <string name="parent_button">Parent</string>
     <string name="settings_button">Settings</string>
+    <string name="see_more">See more</string>
     <string name="settings_menu_title">Settings</string>
     <string name="sign_in_open">Open the sign-in page</string>
     <string name="search_button">Search</string>

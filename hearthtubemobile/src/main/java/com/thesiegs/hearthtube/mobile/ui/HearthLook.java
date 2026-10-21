@@ -41,6 +41,11 @@ public final class HearthLook {
     /** Text over a picture is readable by its shadow, not by darkening the picture */
     private static final int TEXT_SHADOW = 0x99000000;
 
+    /** Titles, chips and labels in the medium weight YouTube uses: a step above body text without being bold */
+    public static android.graphics.Typeface medium() {
+        return android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL);
+    }
+
     private HearthLook() {
     }
 
@@ -88,6 +93,7 @@ public final class HearthLook {
         noFocusSquare(view);
         view.setBackground(shown ? pill(context, Color.WHITE, 0, 0) : pill(context, GLASS, GLASS_OUTLINE, 1));
         view.setTextColor(shown ? Color.BLACK : Color.WHITE);
+        view.setTypeface(medium());
     }
 
     /** The floating bottom bar or side rail: one dark glass capsule with a faint outline */

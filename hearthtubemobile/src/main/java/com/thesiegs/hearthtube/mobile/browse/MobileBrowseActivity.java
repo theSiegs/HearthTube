@@ -121,7 +121,15 @@ public class MobileBrowseActivity extends HearthActivity implements BrowseView {
         mPresenter.onViewResumed();
 
         // A kid's device has a Parent button; anyone else has Settings
-        mParentButton.setText(ParentGate.isKidsProfile(this) ? R.string.parent_button : R.string.settings_button);
+        // (a gear, not a word, for anyone else)
+        if (ParentGate.isKidsProfile(this)) {
+            mParentButton.setText(R.string.parent_button);
+            mParentButton.setCompoundDrawablesRelative(null, null, null, null);
+        } else {
+            mParentButton.setText("");
+            mParentButton.setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.ic_settings_gear, 0, 0, 0);
+        }
+        mParentButton.setContentDescription(getString(ParentGate.isKidsProfile(this) ? R.string.parent_button : R.string.settings_button));
 
         // A parent signed in, or turned kids mode off, in the meantime: show what the presenter has
         if (mGated && !isGated()) {
@@ -156,6 +164,10 @@ public class MobileBrowseActivity extends HearthActivity implements BrowseView {
     /** Back from Library or Subscriptions goes to Home; Back at Home leaves the app */
     @Override
     public void onBackPressed() {
+        if (mGrid.collapse()) { // a row opened with "See more": back to the shelves
+            return;
+        }
+
         if (!isGated() && NavRules.back(currentDestination()) == NavRules.Back.GO_HOME) {
             openDestination(Destination.HOME);
             return;
@@ -198,6 +210,8 @@ public class MobileBrowseActivity extends HearthActivity implements BrowseView {
                 mPresenter.onScrollEnd(last);
             }
         });
+
+        mGrid.setShelves(true);
 
         // A section with several rows (Ambiance: Fireplace, Rain...) has a strip of sub-pills under the section chips; in
         // Subscriptions a long press on a channel's circle opens its menu (a kid's own: open, unsubscribe)

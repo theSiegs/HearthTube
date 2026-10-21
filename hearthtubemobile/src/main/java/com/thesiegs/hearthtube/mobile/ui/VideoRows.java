@@ -26,6 +26,8 @@ public class VideoRows {
     private final Function<Video, String> mAuthorOf;
     /** The row on show when there is a strip; null is the first */
     private Object mSelectedKey;
+    /** The row opened with "See more" (all of it as a grid); null when the shelves show */
+    private Object mExpandedKey;
 
     private static final class Row {
         String title;
@@ -34,6 +36,19 @@ public class VideoRows {
         /** What the row is, for the screen (a channel's menu); opaque here */
         Object tag;
         final List<Video> videos = new ArrayList<>();
+    }
+
+    /** A row on show as a shelf: its title and its videos, which scroll sideways */
+    public static final class Shelf {
+        public final Object key;
+        public final String title;
+        public final List<Video> videos;
+
+        Shelf(Object key, String title, List<Video> videos) {
+            this.key = key;
+            this.title = title;
+            this.videos = videos;
+        }
     }
 
     /** One sub-pill */
@@ -64,6 +79,7 @@ public class VideoRows {
     public void clear() {
         mRows.clear();
         mSelectedKey = null;
+        mExpandedKey = null;
     }
 
     public void update(@NonNull VideoGroup group) {
@@ -251,6 +267,57 @@ public class VideoRows {
 
         Row row = mRows.get(pills().get(selectedIndex()).key);
         return new ArrayList<Object>(row.videos);
+    }
+
+    /** Channels' circles (Subscriptions) stay a strip: they are for picking one channel, not shelves to browse */
+    public boolean hasCircleStrip() {
+        for (Pill pill : pills()) {
+            if (pill.iconUrl != null) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Two or more rows with something in them: a shelf each (title, videos that scroll sideways, "See more"). One row, or
+     * one opened with "See more", is its videos as a grid (under its title once opened).
+     */
+    public List<Object> shelves() {
+        Row expanded = mExpandedKey != null ? mRows.get(mExpandedKey) : null;
+
+        if (expanded != null && !expanded.videos.isEmpty()) {
+            List<Object> items = new ArrayList<>();
+
+            if (expanded.title != null && !expanded.title.isEmpty()) {
+                items.add(expanded.title);
+            }
+
+            items.addAll(expanded.videos);
+            return items;
+        }
+
+        List<Object> shelves = new ArrayList<>();
+
+        for (Map.Entry<Object, Row> entry : mRows.entrySet()) {
+            if (!entry.getValue().videos.isEmpty()) {
+                shelves.add(new Shelf(entry.getKey(), entry.getValue().title, new ArrayList<>(entry.getValue().videos)));
+            }
+        }
+
+        return shelves.size() >= 2 ? shelves : items();
+    }
+
+    public void expand(Object key) {
+        mExpandedKey = key;
+    }
+
+    /** Back from an opened row to the shelves; false when none was open */
+    public boolean collapse() {
+        boolean wasOpen = mExpandedKey != null;
+        mExpandedKey = null;
+        return wasOpen;
     }
 
     /** Headers (as Strings) and videos, in order */
