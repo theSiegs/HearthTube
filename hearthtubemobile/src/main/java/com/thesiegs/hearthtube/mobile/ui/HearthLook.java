@@ -25,6 +25,7 @@ import androidx.annotation.Nullable;
 import com.liskovsoft.smartyoutubetv2.common.utils.DailyBackground;
 import com.liskovsoft.smartyoutubetv2.common.utils.HearthAccent;
 import com.liskovsoft.smartyoutubetv2.common.utils.HearthProfile;
+import com.liskovsoft.smartyoutubetv2.common.utils.HearthWallpaper;
 
 import io.reactivex.disposables.Disposable;
 
@@ -256,7 +257,7 @@ public final class HearthLook {
                 mLoad.dispose();
             }
 
-            mLoad = DailyBackground.load(mActivity, result -> mDrawable.setImage(result.image));
+            mLoad = DailyBackground.load(mActivity, result -> mDrawable.setImage(result.image, HearthWallpaper.getBrightness(mActivity)));
         }
     }
 
@@ -264,21 +265,56 @@ public final class HearthLook {
      * The picture cropped to fill the screen (a phone is tall and the picture is wide), then Hearth's shade over it:
      * darker at the top and bottom so text reads on any picture (hearth_wallpaper_shade.xml).
      */
+    /** The picture's average brightness, 0 (black) .. 1 (white), from a sparse sample of its pixels; 0.5 without one */
+    static double brightnessOf(@Nullable Bitmap image) {
+        if (image == null || image.getWidth() == 0 || image.getHeight() == 0) {
+            return 0.5;
+        }
+
+        double sum = 0;
+        int count = 0;
+
+        for (int y = 0; y < 16; y++) {
+            for (int x = 0; x < 16; x++) {
+                int color = image.getPixel(x * image.getWidth() / 16, y * image.getHeight() / 16);
+                sum += (0.299 * ((color >> 16) & 0xFF) + 0.587 * ((color >> 8) & 0xFF) + 0.114 * (color & 0xFF)) / 255;
+                count++;
+            }
+        }
+
+        return sum / count;
+    }
+
+    /** The shade on a dark picture stays about as it was (0.9x), on a bright one it doubles, so white text still reads */
+    static float shadeScale(double brightness) {
+        return (float) (0.75 + 1.25 * Math.max(0, Math.min(1, brightness)));
+    }
+
     static final class BackdropDrawable extends Drawable {
         private final Paint mPaint = new Paint(Paint.FILTER_BITMAP_FLAG);
         private final Paint mShade = new Paint();
         private final Rect mSource = new Rect();
         private Bitmap mImage;
 
-        void setImage(@Nullable Bitmap image) {
+        /** How strongly the shade is drawn: 1 on an average picture, more on a bright one */
+        private float mShadeScale = 1f;
+
+        void setImage(@Nullable Bitmap image, @Nullable Double hearthBrightness) {
             mImage = image;
+            mShadeScale = shadeScale(hearthBrightness != null ? hearthBrightness : brightnessOf(image));
+            mShade.setShader(null);
+            onBoundsChange(getBounds());
             invalidateSelf();
         }
 
         @Override
         protected void onBoundsChange(Rect bounds) {
             mShade.setShader(new LinearGradient(0, bounds.top, 0, bounds.bottom,
-                    new int[] {0x59000000, 0x26000000, 0x73000000}, null, Shader.TileMode.CLAMP));
+                    new int[] {scaled(0x59), scaled(0x26), scaled(0x73)}, null, Shader.TileMode.CLAMP));
+        }
+
+        private int scaled(int alpha) {
+            return Math.min(0xE6, Math.round(alpha * mShadeScale)) << 24;
         }
 
         @Override
