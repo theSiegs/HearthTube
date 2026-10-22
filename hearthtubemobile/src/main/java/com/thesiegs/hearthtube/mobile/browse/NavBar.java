@@ -80,12 +80,13 @@ final class NavBar extends LinearLayout {
 
             // A rail is as wide as its widest label, so nothing needs to shrink; a bar's items share the width
             TextView text = (TextView) ((LinearLayout) item).getChildAt(1);
+            item.setPadding(dp(mRail ? 8 : 2), dp(6), dp(mRail ? 8 : 2), dp(6));
             if (mRail) {
                 text.setAutoSizeTextTypeWithDefaults(TextView.AUTO_SIZE_TEXT_TYPE_NONE);
                 text.setTextSize(12);
                 text.setEllipsize(null);
             } else {
-                text.setAutoSizeTextTypeUniformWithConfiguration(9, 12, 1, android.util.TypedValue.COMPLEX_UNIT_SP);
+                text.setAutoSizeTextTypeUniformWithConfiguration(8, 11, 1, android.util.TypedValue.COMPLEX_UNIT_SP);
                 text.setEllipsize(TextUtils.TruncateAt.END);
             }
         }
