@@ -6,7 +6,7 @@ the same way.
 
 ## What it is
 
-- One Android app for phones and tablets (Android 7.0 and up). It has its own touch screens; everything behind them is
+- One Android app for phones and tablets (Android 12 and up). It has its own touch screens; everything behind them is
   the TV app's: the YouTube service, the presenters, the video player engine, the parent PIN, blocked words, the
   AI-channel list, the no-Shorts rule and the daily allowance.
 - Works as an ordinary YouTube client on anyone's phone or tablet, and as a locked-down one on a kid's. For a kid it
@@ -110,6 +110,9 @@ There is no update feed yet: the app is set to find none (it must never offer Sm
 new version is installed the way the first one was. Android's developer verification (from 2026 in some countries,
 worldwide in 2027) will need the package registered; the limited-distribution account (up to 20 devices) fits a
 family.
+
+Android 12 is the minimum because that is the first version where an installer (a store, or an updater of its own) can
+update an app it installed without asking. On older versions every update would show the install prompt.
 
 ## Signing
 

@@ -47,8 +47,9 @@ android {
 
     defaultConfig {
         applicationId "com.thesiegs.hearthtube.mobile"
-        // Android 8+, as the TV app
-        minSdkVersion 26
+        // Android 12+: the first version where an installer can update an app it installed without asking
+        // (PackageInstaller's USER_ACTION_NOT_REQUIRED). The TV app stays at 26: its flavor sets its own minimum.
+        minSdkVersion 31
         targetSdkVersion project.properties.compileSdkVersion
         // The same version as the TV app (a release date; its versionCode rises with every release), built on the same
         // SmartTube, shown in About (common's smarttube_base_version). Only a higher versionCode is an update.

@@ -83,9 +83,7 @@ public final class HearthLook {
 
     /** Android's default focus highlight is a square that doesn't follow a pill's shape */
     private static void noFocusSquare(View view) {
-        if (android.os.Build.VERSION.SDK_INT >= 26) {
-            view.setDefaultFocusHighlightEnabled(false);
-        }
+        view.setDefaultFocusHighlightEnabled(false);
     }
 
     /** A choice in a strip (the TV's chips): dark glass, and the shown one white */
