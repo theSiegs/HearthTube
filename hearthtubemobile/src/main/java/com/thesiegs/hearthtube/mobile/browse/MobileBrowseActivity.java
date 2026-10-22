@@ -7,6 +7,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -68,6 +69,8 @@ public class MobileBrowseActivity extends HearthActivity implements BrowseView {
     private FrameLayout mRoot;
     private HorizontalScrollView mChipScroll;
     private TextView mParentButton;
+    /** The signed-in account's picture: opens the same menu as the gear, which shows until there is a picture */
+    private ImageView mAvatar;
     private LinearLayout mChipBar;
     /** The section chips and, under them, the sub-pills; it floats over the list and slides away on a phone as it scrolls */
     private LinearLayout mHeader;
@@ -130,6 +133,7 @@ public class MobileBrowseActivity extends HearthActivity implements BrowseView {
             mParentButton.setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.ic_settings_gear, 0, 0, 0);
         }
         mParentButton.setContentDescription(getString(ParentGate.isKidsProfile(this) ? R.string.parent_button : R.string.settings_button));
+        updateAvatar();
 
         // A parent signed in, or turned kids mode off, in the meantime: show what the presenter has
         if (mGated && !isGated()) {
@@ -190,9 +194,17 @@ public class MobileBrowseActivity extends HearthActivity implements BrowseView {
         LinearLayout bar = new LinearLayout(this);
         bar.setOrientation(LinearLayout.HORIZONTAL);
         bar.setGravity(Gravity.CENTER_VERTICAL);
-        bar.addView(mChipScroll, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         mParentButton = barButton(getString(R.string.parent_button), v -> MobileParentMenu.show(this));
         bar.addView(mParentButton, barButtonParams());
+        mAvatar = new ImageView(this);
+        mAvatar.setVisibility(View.GONE);
+        mAvatar.setContentDescription(getString(R.string.settings_button));
+        mAvatar.setOnClickListener(v -> MobileParentMenu.show(this));
+        LinearLayout.LayoutParams avatarParams = barButtonParams();
+        avatarParams.width = dp(44);
+        avatarParams.height = dp(44);
+        bar.addView(mAvatar, avatarParams);
+        bar.addView(mChipScroll, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
 
         mGrid = new VideoGrid(this, new VideoGrid.Listener() {
             @Override
@@ -371,6 +383,21 @@ public class MobileBrowseActivity extends HearthActivity implements BrowseView {
         return HearthTabsData.instance(this).getTabs();
     }
 
+    /** Anyone but a kid sees their YouTube account's picture, round, where the gear was; the gear stays without one */
+    private void updateAvatar() {
+        com.liskovsoft.mediaserviceinterfaces.oauth.Account account = ParentGate.isKidsProfile(this) ? null
+                : com.liskovsoft.smartyoutubetv2.common.misc.MediaServiceManager.instance().getSelectedAccount();
+        String url = account != null ? account.getAvatarImageUrl() : null;
+
+        mAvatar.setVisibility(url != null ? View.VISIBLE : View.GONE);
+        mParentButton.setVisibility(url != null ? View.GONE : View.VISIBLE);
+
+        if (url != null) {
+            com.bumptech.glide.Glide.with(this).load(url)
+                    .apply(com.bumptech.glide.request.RequestOptions.circleCropTransform()).into(mAvatar);
+        }
+    }
+
     private TextView barButton(String text, View.OnClickListener onClick) {
         TextView button = new TextView(this);
         button.setText(text);
@@ -386,7 +413,7 @@ public class MobileBrowseActivity extends HearthActivity implements BrowseView {
 
     private LinearLayout.LayoutParams barButtonParams() {
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        params.setMargins(dp(2), 0, dp(8), 0);
+        params.setMargins(dp(8), 0, dp(2), 0);
         return params;
     }
 
