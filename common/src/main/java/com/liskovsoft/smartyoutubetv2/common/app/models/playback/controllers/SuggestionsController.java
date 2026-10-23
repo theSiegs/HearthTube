@@ -12,10 +12,14 @@ import com.liskovsoft.mediaserviceinterfaces.data.DislikeData;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaItemMetadata;
 import com.liskovsoft.sharedutils.helpers.Helpers;
+import android.os.SystemClock;
+import android.view.KeyEvent;
+
 import com.liskovsoft.sharedutils.helpers.MessageHelpers;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.sharedutils.rx.RxHelper;
 import com.liskovsoft.smartyoutubetv2.common.R;
+import com.liskovsoft.smartyoutubetv2.common.utils.ChapterSkip;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Playlist;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.VideoGroup;
@@ -48,6 +52,10 @@ public class SuggestionsController extends BasePlayerController {
     private int mNextRetryCount;
     private List<ChapterItem> mChapters;
     private final Runnable mChapterHandler = this::startChapterNotificationServiceIfNeededInt;
+    private static final long CHAPTER_DOUBLE_PRESS_MS = 350;
+    private int mPressedKey;
+    private long mPressedAt;
+    private boolean mPressedWithControlsHidden;
     private static final int MAX_PLAYLIST_CONTINUATIONS = 20;
     private static final int CHAPTER_NOTIFICATION_Id = 565;
 
@@ -797,6 +805,59 @@ public class SuggestionsController extends BasePlayerController {
         dialogPresenter.enableExpandable(false);
         dialogPresenter.setId(CHAPTER_NOTIFICATION_Id);
         dialogPresenter.showDialog();
+    }
+
+    /**
+     * HearthTube: pressing Right (or Left) twice quickly, with the controls hidden at the first press, skips to the next
+     * (or the previous) chapter of a video that has chapters. Holding the key repeats too slowly to count as two presses,
+     * and with the controls up the arrows keep seeking as before.
+     */
+    @Override
+    public boolean onKeyDown(int keyCode) {
+        if ((keyCode != KeyEvent.KEYCODE_DPAD_RIGHT && keyCode != KeyEvent.KEYCODE_DPAD_LEFT) || getPlayer() == null) {
+            return false;
+        }
+
+        if (mChapters == null || mChapters.size() < 2) {
+            return false;
+        }
+
+        long now = SystemClock.uptimeMillis();
+
+        if (mPressedKey == keyCode && mPressedWithControlsHidden && now - mPressedAt < CHAPTER_DOUBLE_PRESS_MS) {
+            mPressedKey = 0;
+            return skipChapter(keyCode == KeyEvent.KEYCODE_DPAD_RIGHT);
+        }
+
+        mPressedKey = keyCode;
+        mPressedAt = now;
+        mPressedWithControlsHidden = !getPlayer().isOverlayShown();
+
+        return false;
+    }
+
+    private boolean skipChapter(boolean forward) {
+        long[] starts = new long[mChapters.size()];
+
+        for (int i = 0; i < starts.length; i++) {
+            starts[i] = mChapters.get(i).getStartTimeMs();
+        }
+
+        long target = ChapterSkip.target(starts, getPlayer().getPositionMs(), forward);
+
+        if (target < 0) {
+            return false;
+        }
+
+        getPlayer().setPositionMs(target);
+        getPlayer().showOverlay(false);
+        Pair<ChapterItem, Integer> chapter = getCurrentChapter(target);
+
+        if (chapter != null) {
+            MessageHelpers.showMessage(getContext(), chapter.first.getTitle());
+        }
+
+        return true;
     }
 
     private ChapterItem getNextChapter() {
