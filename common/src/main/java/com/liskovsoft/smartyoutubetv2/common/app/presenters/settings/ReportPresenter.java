@@ -46,7 +46,8 @@ public final class ReportPresenter {
                 option -> ParentGate.run(context, () -> showList(context))));
     }
 
-    private static void showReport(Context context, Video video) {
+    /** The report panel for this video (the player's Report button opens it too) */
+    public static void showReport(Context context, Video video) {
         AppDialogPresenter dialog = AppDialogPresenter.instance(context);
         boolean[] channel = {!video.hasVideo()};
         boolean hasChannel = video.channelId != null && !video.channelId.isEmpty();
