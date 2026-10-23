@@ -41,6 +41,7 @@ public class ContentSettingsPresenter extends BasePresenter<Void> {
 
         BlockedWordsPresenter.appendSettingsButton(getContext(), dialog);
         BlockedWordsPresenter.appendAiLabelsSwitch(getContext(), dialog);
+        ReportPresenter.appendSettingsButton(getContext(), dialog);
         appendShowShorts(dialog);
         appendHideContent(dialog);
         dialog.appendSingleButton(UiOptionItem.from(getContext().getString(R.string.content_block_provider),

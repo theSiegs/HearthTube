@@ -203,6 +203,7 @@ public class VideoMenuPresenter extends BaseMenuPresenter {
             }
         }
 
+        com.liskovsoft.smartyoutubetv2.common.app.presenters.settings.ReportPresenter.appendMenuButton(getContext(), mDialogPresenter, mVideo); // HearthTube: reports, for kids too
         appendMoreForParentButton();
 
         if (!mDialogPresenter.isEmpty()) {
@@ -227,6 +228,7 @@ public class VideoMenuPresenter extends BaseMenuPresenter {
             }
         }
 
+        com.liskovsoft.smartyoutubetv2.common.app.presenters.settings.ReportPresenter.appendMenuButton(getContext(), mDialogPresenter, mVideo); // HearthTube: reports, for kids too
         appendMoreForParentButton();
 
         if (!mDialogPresenter.isEmpty()) {
