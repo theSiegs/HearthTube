@@ -21,7 +21,7 @@ public final class AccountTwins {
         List<Account> result = new ArrayList<>();
 
         for (Account account : accounts) {
-            if (!isTwin(account, accounts)) {
+            if (account != null && !isTwin(account, accounts)) {
                 result.add(account);
             }
         }

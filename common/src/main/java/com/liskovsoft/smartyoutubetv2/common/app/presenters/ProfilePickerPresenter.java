@@ -82,7 +82,7 @@ public class ProfilePickerPresenter extends BasePresenter<ProfilePickerView> {
             return false;
         }
 
-        List<Account> accounts = YouTubeServiceManager.instance().getSignInService().getAccounts();
+        List<Account> accounts = AccountTwins.withoutTwins(YouTubeServiceManager.instance().getSignInService().getAccounts());
 
         return accounts != null && accounts.size() > 1;
     }
