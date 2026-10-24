@@ -433,6 +433,7 @@ public class MobilePlaybackActivity extends MotherActivity implements PlaybackVi
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        mHandler.removeCallbacksAndMessages(null); // taps, seek text and the segment retries must not outlive the screen
         releasePlayer();
 
         ViewTeardown.destroyed(mPresenter, this);

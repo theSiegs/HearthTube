@@ -81,12 +81,17 @@ public class AccountSelectionPresenter extends BasePresenter<Void> {
     }
 
     private void showUnlocked(boolean force) {
-
         List<Account> accounts = AccountTwins.withoutTwins(mSignInService.getAccounts());
 
+        if (accounts == null) { // not loaded yet
+            accounts = new ArrayList<>();
+        }
+
+        final List<Account> shown = accounts;
+
         GlideIconFetcher.fetchDrawables(getContext(),
-                Helpers.map(accounts, Account::getAvatarImageUrl),
-                icons -> createAndShowDialog(accounts, icons, force));
+                Helpers.map(shown, Account::getAvatarImageUrl),
+                icons -> createAndShowDialog(shown, icons, force));
     }
 
     public void nextAccountOrDialog() {

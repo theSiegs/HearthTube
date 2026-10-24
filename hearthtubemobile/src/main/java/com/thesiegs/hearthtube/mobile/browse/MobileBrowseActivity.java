@@ -33,6 +33,7 @@ import com.thesiegs.hearthtube.mobile.ui.HearthLook;
 import com.thesiegs.hearthtube.mobile.ui.KidGate;
 import com.thesiegs.hearthtube.mobile.ui.KidMenu;
 import com.thesiegs.hearthtube.mobile.ui.SubPillStrip;
+import com.thesiegs.hearthtube.mobile.ui.ViewTeardown;
 import com.thesiegs.hearthtube.mobile.ui.VideoGrid;
 
 import java.util.ArrayList;
@@ -155,7 +156,7 @@ public class MobileBrowseActivity extends HearthActivity implements BrowseView {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        mPresenter.onViewDestroyed();
+        ViewTeardown.destroyed(mPresenter, this);
     }
 
     @Override

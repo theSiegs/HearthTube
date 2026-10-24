@@ -253,17 +253,18 @@ public class ProfilePickerPresenter extends BasePresenter<ProfilePickerView> {
      * when it can't tell who's watching, every account.
      */
     public List<Account> getVisibleAccounts() {
-        List<Account> accounts = AccountTwins.withoutTwins(mSignInService.getAccounts());
+        // Links are resolved against every account; the twin filter only changes what is listed
+        List<Account> accounts = mSignInService.getAccounts();
         String profile = getFollowedProfile();
 
         if (accounts == null || profile == null) {
-            return accounts;
+            return AccountTwins.withoutTwins(accounts);
         }
 
         ProfileLinkData links = ProfileLinkData.instance(getContext());
         ProfileLinkData.Link link = links.getLink(profile, accounts);
 
-        return ProfileFollowRule.offered(link != null ? link.account : null, accounts, accountsLinkedElsewhere(links, profile, accounts));
+        return AccountTwins.withoutTwins(ProfileFollowRule.offered(link != null ? link.account : null, accounts, accountsLinkedElsewhere(links, profile, accounts)));
     }
 
     /** The accounts that Google TV profiles other than this one watch with (one login per profile) */

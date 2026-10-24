@@ -8,6 +8,7 @@ import androidx.annotation.Nullable;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.SplashPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.views.SplashView;
 import com.liskovsoft.smartyoutubetv2.common.misc.MotherActivity;
+import com.thesiegs.hearthtube.mobile.ui.ViewTeardown;
 
 /**
  * The way into the app, as on the TV: the shared {@link SplashPresenter} starts the services, sets up the kids filters
@@ -48,7 +49,7 @@ public class MobileSplashActivity extends MotherActivity implements SplashView {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        mPresenter.onViewDestroyed();
+        ViewTeardown.destroyed(mPresenter, this);
     }
 
     @Override

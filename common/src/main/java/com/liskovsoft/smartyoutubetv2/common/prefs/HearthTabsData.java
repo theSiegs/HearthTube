@@ -41,6 +41,7 @@ public class HearthTabsData {
 
     private HearthTabsData(Context context) {
         mPrefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        addLibraryOnce();
     }
 
     public static HearthTabsData instance(Context context) {
@@ -87,15 +88,22 @@ public class HearthTabsData {
             }
         }
 
-        // A list saved since then has Library or left it out on purpose (save() marks it)
-        if (!mPrefs.getBoolean(LIBRARY_ADDED, false)) {
-            if (!tabs.contains(HearthSections.TYPE_LIBRARY)) {
-                tabs.add(HearthSections.TYPE_LIBRARY);
-            }
-            save(tabs);
+        return tabs;
+    }
+
+    /** Once, when the data is first opened: a list saved before Library existed gets it (a list saved since has it, or left it out on purpose; save() marks that) */
+    private void addLibraryOnce() {
+        if (mPrefs.getString(TABS, null) == null || mPrefs.getBoolean(LIBRARY_ADDED, false)) {
+            return;
         }
 
-        return tabs;
+        List<Integer> tabs = getTabs();
+
+        if (!tabs.contains(HearthSections.TYPE_LIBRARY)) {
+            tabs.add(HearthSections.TYPE_LIBRARY);
+        }
+
+        save(tabs);
     }
 
     public boolean isTab(int sectionId) {

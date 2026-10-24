@@ -53,8 +53,10 @@ public class SuggestionsController extends BasePlayerController {
     private List<ChapterItem> mChapters;
     private final Runnable mChapterHandler = this::startChapterNotificationServiceIfNeededInt;
     private static final long CHAPTER_DOUBLE_PRESS_MS = 350;
+    private static final long CHAPTER_REPEAT_MS = 120;
     private int mPressedKey;
     private long mPressedAt;
+    private long mPressedPositionMs;
     private boolean mPressedWithControlsHidden;
     private static final int MAX_PLAYLIST_CONTINUATIONS = 20;
     private static final int CHAPTER_NOTIFICATION_Id = 565;
@@ -809,8 +811,7 @@ public class SuggestionsController extends BasePlayerController {
 
     /**
      * HearthTube: pressing Right (or Left) twice quickly, with the controls hidden at the first press, skips to the next
-     * (or the previous) chapter of a video that has chapters. Holding the key repeats too slowly to count as two presses,
-     * and with the controls up the arrows keep seeking as before.
+     * (or the previous) chapter of a video that has chapters. A held key's auto-repeat (50 ms apart) is ignored, and with the controls up the arrows keep seeking as before.
      */
     @Override
     public boolean onKeyDown(int keyCode) {
@@ -824,26 +825,34 @@ public class SuggestionsController extends BasePlayerController {
 
         long now = SystemClock.uptimeMillis();
 
+        // A held key repeats every ~50 ms: not a second press (a person can't tap that fast)
+        if (mPressedKey == keyCode && now - mPressedAt < CHAPTER_REPEAT_MS) {
+            mPressedAt = now;
+            return false;
+        }
+
         if (mPressedKey == keyCode && mPressedWithControlsHidden && now - mPressedAt < CHAPTER_DOUBLE_PRESS_MS) {
             mPressedKey = 0;
-            return skipChapter(keyCode == KeyEvent.KEYCODE_DPAD_RIGHT);
+            // The first press has already seeked: work from where the video was when it came
+            return skipChapter(keyCode == KeyEvent.KEYCODE_DPAD_RIGHT, mPressedPositionMs);
         }
 
         mPressedKey = keyCode;
         mPressedAt = now;
+        mPressedPositionMs = getPlayer().getPositionMs();
         mPressedWithControlsHidden = !getPlayer().isOverlayShown();
 
         return false;
     }
 
-    private boolean skipChapter(boolean forward) {
+    private boolean skipChapter(boolean forward, long fromMs) {
         long[] starts = new long[mChapters.size()];
 
         for (int i = 0; i < starts.length; i++) {
             starts[i] = mChapters.get(i).getStartTimeMs();
         }
 
-        long target = ChapterSkip.target(starts, getPlayer().getPositionMs(), forward);
+        long target = ChapterSkip.target(starts, fromMs, forward);
 
         if (target < 0) {
             return false;

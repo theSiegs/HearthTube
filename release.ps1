@@ -163,6 +163,8 @@ $ErrorActionPreference = 'Stop'
 if ($DryRun -or $buildExit -ne 0) { [System.IO.File]::WriteAllText($versionPath, $lastText) }
 if ($buildExit -ne 0) { exit $buildExit }
 
+# Anything failing from here to the commit puts the last version back, so the tree stays clean for the next try
+try {
 # The version as built (the Android Gradle plugin's list of the APKs it made)
 $built = (Get-Content "$apkDir\output-metadata.json" -Raw | ConvertFrom-Json).elements
 $versionName = $built[0].versionName
@@ -237,6 +239,10 @@ if ($DryRun) {
     Write-Host "Dry run: nothing published."
     exit 0
 }
+} catch {
+    [System.IO.File]::WriteAllText($versionPath, $lastText)
+    throw
+}
 
 # Record the version in git first, so the release points at the exact code it was built from
 # git and gh print progress to stderr; a caller that redirects output (*>&1) would make PowerShell stop at the first
@@ -257,14 +263,18 @@ $ErrorActionPreference = 'Stop'
 $ErrorActionPreference = 'Continue'
 gh release delete $tag --repo $repo --yes --cleanup-tag 2>&1 | Out-Null
 
-if ($Stable) {
+# The old release is gone by now, so a dropped connection is tried again before giving up
+$kind = if ($Stable) { '--latest' } else { '--prerelease' }
+for ($try = 1; $try -le 3; $try++) {
     gh release create $tag (Get-ChildItem $dist).FullName --repo $repo --target $branch `
-        --title $title --notes $releaseNotes --latest
-} else {
-    gh release create $tag (Get-ChildItem $dist).FullName --repo $repo --target $branch `
-        --title $title --notes $releaseNotes --prerelease
+        --title $title --notes $releaseNotes $kind
+    if ($LASTEXITCODE -eq 0) { break }
+    if ($try -lt 3) { Write-Host "Publishing failed; trying again in 10 seconds ($try of 3)."; Start-Sleep 10 }
 }
-if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Publishing failed and the old release is deleted: the update feed is empty until this is done. The files are in $dist; the version $versionName is already committed and pushed."
+    exit $LASTEXITCODE
+}
 $ErrorActionPreference = 'Stop'
 
 Write-Host ""

@@ -117,13 +117,13 @@ public final class HearthAllowance {
         // What's playing right now counts too
         take(context, true);
 
-        HearthProfile hearth = HearthProfile.isHearthSuspended(context) ? null
-                : HearthProfile.live(context, HearthProfile.queryHearth(context));
-
-        // Time limits and bedtimes are for kids: an adult's profile plays, whatever Hearth's row says
+        // Time limits and bedtimes are for kids: an adult's profile plays, whatever Hearth's row says (and isn't worth asking)
         if (!ParentGate.isKidsProfile(context)) {
             return YouTubeAllowance.Decision.NO_LIMIT;
         }
+
+        HearthProfile hearth = HearthProfile.isHearthSuspended(context) ? null
+                : HearthProfile.live(context, HearthProfile.queryHearth(context));
 
         // No Hearth to ask (a phone or tablet, or Hearth is silent), or mid-switch, when its row may still be the last
         // profile's: what it last gave counts down here, and a limit a parent set on the device itself
