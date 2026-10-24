@@ -79,7 +79,8 @@ public class TagPresenter extends LongClickPresenter {
         }
 
         view.setBackground(pill);
-        view.setTextColor(on ? 0xFF141418 : 0xFFFFFFFF);
+        // Hearth's rule: the text color follows the fill (the dark glass is dark, the shown pill is white)
+        view.setTextColor(com.liskovsoft.smartyoutubetv2.common.utils.HearthContrast.onColor(on ? 0xFFFFFFFF : 0xFF141418));
     }
 
     private static void updateCardBackgroundColor(TagCardView view, boolean selected) {
