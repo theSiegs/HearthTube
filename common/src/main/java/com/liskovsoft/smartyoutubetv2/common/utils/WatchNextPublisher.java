@@ -125,6 +125,24 @@ public class WatchNextPublisher {
         });
     }
 
+    /**
+     * Videos YouTube's history says are watched to the end (maybe on another device, where this one never saw the
+     * finish): their entries leave Continue Watching.
+     */
+    public static void removeFinished(Context context, java.util.Collection<String> videoIds) {
+        if (context == null || videoIds == null || videoIds.isEmpty()) {
+            return;
+        }
+
+        Context appContext = context.getApplicationContext();
+        java.util.List<String> ids = new java.util.ArrayList<>(videoIds);
+        sExecutor.execute(() -> {
+            for (String id : ids) {
+                remove(appContext, id);
+            }
+        });
+    }
+
     private static void remove(Context context, String videoId) {
         try {
             ContentResolver resolver = context.getContentResolver();

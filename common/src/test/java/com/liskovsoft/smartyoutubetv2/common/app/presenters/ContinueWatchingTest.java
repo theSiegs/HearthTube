@@ -13,10 +13,17 @@ public class ContinueWatchingTest {
     }
 
     @Test
-    public void startedAndUnknownVideosStay() {
-        assertFalse(HearthSections.isFinished(95));
-        assertFalse(HearthSections.isFinished(40));
-        assertFalse(HearthSections.isFinished(0));
-        assertFalse(HearthSections.isFinished(-1));
+    public void startedVideosCanBeResumed() {
+        assertTrue(HearthSections.canResume(1));
+        assertTrue(HearthSections.canResume(40));
+        assertTrue(HearthSections.canResume(95));
+    }
+
+    @Test
+    public void unstartedUnknownAndFinishedVideosCannot() {
+        assertFalse(HearthSections.canResume(0));
+        assertFalse(HearthSections.canResume(-1));
+        assertFalse(HearthSections.canResume(96));
+        assertFalse(HearthSections.canResume(100));
     }
 }

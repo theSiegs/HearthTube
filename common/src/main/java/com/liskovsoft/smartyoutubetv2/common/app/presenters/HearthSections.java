@@ -121,7 +121,7 @@ public final class HearthSections {
 
         // Only what can still be resumed: History has the finished ones
         return content.getHistoryObserve()
-                .map(group -> unfinished(group, title))
+                .map(group -> unfinished(context, group, title))
                 .filter(group -> group.getMediaItems() != null && !group.getMediaItems().isEmpty())
                 .map(group -> Collections.singletonList((MediaGroup) group))
                 .onErrorResumeNext(Observable.empty());
@@ -132,16 +132,26 @@ public final class HearthSections {
         return percentWatched > 95;
     }
 
-    private static TitledGroup unfinished(MediaGroup history, String title) {
+    private static TitledGroup unfinished(Context context, MediaGroup history, String title) {
         List<MediaItem> items = new ArrayList<>();
+        List<String> finished = new ArrayList<>();
 
         if (history.getMediaItems() != null) {
             for (MediaItem item : history.getMediaItems()) {
-                if (item != null && !isFinished(item.getPercentWatched())) {
+                if (item == null) {
+                    continue;
+                }
+
+                if (!isFinished(item.getPercentWatched())) {
                     items.add(item);
+                } else if (item.getVideoId() != null) {
+                    finished.add(item.getVideoId());
                 }
             }
         }
+
+        // The launchers' Continue Watching too (Hearth): a video finished on another device is no longer one to resume
+        com.liskovsoft.smartyoutubetv2.common.utils.WatchNextPublisher.removeFinished(context, finished);
 
         return new TitledGroup(new ItemsGroup(history, items), title, null);
     }
