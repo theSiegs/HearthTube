@@ -27,6 +27,16 @@ public class SearchTagsActivity extends LeanbackActivity {
     }
 
     @Override
+    public void onBackPressed() {
+        // Back in the grid of a row goes back to the results
+        if (mFragment.onBack()) {
+            return;
+        }
+
+        super.onBackPressed();
+    }
+
+    @Override
     public void finishReally() {
         super.finishReally();
 

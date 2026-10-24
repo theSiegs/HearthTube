@@ -52,6 +52,7 @@ public abstract class SearchTagsFragmentBase extends SearchSupportFragment
     private ListRowPresenter mResultsPresenter;
     private TagPresenter mTagsPresenter;
 
+    private androidx.leanback.widget.Row mClickedRow;
     private boolean mIsStopping;
     private SearchTagsProvider mSearchTagsProvider;
     private ProgressBarManager mProgressBarManager;
@@ -153,6 +154,11 @@ public abstract class SearchTagsFragmentBase extends SearchSupportFragment
         mTagsPresenter.setOnItemViewLongPressedListener(listener);
     }
 
+    /** The row of the item just clicked */
+    protected androidx.leanback.widget.Row getClickedRow() {
+        return mClickedRow;
+    }
+
     public boolean isStopping() {
         return mIsStopping;
     }
@@ -163,7 +169,10 @@ public abstract class SearchTagsFragmentBase extends SearchSupportFragment
 
     @SuppressWarnings("deprecation")
     private void setupListenersAndPermissions() {
-        setOnItemViewClickedListener((itemViewHolder, item, rowViewHolder, row) -> onItemViewClicked(item));
+        setOnItemViewClickedListener((itemViewHolder, item, rowViewHolder, row) -> {
+            mClickedRow = row;
+            onItemViewClicked(item);
+        });
         setOnItemViewSelectedListener((itemViewHolder, item, rowViewHolder, row) -> onItemViewSelected(item));
 
         // All needed permissions acquired inside SearchBar component.

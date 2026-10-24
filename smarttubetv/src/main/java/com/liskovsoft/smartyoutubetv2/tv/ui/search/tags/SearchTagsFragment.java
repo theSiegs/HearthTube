@@ -8,8 +8,11 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.leanback.widget.HeaderItem;
 import androidx.leanback.widget.ListRow;
+import androidx.leanback.widget.ArrayObjectAdapter;
 import androidx.leanback.widget.ObjectAdapter;
 import androidx.leanback.widget.Presenter;
+import androidx.leanback.widget.PresenterSelector;
+import com.liskovsoft.smartyoutubetv2.tv.presenter.MoreTilePresenter;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.liskovsoft.sharedutils.helpers.Helpers;
@@ -44,6 +47,24 @@ public class SearchTagsFragment extends SearchTagsFragmentBase {
     private SearchData mSearchData;
     private boolean mIsFragmentCreated;
     private CrashRestorer mCrashRestorer;
+    private static final int PREVIEW_COUNT = 10;
+    private static final int GRID_COLUMNS = 4;
+    private MoreTilePresenter mMorePresenter;
+    /** The full row shown as a grid (More), or null */
+    private ObjectAdapter mGridSource;
+    private final java.util.List<Object> mSavedRows = new java.util.ArrayList<>();
+    private final java.util.List<ListRow> mGridRows = new java.util.ArrayList<>();
+    private final ObjectAdapter.DataObserver mGridObserver = new ObjectAdapter.DataObserver() {
+        @Override
+        public void onChanged() {
+            fillGrid();
+        }
+
+        @Override
+        public void onItemRangeInserted(int positionStart, int itemCount) {
+            fillGrid();
+        }
+    };
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -59,6 +80,7 @@ public class SearchTagsFragment extends SearchTagsFragmentBase {
         mSearchPresenter.setView(this);
         mCardPresenter = new VideoCardPresenter();
         mShortsPresenter = new ShortsCardPresenter();
+        mMorePresenter = new MoreTilePresenter(mCardPresenter);
         mSearchGroupAdapters = new HashMap<>();
         mSearchData = SearchData.instance(getContext());
 
@@ -126,6 +148,7 @@ public class SearchTagsFragment extends SearchTagsFragmentBase {
     @Override
     public void clearSearch() {
         mSearchQuery = null;
+        endGrid();
 
         for (VideoGroupObjectAdapter adapter : mSearchGroupAdapters.values()) {
             adapter.clear();
@@ -144,8 +167,7 @@ public class SearchTagsFragment extends SearchTagsFragmentBase {
 
         for (int i = 0; i < size; i++) {
             Object row = resultsAdapter.get(index);
-            if (row instanceof ListRow &&
-                    ((ListRow) row).getAdapter() instanceof VideoGroupObjectAdapter) {
+            if (row instanceof ListRow && isResultsAdapter(((ListRow) row).getAdapter())) {
                 // Notify about changes (could help with search autofocus)
                 detachAdapter(index);
             } else {
@@ -224,8 +246,7 @@ public class SearchTagsFragment extends SearchTagsFragmentBase {
 
         for (int i = 0; i < rows.size(); i++) {
             Object row = rows.get(i);
-            if (row instanceof ListRow &&
-                ((ListRow) row).getAdapter() instanceof VideoGroupObjectAdapter) {
+            if (row instanceof ListRow && isResultsAdapter(((ListRow) row).getAdapter())) {
                 index = i;
                 break;
             }
@@ -240,6 +261,145 @@ public class SearchTagsFragment extends SearchTagsFragmentBase {
             mSearchPresenter.onVideoItemClicked((Video) item);
         } else if (item instanceof Tag) {
             startSearch(((Tag) item).tag, false);
+        } else if (item instanceof MoreTilePresenter.More) {
+            showGrid(getClickedRow());
+        }
+    }
+
+    private boolean isResultsAdapter(ObjectAdapter adapter) {
+        return adapter instanceof VideoGroupObjectAdapter || adapter instanceof PreviewAdapter;
+    }
+
+    /** Back in the grid goes back to the rows. True: handled. */
+    public boolean onBack() {
+        if (mGridSource == null) {
+            return false;
+        }
+
+        endGrid();
+        return true;
+    }
+
+    private void showGrid(androidx.leanback.widget.Row row) {
+        ObjectAdapter rows = getResultsAdapter();
+
+        if (!(row instanceof ListRow) || !(((ListRow) row).getAdapter() instanceof PreviewAdapter)
+                || !(rows instanceof ArrayObjectAdapter)) {
+            return;
+        }
+
+        ArrayObjectAdapter all = (ArrayObjectAdapter) rows;
+        mGridSource = ((PreviewAdapter) ((ListRow) row).getAdapter()).mSource;
+        mSavedRows.clear();
+        mSavedRows.addAll(all.unmodifiableList());
+        all.clear();
+        mGridRows.clear();
+        fillGrid();
+        mGridSource.registerObserver(mGridObserver);
+
+        if (getRowsSupportFragment() != null) {
+            getRowsSupportFragment().setSelectedPosition(0);
+        }
+    }
+
+    private void endGrid() {
+        if (mGridSource == null) {
+            return;
+        }
+
+        mGridSource.unregisterObserver(mGridObserver);
+        mGridSource = null;
+        mGridRows.clear();
+
+        ObjectAdapter rows = getResultsAdapter();
+
+        if (rows instanceof ArrayObjectAdapter) {
+            ((ArrayObjectAdapter) rows).clear();
+            ((ArrayObjectAdapter) rows).addAll(0, mSavedRows);
+        }
+
+        mSavedRows.clear();
+    }
+
+    /** Rows of four from the full row; more rows come as the search loads more videos */
+    private void fillGrid() {
+        ObjectAdapter rows = getResultsAdapter();
+
+        if (mGridSource == null || !(rows instanceof ArrayObjectAdapter)) {
+            return;
+        }
+
+        for (int i = 0; i < mGridSource.size(); i++) {
+            int rowIndex = i / GRID_COLUMNS;
+
+            if (rowIndex >= mGridRows.size()) {
+                ListRow gridRow = new ListRow(new ArrayObjectAdapter(mCardPresenter));
+                mGridRows.add(gridRow);
+                ((ArrayObjectAdapter) rows).add(gridRow);
+            }
+
+            ArrayObjectAdapter adapter = (ArrayObjectAdapter) mGridRows.get(rowIndex).getAdapter();
+            if (adapter.size() <= i % GRID_COLUMNS) {
+                adapter.add(mGridSource.get(i));
+            }
+        }
+    }
+
+    /** The first {@link #PREVIEW_COUNT} videos of a search row, then the More tile. Follows the row as it loads. */
+    private final class PreviewAdapter extends ObjectAdapter {
+        private final VideoGroupObjectAdapter mSource;
+
+        PreviewAdapter(VideoGroupObjectAdapter source) {
+            super(new PresenterSelector() {
+                @Override
+                public Presenter getPresenter(Object item) {
+                    return item instanceof MoreTilePresenter.More ? mMorePresenter : mCardPresenter;
+                }
+
+                @Override
+                public Presenter[] getPresenters() {
+                    return new Presenter[] {mCardPresenter, mMorePresenter};
+                }
+            });
+            mSource = source;
+            mSource.registerObserver(new DataObserver() {
+                @Override
+                public void onChanged() {
+                    notifyChanged();
+                }
+
+                @Override
+                public void onItemRangeInserted(int positionStart, int itemCount) {
+                    notifyChanged();
+                }
+
+                @Override
+                public void onItemRangeRemoved(int positionStart, int itemCount) {
+                    notifyChanged();
+                }
+
+                @Override
+                public void onItemRangeChanged(int positionStart, int itemCount) {
+                    notifyChanged();
+                }
+            });
+        }
+
+        @Override
+        public int size() {
+            int size = mSource.size();
+            // A full row, or one with more pages behind it (search loads them as it scrolls): More shows it as a grid
+            return size > 0 && (size >= PREVIEW_COUNT || hasMorePages()) ? Math.min(size, PREVIEW_COUNT) + 1 : size;
+        }
+
+        @Override
+        public Object get(int position) {
+            return position < Math.min(mSource.size(), PREVIEW_COUNT) ? mSource.get(position) : MoreTilePresenter.More.INSTANCE;
+        }
+
+        private boolean hasMorePages() {
+            java.util.List<VideoGroup> groups = mSource.getAllGroups();
+            return groups != null && !groups.isEmpty() && groups.get(groups.size() - 1).getNextPageKey() != null;
         }
     }
 
@@ -352,7 +512,9 @@ public class SearchTagsFragment extends SearchTagsFragmentBase {
 
             mSearchGroupAdapters.put(mediaGroupId, mediaGroupAdapter);
             
-            attachAdapter(getResultsAdapter().size(), rowHeader, mediaGroupAdapter);
+            // HearthTube: the first videos of a row and a More tile (as on Home); Shorts rows stay as they are
+            attachAdapter(getResultsAdapter().size(), rowHeader,
+                    group.isShorts() ? mediaGroupAdapter : new PreviewAdapter(mediaGroupAdapter));
         } else {
             Log.d(TAG, "Continue row %s %s", group.getTitle(), System.currentTimeMillis());
 
@@ -394,6 +556,9 @@ public class SearchTagsFragment extends SearchTagsFragmentBase {
                 if (row instanceof ListRow) {
                     // Could be one of those: TagAdapter, VideoGroupObjectAdapter
                     ObjectAdapter adapter = ((ListRow) row).getAdapter();
+                    if (adapter instanceof PreviewAdapter) {
+                        adapter = ((PreviewAdapter) adapter).mSource;
+                    }
                     if (adapter == needed) {
                         return i;
                     }

@@ -30,10 +30,21 @@ public class MoreTilePresenter extends Presenter {
         }
     }
 
+    private final VideoCardPresenter mSizeFrom;
+
+    public MoreTilePresenter() {
+        this(null);
+    }
+
+    /** @param sizeFrom the cards this tile sits among (search results); null: the big row's */
+    public MoreTilePresenter(VideoCardPresenter sizeFrom) {
+        mSizeFrom = sizeFrom;
+    }
+
     @Override
     public ViewHolder onCreateViewHolder(ViewGroup parent) {
         Context context = parent.getContext();
-        Pair<Integer, Integer> size = LargeVideoCardPresenter.getLargeCardDimensPx(context);
+        Pair<Integer, Integer> size = mSizeFrom != null ? mSizeFrom.cardSizePx(context) : LargeVideoCardPresenter.getLargeCardDimensPx(context);
 
         LinearLayout tile = new LinearLayout(context);
         tile.setOrientation(LinearLayout.VERTICAL);

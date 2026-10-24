@@ -217,6 +217,11 @@ public class VideoCardPresenter extends LongClickPresenter {
         mHeight = dimens.second;
     }
     
+    /** The size of this presenter's cards, for tiles that sit among them */
+    public Pair<Integer, Integer> cardSizePx(Context context) {
+        return getCardDimensPx(context);
+    }
+
     protected Pair<Integer, Integer> getCardDimensPx(Context context) {
         return GridFragmentHelper.getCardDimensPx(context, R.dimen.card_width, R.dimen.card_height, MainUIData.instance(context).getVideoGridScale());
     }
