@@ -7,20 +7,31 @@ import org.junit.Test;
 
 public class SearchMatchTest {
     @Test
-    public void everyWordHasToBeInTheTitleOrTheChannel() {
+    public void mostWordsHaveToBeFound() {
         assertTrue(SearchMatch.matches("sailing boat tour", "Boat tour of a sailing catamaran", "Sam"));
         assertTrue(SearchMatch.matches("sailing wynns", "Our sailing life", "Gone with the Wynns"));
-        assertFalse(SearchMatch.matches("sailing boat tour", "Boat tour of a houseboat", "Sam"));
+        assertFalse(SearchMatch.matches("sailing boat tour", "Cooking pasta at home", "Sam"));
+        assertFalse(SearchMatch.matches("sailing", "Cooking pasta at home", "Sam"));
+    }
+
+    @Test
+    public void oneWordHeardWrongDoesNotHideTheVideo() {
+        // voice search heard "wind" for "wynns"
+        assertTrue(SearchMatch.matches("gone with the wind", "Fix One Thing, Break Another", "Gone with the Wynns"));
+        assertFalse(SearchMatch.matches("gone with the wind", "Fix One Thing, Break Another", "Sam"));
+    }
+
+    @Test
+    public void wordsSpelledAlikeAreTheSameWord() {
+        assertTrue(SearchMatch.matches("catamarans", "Sailing a catamaran home", null));
+        assertTrue(SearchMatch.matches("wynn", "Gone with the Wynns", null));
+        assertTrue(SearchMatch.matches("boat tours", "Boat tour in Maine", null));
+        assertFalse(SearchMatch.same("pasta", "boat"));
     }
 
     @Test
     public void caseAccentsAndPunctuationDoNotMatter() {
         assertTrue(SearchMatch.matches("cafe  RENE!", "Le Café de René", null));
-    }
-
-    @Test
-    public void aMisspellingDoesNotMatch() {
-        assertFalse(SearchMatch.matches("gone with the winds", "Fix One Thing, Break Another", "Gone with the Wynns"));
     }
 
     @Test
