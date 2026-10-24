@@ -119,10 +119,88 @@ public final class HearthSections {
     private static Observable<List<MediaGroup>> continueWatchingRow(Context context, ContentService content) {
         String title = context.getString(R.string.continue_watching);
 
+        // Only what can still be resumed: History has the finished ones
         return content.getHistoryObserve()
+                .map(group -> unfinished(group, title))
                 .filter(group -> group.getMediaItems() != null && !group.getMediaItems().isEmpty())
-                .map(group -> Collections.singletonList((MediaGroup) TitledGroup.continuable(group, title)))
+                .map(group -> Collections.singletonList((MediaGroup) group))
                 .onErrorResumeNext(Observable.empty());
+    }
+
+    /** Watched to the end (the same line the Home feed uses for "watched") */
+    static boolean isFinished(int percentWatched) {
+        return percentWatched > 95;
+    }
+
+    private static TitledGroup unfinished(MediaGroup history, String title) {
+        List<MediaItem> items = new ArrayList<>();
+
+        if (history.getMediaItems() != null) {
+            for (MediaItem item : history.getMediaItems()) {
+                if (item != null && !isFinished(item.getPercentWatched())) {
+                    items.add(item);
+                }
+            }
+        }
+
+        return new TitledGroup(new ItemsGroup(history, items), title, null);
+    }
+
+    /** A group's own details with other items (the unfinished ones of a history page) */
+    private static class ItemsGroup implements MediaGroup {
+        private final MediaGroup mGroup;
+        private final List<MediaItem> mItems;
+
+        ItemsGroup(MediaGroup group, List<MediaItem> items) {
+            mGroup = group;
+            mItems = items;
+        }
+
+        @Override
+        public int getType() {
+            return mGroup.getType();
+        }
+
+        @Nullable
+        @Override
+        public List<MediaItem> getMediaItems() {
+            return mItems;
+        }
+
+        @Override
+        public String getTitle() {
+            return mGroup.getTitle();
+        }
+
+        @Override
+        public String getChannelId() {
+            return null;
+        }
+
+        @Override
+        public String getParams() {
+            return null;
+        }
+
+        @Override
+        public String getReloadPageKey() {
+            return null;
+        }
+
+        @Override
+        public String getNextPageKey() {
+            return null;
+        }
+
+        @Override
+        public String getChannelUrl() {
+            return null;
+        }
+
+        @Override
+        public boolean isEmpty() {
+            return mItems.isEmpty();
+        }
     }
 
     /**
