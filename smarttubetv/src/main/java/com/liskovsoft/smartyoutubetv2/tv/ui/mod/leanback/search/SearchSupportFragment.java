@@ -469,13 +469,12 @@ public class SearchSupportFragment extends Fragment {
         super.onStart();
 
         VerticalGridView list = mRowsSupportFragment.getVerticalGridView();
-        int mContainerListAlignTop =
-                getResources().getDimensionPixelSize(R.dimen.lb_search_browse_rows_align_top);
         list.setItemAlignmentOffset(0);
         list.setItemAlignmentOffsetPercent(VerticalGridView.ITEM_ALIGN_OFFSET_PERCENT_DISABLED);
-        list.setWindowAlignmentOffset(mContainerListAlignTop);
-        list.setWindowAlignmentOffsetPercent(VerticalGridView.WINDOW_ALIGN_OFFSET_PERCENT_DISABLED);
-        list.setWindowAlignment(VerticalGridView.WINDOW_ALIGN_NO_EDGE);
+        // MOD (HearthTube): the rows start right under the search bar (the suggestion pills first), not lower down
+        list.setWindowAlignmentOffset(0);
+        list.setWindowAlignmentOffsetPercent(0);
+        list.setWindowAlignment(VerticalGridView.WINDOW_ALIGN_LOW_EDGE);
         // VerticalGridView should not be focusable (see b/26894680 for details).
         list.setFocusable(false);
         list.setFocusableInTouchMode(false);

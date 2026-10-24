@@ -86,6 +86,14 @@ public class TagCardView extends BaseCardView {
         return false;
     }
 
+    /** The text takes its color from the card's own state (focused, selected), like the chips under the tabs */
+    public void setTextColorStates(android.content.res.ColorStateList colors) {
+        if (mTagNameText != null) {
+            mTagNameText.setTextColor(colors);
+            mTagNameText.setDuplicateParentStateEnabled(true);
+        }
+    }
+
     public void setTextColor(int color) {
         if (mTagNameText != null) {
             mTagNameText.setTextColor(color);

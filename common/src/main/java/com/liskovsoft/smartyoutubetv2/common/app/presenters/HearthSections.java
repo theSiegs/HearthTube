@@ -132,6 +132,11 @@ public final class HearthSections {
         return percentWatched > 95;
     }
 
+    /** Something to resume: started (YouTube sends no progress for a video it has none for) and not finished */
+    static boolean canResume(int percentWatched) {
+        return percentWatched > 0 && !isFinished(percentWatched);
+    }
+
     private static TitledGroup unfinished(Context context, MediaGroup history, String title) {
         List<MediaItem> items = new ArrayList<>();
         List<String> finished = new ArrayList<>();
@@ -142,9 +147,9 @@ public final class HearthSections {
                     continue;
                 }
 
-                if (!isFinished(item.getPercentWatched())) {
+                if (canResume(item.getPercentWatched())) {
                     items.add(item);
-                } else if (item.getVideoId() != null) {
+                } else if (isFinished(item.getPercentWatched()) && item.getVideoId() != null) {
                     finished.add(item.getVideoId());
                 }
             }

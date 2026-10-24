@@ -199,6 +199,18 @@ public class SearchPresenter extends BasePresenter<SearchView> implements VideoG
                                 }
 
                                 VideoGroup group = VideoGroup.from(mediaGroup);
+
+                                // HearthTube: "Previously watched" only with the videos that are about the search too
+                                if (com.liskovsoft.smartyoutubetv2.common.utils.SearchMatch.isPreviouslyWatchedShelf(mediaGroup.getTitle())
+                                        && group.getVideos() != null) {
+                                    group.getVideos().removeIf(video -> !com.liskovsoft.smartyoutubetv2.common.utils.SearchMatch
+                                            .matches(searchText, video.getTitle(), video.getAuthor()));
+
+                                    if (group.isEmpty()) {
+                                        continue;
+                                    }
+                                }
+
                                 anyShown[0] |= !group.isEmpty();
                                 startPlayFirstVideo(group);
                                 getView().updateSearch(group);

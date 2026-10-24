@@ -53,6 +53,10 @@ public class HearthTabBar extends LinearLayout {
             Utils.postDelayed(this, QUEUE_CHECK_MS);
         }
     };
+    /** Focus is on the bar's other buttons (the account, the bell, search): no tab shows as open, and no videos */
+    private boolean mAway;
+    private final android.view.ViewTreeObserver.OnGlobalFocusChangeListener mFocusListener =
+            (oldFocus, newFocus) -> setAway(isOtherTitleButton(newFocus));
     private final List<Integer> mTabIds = new ArrayList<>();
     private TextView mQueued;
     /** Last count shown; -1 before the first */
@@ -115,6 +119,7 @@ public class HearthTabBar extends LinearLayout {
         }
 
         BrowsePresenter.instance(getContext()).addOnSectionChange(mOnSectionChange);
+        getViewTreeObserver().addOnGlobalFocusChangeListener(mFocusListener);
         update();
         Utils.postDelayed(mQueueCheck, QUEUE_CHECK_MS);
     }
@@ -124,6 +129,8 @@ public class HearthTabBar extends LinearLayout {
         super.onDetachedFromWindow();
 
         BrowsePresenter.instance(getContext()).removeOnSectionChange(mOnSectionChange);
+        getViewTreeObserver().removeOnGlobalFocusChangeListener(mFocusListener);
+        setAway(false);
         Utils.removeCallbacks(mQueueCheck);
         Utils.removeCallbacks(mOpenPending);
         mPendingTab = null;
@@ -179,8 +186,8 @@ public class HearthTabBar extends LinearLayout {
             refocus = rebuild(tabIds, titles);
         }
 
-        // A tab waiting to open already shows as open
-        int shownId = mPendingTab != null ? mPendingId : getCurrentId();
+        // A tab waiting to open already shows as open; while focus is on the account, bell or search, none does
+        int shownId = mAway ? NO_SECTION : mPendingTab != null ? mPendingId : getCurrentId();
 
         for (int i = 0; i < mTabIds.size(); i++) {
             getChildAt(i).setSelected(mTabIds.get(i) == shownId);
@@ -195,6 +202,52 @@ public class HearthTabBar extends LinearLayout {
             if (tab != null) {
                 tab.requestFocus();
             }
+        }
+    }
+
+    /** In the title bar, but not one of the tabs (the account, the bell, search) */
+    private boolean isOtherTitleButton(View focus) {
+        if (focus == null) {
+            return false;
+        }
+
+        boolean inTitle = false;
+
+        for (View v = focus; v != null; v = v.getParent() instanceof View ? (View) v.getParent() : null) {
+            if (v == this) {
+                return false;
+            }
+            if (v.getId() == androidx.leanback.R.id.browse_title_group) {
+                inTitle = true;
+            }
+        }
+
+        return inTitle;
+    }
+
+    /**
+     * Focus went to (or came back from) the account, bell or search: the open tab's pill and the videos step aside
+     * (faded, so Down still reaches them), instead of showing a tab that isn't the one in mind.
+     */
+    private void setAway(boolean away) {
+        if (away == mAway) {
+            return;
+        }
+
+        mAway = away;
+
+        Context context = getContext();
+        while (context instanceof ContextWrapper && !(context instanceof Activity)) {
+            context = ((ContextWrapper) context).getBaseContext();
+        }
+
+        View content = context instanceof Activity ? ((Activity) context).findViewById(R.id.scale_frame) : null;
+        if (content != null) {
+            content.animate().alpha(away ? 0f : 1f).setDuration(150).start();
+        }
+
+        if (getChildCount() > 0) {
+            update();
         }
     }
 

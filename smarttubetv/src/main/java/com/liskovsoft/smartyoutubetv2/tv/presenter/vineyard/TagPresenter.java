@@ -35,8 +35,12 @@ public class TagPresenter extends LongClickPresenter {
         TagCardView cardView = new TagCardView(parent.getContext()) {
             @Override
             public void setSelected(boolean selected) {
-                updateCardBackgroundColor(this, selected);
-                updateCardTextColor(this, selected);
+                if (sHearth) {
+                    applyHearthPill(this, selected);
+                } else {
+                    updateCardBackgroundColor(this, selected);
+                    updateCardTextColor(this, selected);
+                }
                 super.setSelected(selected);
             }
         };
@@ -45,10 +49,37 @@ public class TagPresenter extends LongClickPresenter {
         cardView.setFocusableInTouchMode(true);
         updateCardBackgroundColor(cardView, false);
         updateCardTextColor(cardView, false);
+
+        if (sHearth) {
+            applyHearthPill(cardView, false);
+        }
         //if (VERSION.SDK_INT >= 23 && MainUIData.instance(parent.getContext()).isUiTweakEnabled(MainUIData.UI_TWEAK_ROUNDED_CORNERS)) {
         //    cardView.setForeground(ContextCompat.getDrawable(parent.getContext(), R.drawable.lb_card_outline));
         //}
         return new ViewHolder(cardView);
+    }
+
+    /**
+     * The chips under the tabs: dark glass with white text; the one in focus (leanback marks it selected) white with
+     * dark text and the accent ring. Both are set here together so the text is never dark on dark.
+     */
+    private static void applyHearthPill(TagCardView view, boolean on) {
+        float density = view.getResources().getDisplayMetrics().density;
+        android.graphics.drawable.GradientDrawable pill = new android.graphics.drawable.GradientDrawable();
+        pill.setCornerRadius(100 * density);
+
+        if (on) {
+            android.util.TypedValue accent = new android.util.TypedValue();
+            view.getContext().getTheme().resolveAttribute(R.attr.hearthAccent, accent, true);
+            pill.setColor(0xFFFFFFFF);
+            pill.setStroke(Math.round(3 * density), accent.data);
+        } else {
+            pill.setColor(0xB3141418);
+            pill.setStroke(Math.max(1, Math.round(density)), 0x24FFFFFF);
+        }
+
+        view.setBackground(pill);
+        view.setTextColor(on ? 0xFF141418 : 0xFFFFFFFF);
     }
 
     private static void updateCardBackgroundColor(TagCardView view, boolean selected) {
@@ -62,8 +93,7 @@ public class TagPresenter extends LongClickPresenter {
 
     private static void updateCardTextColor(TagCardView view, boolean selected) {
         if (sHearth) {
-            view.setTextColor(selected ? 0xFF141418 : 0xFFFFFFFF);
-            return;
+            return; // the text follows the card's state (setTextColorStates)
         }
 
         view.setTextColor(selected ? sSelectedTextColor : sDefaultTextColor);
