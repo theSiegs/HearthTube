@@ -24,6 +24,7 @@ import com.liskovsoft.youtubeapi.service.YouTubeServiceManager;
 
 import java.util.ArrayList;
 import java.util.List;
+import com.liskovsoft.smartyoutubetv2.common.utils.AccountTwins;
 import com.liskovsoft.smartyoutubetv2.common.utils.ParentGate;
 
 public class AccountSelectionPresenter extends BasePresenter<Void> {
@@ -81,9 +82,11 @@ public class AccountSelectionPresenter extends BasePresenter<Void> {
 
     private void showUnlocked(boolean force) {
 
+        List<Account> accounts = AccountTwins.withoutTwins(mSignInService.getAccounts());
+
         GlideIconFetcher.fetchDrawables(getContext(),
-                Helpers.map(mSignInService.getAccounts(), Account::getAvatarImageUrl),
-                icons -> createAndShowDialog(mSignInService.getAccounts(), icons, force));
+                Helpers.map(accounts, Account::getAvatarImageUrl),
+                icons -> createAndShowDialog(accounts, icons, force));
     }
 
     public void nextAccountOrDialog() {

@@ -17,6 +17,7 @@ import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.AccountSelec
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.settings.AccountSettingsPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.views.ProfilePickerView;
 import com.liskovsoft.smartyoutubetv2.common.prefs.AccountsData;
+import com.liskovsoft.smartyoutubetv2.common.utils.AccountTwins;
 import com.liskovsoft.smartyoutubetv2.common.prefs.ProfileLinkData;
 import com.liskovsoft.smartyoutubetv2.common.utils.GlideIconFetcher;
 import com.liskovsoft.smartyoutubetv2.common.utils.HearthProfile;
@@ -252,7 +253,7 @@ public class ProfilePickerPresenter extends BasePresenter<ProfilePickerView> {
      * when it can't tell who's watching, every account.
      */
     public List<Account> getVisibleAccounts() {
-        List<Account> accounts = mSignInService.getAccounts();
+        List<Account> accounts = AccountTwins.withoutTwins(mSignInService.getAccounts());
         String profile = getFollowedProfile();
 
         if (accounts == null || profile == null) {
