@@ -43,6 +43,44 @@ public final class BlockedWordsPresenter {
     public static void appendSettingsButton(Context context, AppDialogPresenter settingsPresenter) {
         settingsPresenter.appendSingleButton(UiOptionItem.from(context.getString(R.string.blocked_words),
                 option -> ParentGate.run(context, () -> show(context))));
+        settingsPresenter.appendSingleButton(UiOptionItem.from(context.getString(R.string.hidden_videos),
+                option -> ParentGate.run(context, () -> showHiddenVideos(context))));
+    }
+
+    /** Settings › General: the videos hidden one by one, each a button that shows it again */
+    private static void showHiddenVideos(Context context) {
+        AppDialogPresenter dialog = AppDialogPresenter.instance(context);
+        com.liskovsoft.smartyoutubetv2.common.prefs.HiddenVideoData hidden =
+                com.liskovsoft.smartyoutubetv2.common.prefs.HiddenVideoData.instance(context);
+
+        for (android.util.Pair<String, String> entry : hidden.getVideos()) {
+            String title = entry.second == null || entry.second.isEmpty() ? entry.first : entry.second;
+            dialog.appendSingleButton(UiOptionItem.from(
+                    SettingsMenuPresenter.withIcon(context, R.drawable.ic_hearth_action_delete, title),
+                    option -> AppDialogUtil.showConfirmationDialog(context, context.getString(R.string.hidden_video_show, title), () -> {
+                        hidden.unhide(entry.first);
+                        sChanged = true;
+                        reopenHidden(context);
+                    })));
+        }
+
+        dialog.appendSingleButton(UiOptionItem.from(
+                context.getString(hidden.isEmpty() ? R.string.hidden_videos_empty : R.string.hidden_videos_hint)));
+
+        sOnTop = dialog.isDialogShown();
+        dialog.showDialog(context.getString(R.string.hidden_videos), () -> onClosed(context));
+    }
+
+    private static void reopenHidden(Context context) {
+        AppDialogPresenter dialog = AppDialogPresenter.instance(context);
+
+        if (sOnTop) {
+            dialog.goBack();
+            showHiddenVideos(context);
+        } else {
+            dialog.closeDialog();
+            Utils.postDelayed(() -> showHiddenVideos(context), PANEL_CLOSE_MS);
+        }
     }
 
     /**
@@ -143,7 +181,7 @@ public final class BlockedWordsPresenter {
         }
 
         dialog.appendSingleButton(UiOptionItem.from(context.getString(R.string.blocked_words_from_title),
-                option -> ParentGate.run(context, () -> showPicker(context, video, callback))));
+                option -> showPicker(context, video, callback))); // no PIN: hiding takes none
     }
 
     /**

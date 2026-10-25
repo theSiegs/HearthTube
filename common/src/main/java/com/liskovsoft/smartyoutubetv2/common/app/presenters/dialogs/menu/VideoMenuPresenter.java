@@ -511,8 +511,8 @@ public class VideoMenuPresenter extends BaseMenuPresenter {
                 : getContext().getString(R.string.dialog_block_channel);
 
         mDialogPresenter.appendSingleButton(
-                // HearthTube: in a kids profile, blocking or unblocking takes the parent PIN
-                UiOptionItem.from(buttonText, optionItem -> com.liskovsoft.smartyoutubetv2.common.utils.ParentGate.run(getContext(), () -> {
+                // HearthTube: hiding or blocking takes no PIN, in a kids profile too
+                UiOptionItem.from(buttonText, optionItem -> {
                     if (isBlocked) {
                         blockedChannelData.removeChannel(channelId, channelName);
                         MessageHelpers.showMessage(getContext(), R.string.channel_unblocked);
@@ -526,7 +526,33 @@ public class VideoMenuPresenter extends BaseMenuPresenter {
                     }
                     mDialogPresenter.closeDialog();
                     showHideBlockedChannelsSection(blockedChannelData);
-                })));
+                }));
+    }
+
+    /** HearthTube: this one video, out of every list in this profile (signed in or not) */
+    private void appendHideVideoButton() {
+        if (mVideo == null || mVideo.isChapter || !mVideo.hasVideo() || mVideo.videoId == null || !mIsBlockChannelEnabled) {
+            return;
+        }
+
+        Video video = mVideo;
+        com.liskovsoft.smartyoutubetv2.common.prefs.HiddenVideoData hidden =
+                com.liskovsoft.smartyoutubetv2.common.prefs.HiddenVideoData.instance(getContext());
+
+        if (hidden.isHidden(video.videoId)) {
+            return;
+        }
+
+        mDialogPresenter.appendSingleButton(
+                UiOptionItem.from(getContext().getString(R.string.hide_video), optionItem -> {
+                    hidden.hide(video.videoId, video.getTitle());
+                    MessageHelpers.showMessage(getContext(), R.string.video_hidden);
+
+                    if (mCallback != null) {
+                        mCallback.onItemAction(video, VideoMenuCallback.ACTION_REMOVE);
+                    }
+                    mDialogPresenter.closeDialog();
+                }));
     }
 
     private void showHideBlockedChannelsSection(BlockedChannelData blockedChannelData) {
@@ -1096,7 +1122,7 @@ public class VideoMenuPresenter extends BaseMenuPresenter {
         mMenuMapping.put(MainUIData.MENU_ITEM_NOT_INTERESTED, new MenuAction(this::appendNotInterestedButton, true));
         mMenuMapping.put(MainUIData.MENU_ITEM_NOT_RECOMMEND_CHANNEL, new MenuAction(this::appendNotRecommendChannelButton, true));
         mMenuMapping.put(MainUIData.MENU_ITEM_REMOVE_FROM_SUBSCRIPTIONS, new MenuAction(() -> { appendRemoveFromSubscriptionsButton(); appendRemoveFromNotificationsButton(); }, true));
-        mMenuMapping.put(MainUIData.MENU_ITEM_BLOCK_CHANNEL, new MenuAction(() -> { appendBlockChannelButton(); com.liskovsoft.smartyoutubetv2.common.app.presenters.settings.BlockedWordsPresenter.appendMenuButton(getContext(), mDialogPresenter, mVideo, mCallback); }, false)); // HearthTube: and blocked words
+        mMenuMapping.put(MainUIData.MENU_ITEM_BLOCK_CHANNEL, new MenuAction(() -> { appendHideVideoButton(); appendBlockChannelButton(); com.liskovsoft.smartyoutubetv2.common.app.presenters.settings.BlockedWordsPresenter.appendMenuButton(getContext(), mDialogPresenter, mVideo, mCallback); }, false)); // HearthTube: and blocked words
         mMenuMapping.put(MainUIData.MENU_ITEM_MARK_AS_WATCHED, new MenuAction(this::appendMarkAsWatchedButton, false));
         mMenuMapping.put(MainUIData.MENU_ITEM_PLAYLIST_ORDER, new MenuAction(this::appendPlaylistOrderButton, true));
         mMenuMapping.put(MainUIData.MENU_ITEM_ADD_TO_QUEUE, new MenuAction(() -> { appendAddToPlaybackQueueButton(); appendRemoveFromPlaybackQueueButton(); }, false));

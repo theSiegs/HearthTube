@@ -1406,5 +1406,6 @@ public class Utils {
         MediaServiceData mediaServiceData = MediaServiceData.instance();
         mediaServiceData.persistNow();
         BlockedChannelData.instance(context).persistNow();
+        com.liskovsoft.smartyoutubetv2.common.prefs.HiddenVideoData.instance(context).persistNow();
     }
 }

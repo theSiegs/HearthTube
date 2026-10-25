@@ -490,6 +490,11 @@ public class VideoGroup {
             return;
         }
 
+        // HearthTube: videos hidden one by one ("Hide this video")
+        if (!video.isChapter && com.liskovsoft.smartyoutubetv2.common.prefs.HiddenVideoData.instance(GlobalPreferences.context()).isHidden(video.videoId)) {
+            return;
+        }
+
         if (com.liskovsoft.smartyoutubetv2.common.utils.KeywordFilter.isHidden(video)) { // HearthTube: blocked words
             return;
         }
