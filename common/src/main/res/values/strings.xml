@@ -726,8 +726,8 @@
     <string name="once_a_week">Once a week</string>
     <string name="once_a_month">Once a month</string>
     <string name="action_debug_info">Debug info</string>
-    <string name="dialog_block_channel">Block the channel</string>
-    <string name="dialog_unblock_channel">Unblock the channel</string>
+    <string name="dialog_block_channel">Don\'t show this creator</string>
+    <string name="dialog_unblock_channel">Show this creator again</string>
     <string name="confirm_block_channel">Hide all content from %s?</string>
     <string name="channel_blocked">Channel blocked</string>
     <string name="channel_unblocked">Channel unblocked</string>

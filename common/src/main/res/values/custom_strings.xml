@@ -143,8 +143,7 @@
     <string name="youtube_time_used_up_shared">YouTube time is used up for today, shared with your phone</string>
     <string name="youtube_bedtime">It\'s bedtime</string>
     <string name="blocked_words">Blocked words</string>
-    <string name="hide_video">Hide this video</string>
-    <string name="video_hidden">Video hidden. It can be shown again in Settings › General › Hidden videos.</string>
+    <string name="video_hidden">Hidden. It can be shown again in Settings › General › Hidden videos.</string>
     <string name="hidden_videos">Hidden videos</string>
     <string name="hidden_videos_empty">No hidden videos.</string>
     <string name="hidden_videos_hint">Choose one to show it again.</string>

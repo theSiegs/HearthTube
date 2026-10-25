@@ -385,11 +385,16 @@ public class VideoMenuPresenter extends BaseMenuPresenter {
     }
 
     private void appendNotInterestedButton() {
-        if (mVideo == null || mVideo.mediaItem == null || (mVideo.mediaItem.getFeedbackToken() == null && mVideo.mediaItem.getFeedbackEndpoint() == null)) {
+        if (mVideo == null || !mIsNotInterestedButtonEnabled) {
             return;
         }
 
-        if ((!mVideo.belongsToHome() && !mVideo.belongsToShorts()) || !mIsNotInterestedButtonEnabled) {
+        boolean youtube = mVideo.mediaItem != null && (mVideo.mediaItem.getFeedbackToken() != null || mVideo.mediaItem.getFeedbackEndpoint() != null)
+                && (mVideo.belongsToHome() || mVideo.belongsToShorts());
+
+        if (!youtube) {
+            // HearthTube: no YouTube account to tell (a kids profile, or a list without feedback): hidden here instead
+            appendLocalNotInterestedButton();
             return;
         }
 
@@ -437,7 +442,34 @@ public class VideoMenuPresenter extends BaseMenuPresenter {
                 );
     }
 
+    /** HearthTube: "Not interested" without a YouTube account: this one video, out of every list in this profile */
+    private void appendLocalNotInterestedButton() {
+        if (mVideo.isChapter || !mVideo.hasVideo() || mVideo.videoId == null) {
+            return;
+        }
+
+        Video video = mVideo;
+
+        mDialogPresenter.appendSingleButton(
+                UiOptionItem.from(getContext().getString(R.string.not_interested), optionItem -> {
+                    hideLocally(video);
+                    MessageHelpers.showMessage(getContext(), R.string.video_hidden);
+
+                    if (mCallback != null) {
+                        mCallback.onItemAction(video, VideoMenuCallback.ACTION_REMOVE);
+                    }
+                    mDialogPresenter.closeDialog();
+                }));
+    }
+
+    private void hideLocally(Video video) {
+        if (video != null && video.videoId != null && !video.isChapter) {
+            com.liskovsoft.smartyoutubetv2.common.prefs.HiddenVideoData.instance(getContext()).hide(video.videoId, video.getTitle());
+        }
+    }
+
     private void removeSuggestedItemAndClose() {
+        hideLocally(mVideo); // HearthTube: and it stays out when the feed is rebuilt
         if (mCallback != null) {
             mCallback.onItemAction(mVideo, VideoMenuCallback.ACTION_REMOVE);
         } else {
@@ -526,32 +558,6 @@ public class VideoMenuPresenter extends BaseMenuPresenter {
                     }
                     mDialogPresenter.closeDialog();
                     showHideBlockedChannelsSection(blockedChannelData);
-                }));
-    }
-
-    /** HearthTube: this one video, out of every list in this profile (signed in or not) */
-    private void appendHideVideoButton() {
-        if (mVideo == null || mVideo.isChapter || !mVideo.hasVideo() || mVideo.videoId == null || !mIsBlockChannelEnabled) {
-            return;
-        }
-
-        Video video = mVideo;
-        com.liskovsoft.smartyoutubetv2.common.prefs.HiddenVideoData hidden =
-                com.liskovsoft.smartyoutubetv2.common.prefs.HiddenVideoData.instance(getContext());
-
-        if (hidden.isHidden(video.videoId)) {
-            return;
-        }
-
-        mDialogPresenter.appendSingleButton(
-                UiOptionItem.from(getContext().getString(R.string.hide_video), optionItem -> {
-                    hidden.hide(video.videoId, video.getTitle());
-                    MessageHelpers.showMessage(getContext(), R.string.video_hidden);
-
-                    if (mCallback != null) {
-                        mCallback.onItemAction(video, VideoMenuCallback.ACTION_REMOVE);
-                    }
-                    mDialogPresenter.closeDialog();
                 }));
     }
 
@@ -1122,7 +1128,7 @@ public class VideoMenuPresenter extends BaseMenuPresenter {
         mMenuMapping.put(MainUIData.MENU_ITEM_NOT_INTERESTED, new MenuAction(this::appendNotInterestedButton, true));
         mMenuMapping.put(MainUIData.MENU_ITEM_NOT_RECOMMEND_CHANNEL, new MenuAction(this::appendNotRecommendChannelButton, true));
         mMenuMapping.put(MainUIData.MENU_ITEM_REMOVE_FROM_SUBSCRIPTIONS, new MenuAction(() -> { appendRemoveFromSubscriptionsButton(); appendRemoveFromNotificationsButton(); }, true));
-        mMenuMapping.put(MainUIData.MENU_ITEM_BLOCK_CHANNEL, new MenuAction(() -> { appendHideVideoButton(); appendBlockChannelButton(); com.liskovsoft.smartyoutubetv2.common.app.presenters.settings.BlockedWordsPresenter.appendMenuButton(getContext(), mDialogPresenter, mVideo, mCallback); }, false)); // HearthTube: and blocked words
+        mMenuMapping.put(MainUIData.MENU_ITEM_BLOCK_CHANNEL, new MenuAction(() -> { appendBlockChannelButton(); com.liskovsoft.smartyoutubetv2.common.app.presenters.settings.BlockedWordsPresenter.appendMenuButton(getContext(), mDialogPresenter, mVideo, mCallback); }, false)); // HearthTube: and blocked words
         mMenuMapping.put(MainUIData.MENU_ITEM_MARK_AS_WATCHED, new MenuAction(this::appendMarkAsWatchedButton, false));
         mMenuMapping.put(MainUIData.MENU_ITEM_PLAYLIST_ORDER, new MenuAction(this::appendPlaylistOrderButton, true));
         mMenuMapping.put(MainUIData.MENU_ITEM_ADD_TO_QUEUE, new MenuAction(() -> { appendAddToPlaybackQueueButton(); appendRemoveFromPlaybackQueueButton(); }, false));

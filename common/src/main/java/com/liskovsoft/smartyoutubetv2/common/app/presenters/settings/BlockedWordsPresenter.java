@@ -16,7 +16,6 @@ import com.liskovsoft.smartyoutubetv2.common.utils.AiSlopList;
 import com.liskovsoft.smartyoutubetv2.common.utils.AppDialogUtil;
 import com.liskovsoft.smartyoutubetv2.common.utils.KeywordFilter;
 import com.liskovsoft.smartyoutubetv2.common.utils.KeywordMatcher;
-import com.liskovsoft.smartyoutubetv2.common.utils.ParentGate;
 import com.liskovsoft.smartyoutubetv2.common.utils.SimpleEditDialog;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 
@@ -42,9 +41,9 @@ public final class BlockedWordsPresenter {
     /** Settings › General, under Hide content */
     public static void appendSettingsButton(Context context, AppDialogPresenter settingsPresenter) {
         settingsPresenter.appendSingleButton(UiOptionItem.from(context.getString(R.string.blocked_words),
-                option -> ParentGate.run(context, () -> show(context))));
+                option -> show(context)));
         settingsPresenter.appendSingleButton(UiOptionItem.from(context.getString(R.string.hidden_videos),
-                option -> ParentGate.run(context, () -> showHiddenVideos(context))));
+                option -> showHiddenVideos(context)));
     }
 
     /** Settings › General: the videos hidden one by one, each a button that shows it again */
