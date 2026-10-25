@@ -10,12 +10,25 @@ public final class HearthContrast {
     public static final int DARK = 0xFF141418;
     public static final int LIGHT = 0xFFFFFFFF;
 
+    /** The dark glass pills sit on when they are not lit */
+    public static final int GLASS = 0xFF141418;
+
     private HearthContrast() {
     }
 
     /** Text color for this (opaque) fill, as ARGB */
     public static int onColor(int fill) {
         return isLight(fill) ? DARK : LIGHT;
+    }
+
+    /**
+     * Text colors for a pill that is lit (state: selected, focused...) with this fill and dark glass otherwise.
+     * Each follows {@link #onColor}, so the same rule decides for tabs, chips and buttons.
+     */
+    public static android.content.res.ColorStateList whenLit(int state, int litFill) {
+        return new android.content.res.ColorStateList(
+                new int[][] {{state}, {}},
+                new int[] {onColor(litFill), onColor(GLASS)});
     }
 
     /** Flutter's estimateBrightnessForColor: light when (relative luminance + 0.05)^2 > 0.15 */

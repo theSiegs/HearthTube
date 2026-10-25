@@ -13,6 +13,12 @@ public class HearthContrastTest {
     }
 
     @Test
+    public void tabAndChipFillsGetDarkText() {
+        assertEquals(HearthContrast.DARK, HearthContrast.onColor(0xFFECEBEF)); // the open tab
+        assertEquals(HearthContrast.LIGHT, HearthContrast.onColor(HearthContrast.GLASS));
+    }
+
+    @Test
     public void whiteTextOnDarkFills() {
         assertEquals(HearthContrast.LIGHT, HearthContrast.onColor(0xFF141418));
         assertEquals(HearthContrast.LIGHT, HearthContrast.onColor(0xFF2979FF)); // blue
