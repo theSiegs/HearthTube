@@ -46,6 +46,66 @@ public final class BlockedWordsPresenter {
                 option -> showHiddenVideos(context)));
     }
 
+    /**
+     * The long-press menu's last hiding item: everything hidden or blocked in this profile in one place (no PIN: a kid who
+     * hid something can undo it). Videos, creators and words each open their list.
+     */
+    public static void appendManageButton(Context context, AppDialogPresenter dialog) {
+        if (context == null || !MainUIData.instance(context).isMenuItemEnabled(MainUIData.MENU_ITEM_BLOCK_CHANNEL)) {
+            return;
+        }
+
+        dialog.appendSingleButton(UiOptionItem.from(context.getString(R.string.manage_hidden),
+                option -> showManager(context)));
+    }
+
+    private static void showManager(Context context) {
+        AppDialogPresenter dialog = AppDialogPresenter.instance(context);
+        int videos = com.liskovsoft.smartyoutubetv2.common.prefs.HiddenVideoData.instance(context).getVideos().size();
+        int creators = com.liskovsoft.smartyoutubetv2.common.prefs.BlockedChannelData.instance(context).getChannelCount();
+        int words = KeywordFilter.getWords(context).size();
+
+        dialog.appendSingleButton(UiOptionItem.from(context.getString(R.string.hidden_videos) + " (" + videos + ")",
+                option -> showHiddenVideos(context)));
+        dialog.appendSingleButton(UiOptionItem.from(context.getString(R.string.blocked_creators) + " (" + creators + ")",
+                option -> showBlockedCreators(context)));
+        dialog.appendSingleButton(UiOptionItem.from(context.getString(R.string.blocked_words) + " (" + words + ")",
+                option -> show(context)));
+
+        sOnTop = dialog.isDialogShown();
+        dialog.showDialog(context.getString(R.string.manage_hidden), () -> onClosed(context));
+    }
+
+    /** Creators not shown: each a button that shows it again */
+    private static void showBlockedCreators(Context context) {
+        AppDialogPresenter dialog = AppDialogPresenter.instance(context);
+        com.liskovsoft.smartyoutubetv2.common.prefs.BlockedChannelData blocked =
+                com.liskovsoft.smartyoutubetv2.common.prefs.BlockedChannelData.instance(context);
+
+        for (android.util.Pair<String, String> entry : blocked.getChannelIdsWithNames()) {
+            String name = entry.second == null || entry.second.isEmpty() ? entry.first : entry.second;
+            dialog.appendSingleButton(UiOptionItem.from(
+                    SettingsMenuPresenter.withIcon(context, R.drawable.ic_hearth_action_delete, name),
+                    option -> AppDialogUtil.showConfirmationDialog(context, context.getString(R.string.hidden_video_show, name), () -> {
+                        blocked.removeChannel(entry.first, entry.second);
+                        sChanged = true;
+                        reopenCreators(context);
+                    })));
+        }
+
+        dialog.appendSingleButton(UiOptionItem.from(
+                context.getString(blocked.isEmpty() ? R.string.blocked_creators_empty : R.string.hidden_videos_hint)));
+
+        sOnTop = dialog.isDialogShown();
+        dialog.showDialog(context.getString(R.string.blocked_creators), () -> onClosed(context));
+    }
+
+    private static void reopenCreators(Context context) {
+        // The panels stack (menu, manager, list, question): close them all rather than guess which one is on top
+        AppDialogPresenter.instance(context).closeDialog();
+        MessageHelpers.showMessage(context, R.string.shown_again);
+    }
+
     /** Settings › General: the videos hidden one by one, each a button that shows it again */
     private static void showHiddenVideos(Context context) {
         AppDialogPresenter dialog = AppDialogPresenter.instance(context);
@@ -71,15 +131,9 @@ public final class BlockedWordsPresenter {
     }
 
     private static void reopenHidden(Context context) {
-        AppDialogPresenter dialog = AppDialogPresenter.instance(context);
-
-        if (sOnTop) {
-            dialog.goBack();
-            showHiddenVideos(context);
-        } else {
-            dialog.closeDialog();
-            Utils.postDelayed(() -> showHiddenVideos(context), PANEL_CLOSE_MS);
-        }
+        // The panels stack (menu, manager, list, question): close them all rather than guess which one is on top
+        AppDialogPresenter.instance(context).closeDialog();
+        MessageHelpers.showMessage(context, R.string.shown_again);
     }
 
     /**

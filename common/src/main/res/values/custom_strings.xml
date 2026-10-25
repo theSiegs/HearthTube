@@ -145,6 +145,10 @@
     <string name="blocked_words">Blocked words</string>
     <string name="video_hidden">Hidden. It can be shown again in Settings › General › Hidden videos.</string>
     <string name="hidden_videos">Hidden videos</string>
+    <string name="shown_again">Shown again.</string>
+    <string name="manage_hidden">Hidden and blocked…</string>
+    <string name="blocked_creators">Hidden creators</string>
+    <string name="blocked_creators_empty">No hidden creators.</string>
     <string name="hidden_videos_empty">No hidden videos.</string>
     <string name="hidden_videos_hint">Choose one to show it again.</string>
     <string name="hidden_video_show">Show \"%s\" again?</string>
