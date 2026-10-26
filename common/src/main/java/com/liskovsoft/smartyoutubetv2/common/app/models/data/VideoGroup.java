@@ -491,7 +491,8 @@ public class VideoGroup {
         }
 
         // HearthTube: videos hidden one by one ("Hide this video")
-        if (!video.isChapter && com.liskovsoft.smartyoutubetv2.common.prefs.HiddenVideoData.instance(GlobalPreferences.context()).isHidden(video.videoId)) {
+        // (History, playlists and the queue still list it: that's where it is managed)
+        if (!video.isChapter && !keepsHidden() && com.liskovsoft.smartyoutubetv2.common.prefs.HiddenVideoData.instance(GlobalPreferences.context()).isHidden(video.videoId)) {
             return;
         }
 
@@ -522,6 +523,13 @@ public class VideoGroup {
         }
 
         mVideos.add(idx, video);
+    }
+
+    private boolean keepsHidden() {
+        int type = getType();
+
+        return type == MediaGroup.TYPE_HISTORY || type == MediaGroup.TYPE_PLAYBACK_QUEUE || type == MediaGroup.TYPE_USER_PLAYLISTS
+                || type == com.liskovsoft.smartyoutubetv2.common.app.presenters.HearthSections.TYPE_WATCH_LATER;
     }
 
     private boolean isChannelBlocked(Video video) {

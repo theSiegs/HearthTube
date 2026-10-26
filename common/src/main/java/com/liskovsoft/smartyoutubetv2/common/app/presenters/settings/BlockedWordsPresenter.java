@@ -15,6 +15,7 @@ import com.liskovsoft.smartyoutubetv2.common.prefs.MainUIData;
 import com.liskovsoft.smartyoutubetv2.common.utils.AiSlopList;
 import com.liskovsoft.smartyoutubetv2.common.utils.AppDialogUtil;
 import com.liskovsoft.smartyoutubetv2.common.utils.KeywordFilter;
+import com.liskovsoft.smartyoutubetv2.common.utils.ParentGate;
 import com.liskovsoft.smartyoutubetv2.common.utils.KeywordMatcher;
 import com.liskovsoft.smartyoutubetv2.common.utils.SimpleEditDialog;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
@@ -86,11 +87,13 @@ public final class BlockedWordsPresenter {
             String name = entry.second == null || entry.second.isEmpty() ? entry.first : entry.second;
             dialog.appendSingleButton(UiOptionItem.from(
                     SettingsMenuPresenter.withIcon(context, R.drawable.ic_hearth_action_delete, name),
-                    option -> AppDialogUtil.showConfirmationDialog(context, context.getString(R.string.hidden_video_show, name), () -> {
-                        blocked.removeChannel(entry.first, entry.second);
-                        sChanged = true;
-                        reopenCreators(context);
-                    })));
+                    // A parent may have blocked it: in a kids profile, showing a creator again takes the PIN
+                    option -> AppDialogUtil.showConfirmationDialog(context, context.getString(R.string.hidden_video_show, name),
+                            () -> ParentGate.run(context, () -> {
+                                blocked.removeChannel(entry.first, entry.second);
+                                sChanged = true;
+                                reopenCreators(context);
+                            }))));
         }
 
         dialog.appendSingleButton(UiOptionItem.from(
@@ -163,11 +166,13 @@ public final class BlockedWordsPresenter {
         for (String word : words) {
             dialog.appendSingleButton(UiOptionItem.from(
                     SettingsMenuPresenter.withIcon(context, R.drawable.ic_hearth_action_delete, word),
-                    option -> AppDialogUtil.showConfirmationDialog(context, context.getString(R.string.blocked_words_remove, word), () -> {
-                        KeywordFilter.remove(context, word);
-                        sChanged = true;
-                        reopen(context);
-                    })));
+                    // A parent may have added it: in a kids profile, removing a word takes the PIN
+                    option -> AppDialogUtil.showConfirmationDialog(context, context.getString(R.string.blocked_words_remove, word),
+                            () -> ParentGate.run(context, () -> {
+                                KeywordFilter.remove(context, word);
+                                sChanged = true;
+                                reopen(context);
+                            }))));
         }
 
         dialog.appendSingleButton(UiOptionItem.from(
@@ -248,11 +253,16 @@ public final class BlockedWordsPresenter {
         String channel = video.getAuthor();
         boolean[] added = {false};
 
+        // In a kids profile a word already blocked isn't offered: unticking it would undo what a parent may have set
+        boolean kids = ParentGate.isKidsProfile(context);
+
         for (String word : words) {
-            options.add(pickOption(context, word, word, added));
+            if (!kids || !KeywordFilter.contains(context, word)) {
+                options.add(pickOption(context, word, word, added));
+            }
         }
 
-        if (KeywordMatcher.isUsable(channel) && !isAmong(channel, words)) {
+        if (KeywordMatcher.isUsable(channel) && !isAmong(channel, words) && (!kids || !KeywordFilter.contains(context, channel))) {
             options.add(pickOption(context, context.getString(R.string.blocked_words_channel, channel), channel, added));
         }
 

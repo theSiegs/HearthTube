@@ -41,21 +41,21 @@ public class HiddenVideoData implements ProfileChangeListener {
         return sInstance;
     }
 
-    public boolean isHidden(String videoId) {
+    public synchronized boolean isHidden(String videoId) {
         return videoId != null && !mVideos.isEmpty() && mVideos.containsKey(videoId);
     }
 
-    public boolean isEmpty() {
+    public synchronized boolean isEmpty() {
         return mVideos.isEmpty();
     }
 
-    public void hide(String videoId, String title) {
+    public synchronized void hide(String videoId, String title) {
         if (videoId == null) {
             return;
         }
 
         mVideos.remove(videoId);
-        mVideos.put(videoId, title != null ? title : "");
+        mVideos.put(videoId, titleOrId(videoId, title));
 
         while (mVideos.size() > MAX) {
             mVideos.remove(mVideos.keySet().iterator().next());
@@ -64,14 +64,14 @@ public class HiddenVideoData implements ProfileChangeListener {
         persistState();
     }
 
-    public void unhide(String videoId) {
+    public synchronized void unhide(String videoId) {
         if (videoId != null && mVideos.remove(videoId) != null) {
             persistState();
         }
     }
 
     /** Newest first: videoId -> title */
-    public List<Pair<String, String>> getVideos() {
+    public synchronized List<Pair<String, String>> getVideos() {
         List<Pair<String, String>> result = new ArrayList<>();
 
         for (Map.Entry<String, String> entry : mVideos.entrySet()) {
@@ -81,16 +81,34 @@ public class HiddenVideoData implements ProfileChangeListener {
         return result;
     }
 
+    /** A tile with no title is listed by its id (an empty one wouldn't survive being saved) */
+    static String titleOrId(String videoId, String title) {
+        return title == null || title.trim().isEmpty() ? videoId : title;
+    }
+
+    /** One saved entry as {id, title}; null when it isn't one */
+    static String[] parse(String spec) {
+        String[] pair = Helpers.splitObj(spec);
+
+        if (pair == null || pair.length == 0 || Helpers.parseStr(pair[0]) == null) {
+            return null;
+        }
+
+        String id = Helpers.parseStr(pair[0]);
+
+        return new String[] {id, pair.length > 1 ? titleOrId(id, Helpers.parseStr(pair[1])) : id};
+    }
+
     private synchronized void restoreState() {
         String[] split = Helpers.splitData(mPrefs.getProfileData(HIDDEN_VIDEO_DATA));
 
         mVideos.clear();
 
         for (String spec : Helpers.parseList(split, 0, item -> item)) {
-            String[] pair = Helpers.splitObj(spec);
+            String[] entry = parse(spec);
 
-            if (pair != null && pair.length == 2 && Helpers.parseStr(pair[0]) != null) {
-                mVideos.put(Helpers.parseStr(pair[0]), Helpers.parseStr(pair[1]));
+            if (entry != null) {
+                mVideos.put(entry[0], entry[1]);
             }
         }
     }
@@ -103,7 +121,7 @@ public class HiddenVideoData implements ProfileChangeListener {
         Utils.postDelayed(mPersistStateInt, 2_000);
     }
 
-    private void persistStateInt() {
+    private synchronized void persistStateInt() {
         List<String> specs = new ArrayList<>();
 
         for (Map.Entry<String, String> entry : mVideos.entrySet()) {

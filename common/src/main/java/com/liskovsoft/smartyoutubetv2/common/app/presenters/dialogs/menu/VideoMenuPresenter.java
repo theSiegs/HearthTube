@@ -448,6 +448,11 @@ public class VideoMenuPresenter extends BaseMenuPresenter {
             return;
         }
 
+        // Those lists have their own "Remove from ..." and are where a hidden video is still managed
+        if (mVideo.belongsToHistory() || mVideo.belongsToUserPlaylists() || mVideo.belongsToPlaybackQueue()) {
+            return;
+        }
+
         Video video = mVideo;
 
         mDialogPresenter.appendSingleButton(
@@ -469,7 +474,6 @@ public class VideoMenuPresenter extends BaseMenuPresenter {
     }
 
     private void removeSuggestedItemAndClose() {
-        hideLocally(mVideo); // HearthTube: and it stays out when the feed is rebuilt
         if (mCallback != null) {
             mCallback.onItemAction(mVideo, VideoMenuCallback.ACTION_REMOVE);
         } else {
@@ -542,22 +546,30 @@ public class VideoMenuPresenter extends BaseMenuPresenter {
                 ? getContext().getString(R.string.dialog_unblock_channel)
                 : getContext().getString(R.string.dialog_block_channel);
 
+        Runnable toggle = () -> {
+            if (isBlocked) {
+                blockedChannelData.removeChannel(channelId, channelName);
+                MessageHelpers.showMessage(getContext(), R.string.channel_unblocked);
+            } else {
+                blockedChannelData.addChannel(channelId, channelName);
+                MessageHelpers.showMessage(getContext(), R.string.channel_blocked);
+            }
+
+            if (mCallback != null) {
+                mCallback.onItemAction(mVideo, VideoMenuCallback.ACTION_REMOVE);
+            }
+            mDialogPresenter.closeDialog();
+            showHideBlockedChannelsSection(blockedChannelData);
+        };
+
         mDialogPresenter.appendSingleButton(
-                // HearthTube: hiding or blocking takes no PIN, in a kids profile too
+                // HearthTube: blocking takes no PIN; showing a creator again does in a kids profile (a parent may have blocked it)
                 UiOptionItem.from(buttonText, optionItem -> {
                     if (isBlocked) {
-                        blockedChannelData.removeChannel(channelId, channelName);
-                        MessageHelpers.showMessage(getContext(), R.string.channel_unblocked);
+                        com.liskovsoft.smartyoutubetv2.common.utils.ParentGate.run(getContext(), toggle);
                     } else {
-                        blockedChannelData.addChannel(channelId, channelName);
-                        MessageHelpers.showMessage(getContext(), R.string.channel_blocked);
+                        toggle.run();
                     }
-
-                    if (mCallback != null) {
-                        mCallback.onItemAction(mVideo, VideoMenuCallback.ACTION_REMOVE);
-                    }
-                    mDialogPresenter.closeDialog();
-                    showHideBlockedChannelsSection(blockedChannelData);
                 }));
     }
 
