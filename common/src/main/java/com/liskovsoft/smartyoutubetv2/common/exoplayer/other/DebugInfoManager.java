@@ -411,7 +411,7 @@ public final class DebugInfoManager implements Runnable, Player.EventListener {
     }
 
     private void appendClientType() {
-        int videoInfoType = MediaServiceData.instance().getVideoInfoType();
+        int videoInfoType = MediaServiceData.instance().getClientType();
         String clientType = videoInfoType != -1 && videoInfoType < AppClient.values().length ? AppClient.values()[videoInfoType].name() : "default";
 
         appendRow("Client type", clientType);
@@ -574,7 +574,7 @@ public final class DebugInfoManager implements Runnable, Player.EventListener {
     }
 
     private String getClientType() {
-        int videoInfoType = MediaServiceData.instance().getVideoInfoType();
+        int videoInfoType = MediaServiceData.instance().getClientType();
         String clientType = videoInfoType != -1 && videoInfoType < AppClient.values().length ? AppClient.values()[videoInfoType].name() : "default";
 
         return clientType;
