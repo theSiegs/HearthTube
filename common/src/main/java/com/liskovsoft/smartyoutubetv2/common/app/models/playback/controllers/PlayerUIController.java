@@ -439,10 +439,24 @@ public class PlayerUIController extends BasePlayerController {
             return;
         }
 
+        Video current = getVideo();
+        com.liskovsoft.smartyoutubetv2.common.prefs.HiddenVideoData off =
+                com.liskovsoft.smartyoutubetv2.common.prefs.HiddenVideoData.instance(getContext());
+
         if (!dislike) {
             callMediaItemObservable(mMediaItemService::setDislikeObserve);
+
+            if (current != null && current.videoId != null) {
+                // Thumbed down: not one to resume later
+                off.keepOffContinue(current.videoId);
+                com.liskovsoft.smartyoutubetv2.common.utils.WatchNextPublisher.dismiss(getContext(), current.videoId);
+            }
         } else {
             callMediaItemObservable(mMediaItemService::removeDislikeObserve);
+
+            if (current != null) {
+                off.allowContinue(current.videoId);
+            }
         }
     }
 

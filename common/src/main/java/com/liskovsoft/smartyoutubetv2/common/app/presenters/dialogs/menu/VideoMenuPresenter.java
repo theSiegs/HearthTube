@@ -428,6 +428,7 @@ public class VideoMenuPresenter extends BaseMenuPresenter {
                                             UiOptionItem.from(item.getTitle(),
                                                     option -> {
                                                         RxHelper.execute(mMediaItemService.markAsNotInterestedObserve(item.getToken()));
+                                                        keepOffContinue(mVideo);
                                                         removeSuggestedItemAndClose();
                                                     }
                                             )
@@ -435,6 +436,7 @@ public class VideoMenuPresenter extends BaseMenuPresenter {
                                 }
                                 mDialogPresenter.showDialog(reasons.getTitle());
                             } else {
+                                keepOffContinue(mVideo);
                                 removeSuggestedItemAndClose();
                             }
                         },
@@ -470,6 +472,15 @@ public class VideoMenuPresenter extends BaseMenuPresenter {
     private void hideLocally(Video video) {
         if (video != null && video.videoId != null && !video.isChapter) {
             com.liskovsoft.smartyoutubetv2.common.prefs.HiddenVideoData.instance(getContext()).hide(video.videoId, video.getTitle());
+            com.liskovsoft.smartyoutubetv2.common.utils.WatchNextPublisher.dismiss(getContext(), video.videoId);
+        }
+    }
+
+    /** Not interested (YouTube's own): the video isn't offered in Continue watching either, in HearthTube or the launcher */
+    private void keepOffContinue(Video video) {
+        if (video != null && video.videoId != null && !video.isChapter) {
+            com.liskovsoft.smartyoutubetv2.common.prefs.HiddenVideoData.instance(getContext()).keepOffContinue(video.videoId);
+            com.liskovsoft.smartyoutubetv2.common.utils.WatchNextPublisher.dismiss(getContext(), video.videoId);
         }
     }
 

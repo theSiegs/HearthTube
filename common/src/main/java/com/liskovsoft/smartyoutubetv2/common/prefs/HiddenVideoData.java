@@ -10,6 +10,7 @@ import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -19,12 +20,15 @@ import java.util.Map;
  */
 public class HiddenVideoData implements ProfileChangeListener {
     private static final String HIDDEN_VIDEO_DATA = "hidden_video_data";
+    private static final String OFF_CONTINUE_DATA = "off_continue_video_ids";
     static final int MAX = 500;
     @SuppressLint("StaticFieldLeak")
     private static HiddenVideoData sInstance;
     private final AppPrefs mPrefs;
     /** videoId -> title */
     private final LinkedHashMap<String, String> mVideos = new LinkedHashMap<>();
+    /** Videos marked Not interested or thumbed down: not offered to resume (Continue watching) */
+    private final LinkedHashSet<String> mOffContinue = new LinkedHashSet<>();
     private final Runnable mPersistStateInt = this::persistStateInt;
 
     private HiddenVideoData(Context context) {
@@ -43,6 +47,33 @@ public class HiddenVideoData implements ProfileChangeListener {
 
     public synchronized boolean isHidden(String videoId) {
         return videoId != null && !mVideos.isEmpty() && mVideos.containsKey(videoId);
+    }
+
+    /** Not to be offered in Continue watching: hidden, marked Not interested or thumbed down */
+    public synchronized boolean isOffContinue(String videoId) {
+        return videoId != null && (mVideos.containsKey(videoId) || mOffContinue.contains(videoId));
+    }
+
+    public synchronized void keepOffContinue(String videoId) {
+        if (videoId == null) {
+            return;
+        }
+
+        mOffContinue.remove(videoId);
+        mOffContinue.add(videoId);
+
+        while (mOffContinue.size() > MAX) {
+            mOffContinue.remove(mOffContinue.iterator().next());
+        }
+
+        persistState();
+    }
+
+    /** The thumbs down was taken back */
+    public synchronized void allowContinue(String videoId) {
+        if (videoId != null && mOffContinue.remove(videoId)) {
+            persistState();
+        }
     }
 
     public synchronized boolean isEmpty() {
@@ -103,12 +134,21 @@ public class HiddenVideoData implements ProfileChangeListener {
         String[] split = Helpers.splitData(mPrefs.getProfileData(HIDDEN_VIDEO_DATA));
 
         mVideos.clear();
+        mOffContinue.clear();
 
         for (String spec : Helpers.parseList(split, 0, item -> item)) {
             String[] entry = parse(spec);
 
             if (entry != null) {
                 mVideos.put(entry[0], entry[1]);
+            }
+        }
+
+        String[] offSplit = Helpers.splitData(mPrefs.getProfileData(OFF_CONTINUE_DATA));
+
+        for (String id : Helpers.parseList(offSplit, 0, item -> Helpers.parseStr(item))) {
+            if (id != null) {
+                mOffContinue.add(id);
             }
         }
     }
@@ -129,6 +169,7 @@ public class HiddenVideoData implements ProfileChangeListener {
         }
 
         mPrefs.setProfileData(HIDDEN_VIDEO_DATA, Helpers.mergeData(specs));
+        mPrefs.setProfileData(OFF_CONTINUE_DATA, Helpers.mergeData(new ArrayList<>(mOffContinue)));
     }
 
     @Override

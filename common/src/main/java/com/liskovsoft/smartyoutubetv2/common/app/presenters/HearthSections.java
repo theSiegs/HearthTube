@@ -140,10 +140,18 @@ public final class HearthSections {
     private static TitledGroup unfinished(Context context, MediaGroup history, String title) {
         List<MediaItem> items = new ArrayList<>();
         List<String> finished = new ArrayList<>();
+        com.liskovsoft.smartyoutubetv2.common.prefs.HiddenVideoData off =
+                com.liskovsoft.smartyoutubetv2.common.prefs.HiddenVideoData.instance(context);
 
         if (history.getMediaItems() != null) {
             for (MediaItem item : history.getMediaItems()) {
                 if (item == null) {
+                    continue;
+                }
+
+                if (off.isOffContinue(item.getVideoId())) {
+                    // Hidden, Not interested, thumbed down: not offered, and gone from the launchers' row too
+                    com.liskovsoft.smartyoutubetv2.common.utils.WatchNextPublisher.dismiss(context, item.getVideoId());
                     continue;
                 }
 

@@ -14,6 +14,7 @@ import androidx.tvprovider.media.tv.WatchNextProgram;
 import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
 import com.liskovsoft.smartyoutubetv2.common.prefs.HearthLinkData;
+import com.liskovsoft.smartyoutubetv2.common.prefs.HiddenVideoData;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -51,6 +52,13 @@ public class WatchNextPublisher {
         }
 
         Context appContext = context.getApplicationContext();
+
+        // Hidden, Not interested or thumbed down: not to be resumed (and gone from the launcher's row if it was there)
+        if (HiddenVideoData.instance(appContext).isOffContinue(video.videoId)) {
+            sExecutor.execute(() -> remove(appContext, video.videoId));
+            return;
+        }
+
         boolean finished = positionMs >= durationMs * FINISHED_FRACTION;
 
         if (finished) {
@@ -141,6 +149,16 @@ public class WatchNextPublisher {
                 remove(appContext, id);
             }
         });
+    }
+
+    /** This video leaves Continue Watching (it was hidden, marked Not interested or thumbed down) */
+    public static void dismiss(Context context, String videoId) {
+        if (context == null || videoId == null) {
+            return;
+        }
+
+        Context appContext = context.getApplicationContext();
+        sExecutor.execute(() -> remove(appContext, videoId));
     }
 
     private static void remove(Context context, String videoId) {
