@@ -403,7 +403,8 @@ public class HearthTabBar extends LinearLayout {
         TextView tab = new TextView(getContext());
         tab.setText(title);
         tab.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15); // same as the chips under it
-        tab.setTextColor(com.liskovsoft.smartyoutubetv2.common.utils.HearthContrast.whenLit(android.R.attr.state_selected, 0xFFECEBEF));
+        tab.setTextColor(com.liskovsoft.smartyoutubetv2.common.utils.HearthContrast.whenLit(android.R.attr.state_selected,
+                androidx.core.content.ContextCompat.getColor(getContext(), R.color.hearth_tab_lit)));
         tab.setBackgroundResource(R.drawable.hearth_tab_background);
         tab.setSingleLine(true);
         tab.setGravity(Gravity.CENTER);

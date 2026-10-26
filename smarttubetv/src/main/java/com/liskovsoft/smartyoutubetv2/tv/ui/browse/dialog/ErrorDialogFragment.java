@@ -95,7 +95,8 @@ public class ErrorDialogFragment extends ErrorSupportFragment implements BrowseS
             if (hearth && button != null) {
                 float density = getResources().getDisplayMetrics().density;
                 button.setBackgroundResource(R.drawable.hearth_button_background);
-                button.setTextColor(com.liskovsoft.smartyoutubetv2.common.utils.HearthContrast.whenLit(android.R.attr.state_focused, 0xFFFFFFFF));
+                button.setTextColor(com.liskovsoft.smartyoutubetv2.common.utils.HearthContrast.whenLit(android.R.attr.state_focused,
+                        ContextCompat.getColor(getActivity(), R.color.hearth_pill_lit)));
                 button.setAllCaps(false);
                 button.setPadding(Math.round(24 * density), Math.round(8 * density), Math.round(24 * density), Math.round(8 * density));
             }

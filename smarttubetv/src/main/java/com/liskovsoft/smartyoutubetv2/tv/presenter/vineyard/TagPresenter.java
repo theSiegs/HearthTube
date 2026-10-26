@@ -68,10 +68,12 @@ public class TagPresenter extends LongClickPresenter {
         android.graphics.drawable.GradientDrawable pill = new android.graphics.drawable.GradientDrawable();
         pill.setCornerRadius(100 * density);
 
+        int lit = androidx.core.content.ContextCompat.getColor(view.getContext(), R.color.hearth_pill_lit);
+
         if (on) {
             android.util.TypedValue accent = new android.util.TypedValue();
             view.getContext().getTheme().resolveAttribute(R.attr.hearthAccent, accent, true);
-            pill.setColor(0xFFFFFFFF);
+            pill.setColor(lit);
             pill.setStroke(Math.round(3 * density), accent.data);
         } else {
             pill.setColor(0xB3141418);
@@ -80,7 +82,7 @@ public class TagPresenter extends LongClickPresenter {
 
         view.setBackground(pill);
         // Hearth's rule: the text color follows the fill (the dark glass is dark, the shown pill is white)
-        view.setTextColor(com.liskovsoft.smartyoutubetv2.common.utils.HearthContrast.onColor(on ? 0xFFFFFFFF : 0xFF141418));
+        view.setTextColor(com.liskovsoft.smartyoutubetv2.common.utils.HearthContrast.onColor(on ? lit : com.liskovsoft.smartyoutubetv2.common.utils.HearthContrast.GLASS));
     }
 
     private static void updateCardBackgroundColor(TagCardView view, boolean selected) {

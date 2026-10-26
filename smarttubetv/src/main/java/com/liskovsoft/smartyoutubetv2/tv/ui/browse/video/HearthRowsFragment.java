@@ -610,7 +610,8 @@ public class HearthRowsFragment extends VideoRowsFragment {
         TextView chip = new TextView(context);
         chip.setText(title);
         chip.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
-        chip.setTextColor(com.liskovsoft.smartyoutubetv2.common.utils.HearthContrast.whenLit(android.R.attr.state_selected, 0xFFFFFFFF));
+        chip.setTextColor(com.liskovsoft.smartyoutubetv2.common.utils.HearthContrast.whenLit(android.R.attr.state_selected,
+                ContextCompat.getColor(context, R.color.hearth_pill_lit)));
         chip.setBackgroundResource(R.drawable.hearth_chip_background);
         chip.setSingleLine(true);
         chip.setPadding(dp(context, 16), dp(context, 7), dp(context, 16), dp(context, 7));

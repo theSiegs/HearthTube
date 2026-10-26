@@ -10,4 +10,8 @@
     <!-- Text drawn on the daily background image -->
     <color name="text_on_image_shadow">#E6000000</color>
     <color name="text_on_image_pill">#8C000000</color>
+    <!-- The fill of a lit pill (a tab, chip, button or suggestion that is selected or focused): the drawables and
+         the text-color rule (HearthContrast) read these, so they can't drift apart -->
+    <color name="hearth_pill_lit">#FFFFFFFF</color>
+    <color name="hearth_tab_lit">#FFECEBEF</color>
 </resources>
