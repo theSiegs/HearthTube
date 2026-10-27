@@ -451,7 +451,7 @@ public class VideoMenuPresenter extends BaseMenuPresenter {
         }
 
         // Those lists have their own "Remove from ..." and are where a hidden video is still managed
-        if (mVideo.belongsToHistory() || mVideo.belongsToUserPlaylists() || mVideo.belongsToPlaybackQueue()) {
+        if ((mVideo.belongsToHistory() && !inContinueWatching(mVideo)) || mVideo.belongsToUserPlaylists() || mVideo.belongsToPlaybackQueue()) {
             return;
         }
 
@@ -467,6 +467,15 @@ public class VideoMenuPresenter extends BaseMenuPresenter {
                     }
                     mDialogPresenter.closeDialog();
                 }));
+    }
+
+    /** The Continue watching row is made of history items, but is not the History list: it has no "Remove from history" */
+    private boolean inContinueWatching(Video video) {
+        if (video.getGroup() == null || !(video.getGroup().getMediaGroup() instanceof com.liskovsoft.smartyoutubetv2.common.app.presenters.HearthSections.TitledGroup)) {
+            return false;
+        }
+
+        return getContext().getString(R.string.continue_watching).equals(video.getGroup().getMediaGroup().getTitle());
     }
 
     private void hideLocally(Video video) {
