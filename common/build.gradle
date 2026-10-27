@@ -18,7 +18,7 @@ android {
     }
 
     defaultConfig {
-        // Android 8+, as the apps (also what tvprovider, for Watch Next, asks for)
+        // Android 8+ (what tvprovider, for Watch Next, asks for). The two apps ask for more: Android 12 and up.
         minSdkVersion 26
         targetSdkVersion project.properties.targetSdkVersion
         versionCode 10

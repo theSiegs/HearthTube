@@ -200,8 +200,10 @@ android {
         // Personal build: "HearthTube" name/icon (src/hearthtube), installs next to the official app
         hearthtube {
             applicationId "com.thesiegs.hearthtube"
-            // Android 8+: the family's TVs and phones all run it, and the kids checks (profiles, suspended apps) need it
-            minSdkVersion 26
+            // Android 12+: the family's TVs all run Android 14, and Hearth can only update an app it installed without
+            // asking from Android 12 (PackageInstaller's USER_ACTION_NOT_REQUIRED). The kids checks (profiles, suspended
+            // apps) need 8+ anyway.
+            minSdkVersion 31
             targetSdkVersion project.properties.compileSdkVersion
             matchingFallbacks = ['ststable']
 
