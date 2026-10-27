@@ -606,6 +606,11 @@ public class VideoMenuPresenter extends BaseMenuPresenter {
             return;
         }
 
+        // HearthTube: a kid doesn't clear what a parent reviews (the parent's watch log keeps it either way)
+        if (com.liskovsoft.smartyoutubetv2.common.utils.ParentGate.isKidsProfile(getContext())) {
+            return;
+        }
+
         RxHelper.disposeActions(mNotInterestedAction);
 
         mDialogPresenter.appendSingleButton(
@@ -1160,7 +1165,7 @@ public class VideoMenuPresenter extends BaseMenuPresenter {
         mMenuMapping.put(MainUIData.MENU_ITEM_NOT_INTERESTED, new MenuAction(this::appendNotInterestedButton, true));
         mMenuMapping.put(MainUIData.MENU_ITEM_NOT_RECOMMEND_CHANNEL, new MenuAction(this::appendNotRecommendChannelButton, true));
         mMenuMapping.put(MainUIData.MENU_ITEM_REMOVE_FROM_SUBSCRIPTIONS, new MenuAction(() -> { appendRemoveFromSubscriptionsButton(); appendRemoveFromNotificationsButton(); }, true));
-        mMenuMapping.put(MainUIData.MENU_ITEM_BLOCK_CHANNEL, new MenuAction(() -> { appendBlockChannelButton(); com.liskovsoft.smartyoutubetv2.common.app.presenters.settings.BlockedWordsPresenter.appendMenuButton(getContext(), mDialogPresenter, mVideo, mCallback); com.liskovsoft.smartyoutubetv2.common.app.presenters.settings.BlockedWordsPresenter.appendManageButton(getContext(), mDialogPresenter); }, false)); // HearthTube: and blocked words
+        mMenuMapping.put(MainUIData.MENU_ITEM_BLOCK_CHANNEL, new MenuAction(() -> { appendBlockChannelButton(); com.liskovsoft.smartyoutubetv2.common.app.presenters.settings.BlockedWordsPresenter.appendMenuButton(getContext(), mDialogPresenter, mVideo, mCallback); com.liskovsoft.smartyoutubetv2.common.app.presenters.settings.BlockedWordsPresenter.appendManageButton(getContext(), mDialogPresenter); com.liskovsoft.smartyoutubetv2.common.app.presenters.settings.ParentOptionsPresenter.appendMenuButton(getContext(), mDialogPresenter); }, false)); // HearthTube: and blocked words, and a parent's options in a kids profile
         mMenuMapping.put(MainUIData.MENU_ITEM_MARK_AS_WATCHED, new MenuAction(this::appendMarkAsWatchedButton, false));
         mMenuMapping.put(MainUIData.MENU_ITEM_PLAYLIST_ORDER, new MenuAction(this::appendPlaylistOrderButton, true));
         mMenuMapping.put(MainUIData.MENU_ITEM_ADD_TO_QUEUE, new MenuAction(() -> { appendAddToPlaybackQueueButton(); appendRemoveFromPlaybackQueueButton(); }, false));

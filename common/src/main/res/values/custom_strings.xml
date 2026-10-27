@@ -146,6 +146,12 @@
     <string name="video_hidden">Hidden. It can be shown again in Settings › General › Hidden videos.</string>
     <string name="hidden_videos">Hidden videos</string>
     <string name="shown_again">Shown again.</string>
+    <string name="parent_options">Parent options</string>
+    <string name="watch_log">Videos started</string>
+    <string name="watch_log_empty">Nothing started yet.</string>
+    <string name="watch_log_save">Save the log as files</string>
+    <string name="watch_log_saved">Saved watch-log.txt and watch-log.json in %1$s</string>
+    <string name="watch_log_save_failed">The log could not be saved.</string>
     <string name="manage_hidden">Hidden and blocked…</string>
     <string name="blocked_creators">Hidden creators</string>
     <string name="blocked_creators_empty">No hidden creators.</string>

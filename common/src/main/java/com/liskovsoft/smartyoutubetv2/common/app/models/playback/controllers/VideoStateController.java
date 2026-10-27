@@ -195,6 +195,13 @@ public class VideoStateController extends BasePlayerController {
         // Need to contain channel id
         restoreSpeedAndPositionIfNeeded();
 
+        // HearthTube: what a kids profile started, for a parent to read (not a remote cast shown here)
+        if (getVideo() != null && getVideo().videoId != null && !getVideo().isRemote
+                && com.liskovsoft.smartyoutubetv2.common.utils.ParentGate.isKidsProfile(getContext())) {
+            com.liskovsoft.smartyoutubetv2.common.prefs.WatchLogData.instance(getContext())
+                    .record(getVideo().videoId, getVideo().getTitleFull(), getVideo().getAuthor());
+        }
+
         // NOTE: needed for the restore after oom crash?
         saveState(); // start watching?
     }
