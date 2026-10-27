@@ -255,7 +255,7 @@ public final class KeywordFilter {
             }
         }
 
-        apply(words);
+        apply(context, words);
     }
 
     private static synchronized void save(Context context, List<String> words) {
@@ -273,12 +273,15 @@ public final class KeywordFilter {
         }
 
         prefs(context).edit().putString(wordsKey(HearthViewer.currentKey()), joined.toString()).apply();
-        apply(words);
+        apply(context, words);
     }
 
     /** Folds the words once here, not for every video */
-    private static void apply(List<String> words) {
-        sMatcher = KeywordMatcher.compile(words);
+    private static void apply(Context context, List<String> words) {
+        // The viewer's own words are listed and edited; a parent's are only matched (ParentBlockData)
+        List<String> matched = new ArrayList<>(words);
+        matched.addAll(com.liskovsoft.smartyoutubetv2.common.prefs.ParentBlockData.instance(context).getWords());
+        sMatcher = KeywordMatcher.compile(matched);
         sWords = Collections.unmodifiableList(new ArrayList<>(words));
     }
 

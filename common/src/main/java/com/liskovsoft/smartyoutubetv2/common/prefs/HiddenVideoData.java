@@ -25,6 +25,7 @@ public class HiddenVideoData implements ProfileChangeListener {
     @SuppressLint("StaticFieldLeak")
     private static HiddenVideoData sInstance;
     private final AppPrefs mPrefs;
+    private final Context mContext;
     /** videoId -> title */
     private final LinkedHashMap<String, String> mVideos = new LinkedHashMap<>();
     /** Videos marked Not interested or thumbed down: not offered to resume (Continue watching) */
@@ -32,6 +33,7 @@ public class HiddenVideoData implements ProfileChangeListener {
     private final Runnable mPersistStateInt = this::persistStateInt;
 
     private HiddenVideoData(Context context) {
+        mContext = context;
         mPrefs = AppPrefs.instance(context);
         mPrefs.addListener(this);
         restoreState();
@@ -46,12 +48,14 @@ public class HiddenVideoData implements ProfileChangeListener {
     }
 
     public synchronized boolean isHidden(String videoId) {
-        return videoId != null && !mVideos.isEmpty() && mVideos.containsKey(videoId);
+        // The viewer's own hides, and what a parent blocked
+        return videoId != null && (mVideos.containsKey(videoId) || ParentBlockData.instance(mContext).isVideoBlocked(videoId));
     }
 
     /** Not to be offered in Continue watching: hidden, marked Not interested or thumbed down */
     public synchronized boolean isOffContinue(String videoId) {
-        return videoId != null && (mVideos.containsKey(videoId) || mOffContinue.contains(videoId));
+        return videoId != null && (mVideos.containsKey(videoId) || mOffContinue.contains(videoId)
+                || ParentBlockData.instance(mContext).isVideoBlocked(videoId));
     }
 
     public synchronized void keepOffContinue(String videoId) {

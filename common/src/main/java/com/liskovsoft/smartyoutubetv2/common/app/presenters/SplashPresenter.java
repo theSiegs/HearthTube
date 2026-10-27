@@ -121,6 +121,7 @@ public class SplashPresenter extends BasePresenter<SplashView> {
 
         // HearthTube: another adult's profile since the last launch? Not into the last one's video then
         com.liskovsoft.smartyoutubetv2.common.utils.HearthViewer.onLaunch(getContext());
+        com.liskovsoft.smartyoutubetv2.common.utils.ParentChannel.onLaunch(getContext()); // a kids profile: the parent's lists in, the log out
 
         checkMasterPassword(() -> applyNewIntent(getView().getNewIntent()));
 

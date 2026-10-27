@@ -118,8 +118,12 @@ Written and committed on branch `parent-channel-contract-8` in the Hearth repo (
 
 1. **Hearth contract 8** (Hearth repo): **done, committed on its branch**: provider column and call, the agent relay,
    the log and list stores, 9 unit tests.
-2. **HearthTube**: add the channel id to the watch log; contract reader; the unsent mark and sender; kid and parent
-   source on list entries; applying `parent_blocks`; locked rows in Hidden and blocked; phone menu items removed.
+2. **HearthTube**: **done, committed (not yet tried on a device)**: the channel id in the watch log; the contract reader
+   and sender (`ParentChannel`, with an unsent mark); the parent's blocks kept apart from the kid's (`ParentBlockData`,
+   sources Hearth and PIN, plus what the kid blocked themselves); applying them to lists, search, suggestions and the
+   player; locked rows in Hidden and blocked; a parent blocks a video or channel from a log row. The phone keeps its
+   menu items: a kid's phone now gets Not interested, Don't show this creator and Hidden and blocked with no PIN, as on
+   the TV (it was behind the PIN), and adult phones are unchanged.
 3. **Hearth's settings screens** (no Home Assistant needed): per kid, Videos started (read, save as files, block a
    video or channel from a row) and Blocked on YouTube (the lists), behind Hearth's parent PIN.
 4. **Hearth to Home Assistant**: events endpoint and its queue (Hearth), then the integration's stored log, event,

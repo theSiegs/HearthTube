@@ -153,8 +153,8 @@ public class VideoMenuPresenter extends BaseMenuPresenter {
 
     /**
      * HearthTube Mobile: on a kid's phone, until the call is undone, a menu opened by a long-press holds only what the
-     * TV lets a kid do on their own: open the channel, subscribe or unsubscribe. The rest (blocking, playlists, blocked
-     * words) is behind "More" and the parent PIN. Set it around the presenter call that opens the menu, and unset it.
+     * TV lets a kid do on their own: open the channel, subscribe or unsubscribe, say Not interested, and hide or block
+     * (no PIN; a parent's blocks are locked). The rest (playlists and the like) is behind "More" and the parent PIN. Set it around the presenter call that opens the menu, and unset it.
      */
     public static void limitNextMenuToKids(boolean limit) {
         sLimitToKids = limit;
@@ -238,9 +238,12 @@ public class VideoMenuPresenter extends BaseMenuPresenter {
         }
     }
 
-    /** A kid's menu has only opening the channel and (un)subscribing; any other menu has everything that is switched on */
+    /** A kid's phone menu has opening the channel, (un)subscribing, Not interested and hiding and blocking; any other menu has everything that is switched on */
     private boolean isInMenu(long menuItem) {
-        return !mKidsMenu || menuItem == MainUIData.MENU_ITEM_OPEN_CHANNEL || menuItem == MainUIData.MENU_ITEM_SUBSCRIBE;
+        return !mKidsMenu || menuItem == MainUIData.MENU_ITEM_OPEN_CHANNEL || menuItem == MainUIData.MENU_ITEM_SUBSCRIBE
+                // As on the TV, a kid may say Not interested and hide or block with no PIN (taking a parent's block back takes it)
+                || menuItem == MainUIData.MENU_ITEM_NOT_INTERESTED || menuItem == MainUIData.MENU_ITEM_NOT_RECOMMEND_CHANNEL
+                || menuItem == MainUIData.MENU_ITEM_BLOCK_CHANNEL;
     }
 
     /** The rest of the menu is a parent's: the PIN first, then the whole menu in place of this one */
@@ -481,6 +484,7 @@ public class VideoMenuPresenter extends BaseMenuPresenter {
     private void hideLocally(Video video) {
         if (video != null && video.videoId != null && !video.isChapter) {
             com.liskovsoft.smartyoutubetv2.common.prefs.HiddenVideoData.instance(getContext()).hide(video.videoId, video.getTitle());
+            com.liskovsoft.smartyoutubetv2.common.prefs.ParentBlockData.kidMade(getContext(), com.liskovsoft.smartyoutubetv2.common.prefs.ParentBlockData.Item.VIDEO, video.videoId);
             com.liskovsoft.smartyoutubetv2.common.utils.WatchNextPublisher.dismiss(getContext(), video.videoId);
         }
     }
@@ -559,6 +563,12 @@ public class VideoMenuPresenter extends BaseMenuPresenter {
             return;
         }
 
+        // A parent's block isn't the kid's to toggle (it is listed, locked, in Hidden and blocked)
+        if (channelId != null && com.liskovsoft.smartyoutubetv2.common.utils.ParentGate.isKidsProfile(getContext())
+                && com.liskovsoft.smartyoutubetv2.common.prefs.ParentBlockData.instance(getContext()).isChannelBlocked(channelId)) {
+            return;
+        }
+
         BlockedChannelData blockedChannelData = BlockedChannelData.instance(getContext());
         boolean isBlocked = blockedChannelData.containsChannel(channelId, channelName);
 
@@ -572,6 +582,7 @@ public class VideoMenuPresenter extends BaseMenuPresenter {
                 MessageHelpers.showMessage(getContext(), R.string.channel_unblocked);
             } else {
                 blockedChannelData.addChannel(channelId, channelName);
+                com.liskovsoft.smartyoutubetv2.common.prefs.ParentBlockData.kidMade(getContext(), com.liskovsoft.smartyoutubetv2.common.prefs.ParentBlockData.Item.CHANNEL, channelId != null ? channelId : channelName);
                 MessageHelpers.showMessage(getContext(), R.string.channel_blocked);
             }
 
@@ -583,10 +594,10 @@ public class VideoMenuPresenter extends BaseMenuPresenter {
         };
 
         mDialogPresenter.appendSingleButton(
-                // HearthTube: blocking takes no PIN; showing a creator again does in a kids profile (a parent may have blocked it)
+                // HearthTube: blocking takes no PIN; showing a creator again does in a kids profile, unless the kid blocked it
                 UiOptionItem.from(buttonText, optionItem -> {
                     if (isBlocked) {
-                        com.liskovsoft.smartyoutubetv2.common.utils.ParentGate.run(getContext(), toggle);
+                        com.liskovsoft.smartyoutubetv2.common.prefs.ParentBlockData.unblockGate(getContext(), com.liskovsoft.smartyoutubetv2.common.prefs.ParentBlockData.Item.CHANNEL, channelId != null ? channelId : channelName, toggle);
                     } else {
                         toggle.run();
                     }

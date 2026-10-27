@@ -7,6 +7,8 @@ import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.smartyoutubetv2.common.R;
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.ui.UiOptionItem;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.AppDialogPresenter;
+import com.liskovsoft.smartyoutubetv2.common.prefs.ParentBlockData;
+import com.liskovsoft.smartyoutubetv2.common.prefs.ParentBlockData.Item;
 import com.liskovsoft.smartyoutubetv2.common.prefs.WatchLogData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.WatchLogData.Entry;
 import com.liskovsoft.smartyoutubetv2.common.utils.ParentGate;
@@ -60,10 +62,35 @@ public final class ParentOptionsPresenter {
         }
 
         for (int i = entries.size() - 1, shown = 0; i >= 0 && shown < LIST_MAX; i--, shown++) {
-            dialog.appendSingleButton(UiOptionItem.from(WatchLogData.lineOf(entries.get(i))));
+            Entry entry = entries.get(i);
+            // A parent acts on what the log shows: block the video or its channel (locked for the kid)
+            dialog.appendSingleButton(UiOptionItem.from(WatchLogData.lineOf(entry), option -> showBlock(context, entry)));
         }
 
         dialog.showDialog(context.getString(R.string.watch_log));
+    }
+
+    private static void showBlock(Context context, Entry entry) {
+        AppDialogPresenter dialog = AppDialogPresenter.instance(context);
+        ParentBlockData blocks = ParentBlockData.instance(context);
+        String title = entry.title.isEmpty() ? entry.videoId : entry.title;
+
+        dialog.appendSingleButton(UiOptionItem.from(context.getString(R.string.parent_block_video), option -> {
+            blocks.addLocal(Item.VIDEO, entry.videoId, title);
+            MessageHelpers.showMessage(context, R.string.parent_blocked_done);
+            dialog.closeDialog();
+        }));
+
+        // Entries from before the channel was kept have none to block
+        if (!entry.channelId.isEmpty()) {
+            dialog.appendSingleButton(UiOptionItem.from(context.getString(R.string.parent_block_channel), option -> {
+                blocks.addLocal(Item.CHANNEL, entry.channelId, entry.channel);
+                MessageHelpers.showMessage(context, R.string.parent_blocked_done);
+                dialog.closeDialog();
+            }));
+        }
+
+        dialog.showDialog(title);
     }
 
     /** Two files a person can open and an AI agent can read (watch-log.txt, watch-log.json), in the app's own files folder */

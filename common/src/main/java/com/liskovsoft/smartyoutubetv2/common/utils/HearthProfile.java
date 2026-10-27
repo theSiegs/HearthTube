@@ -139,8 +139,14 @@ public class HearthProfile {
      */
     @Nullable
     public final Integer shareNowPlaying;
+    /**
+     * What a parent blocked in HearthTube for the active profile (contract 8): {"videos":[…],"channels":[…],"words":[…]}
+     * from Hearth's own settings and Home Assistant's; null when nothing is blocked, or Hearth is older.
+     */
+    @Nullable
+    public final String parentBlocks;
     /** The newest contract this code was written against: a newer Hearth may mean columns changed meaning. */
-    private static final int KNOWN_CONTRACT = 7;
+    private static final int KNOWN_CONTRACT = 8;
     /** Hearth takes at most this much playing time in one {@link #reportPlaying} */
     public static final long MAX_REPORT_MS = 10 * 60_000;
     /** HearthTube was last opened by Hearth (Android 14+, Hearth's share-identity launch); null when unknown */
@@ -180,6 +186,7 @@ public class HearthProfile {
         this.allowanceCheckedAt = getLongOrNull(cursor, "allowance_checked_at");
         Long share = contractVersion >= 7 ? getLongOrNull(cursor, "ha_share_now_playing") : null;
         this.shareNowPlaying = share != null ? share.intValue() : null;
+        this.parentBlocks = contractVersion >= 8 ? getString(cursor, "parent_blocks") : null;
 
         if (contractVersion > KNOWN_CONTRACT && !sWarnedNewerContract) {
             sWarnedNewerContract = true;
@@ -418,6 +425,32 @@ public class HearthProfile {
             return result != null && result.getBoolean("ok");
         } catch (Exception e) {
             Log.d(TAG, "Hearth didn't take the playing time: %s", e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Tells Hearth a video was started in this (kids) profile, for a parent to read (contract 8). Blocking: call it off
+     * the main thread. False when Hearth didn't take it (missing, too old, not connected to this profile, or this
+     * HearthTube isn't signed with Hearth's key); the caller keeps the entry and sends it again later.
+     */
+    public static boolean reportStarted(Context context, long timeMs, String videoId, String title, String channel, String channelId) {
+        String hearth = context != null && timeMs > 0 && videoId != null ? trustedPackage(context) : null;
+        if (hearth == null) {
+            return false;
+        }
+
+        try {
+            Bundle extras = new Bundle();
+            extras.putLong("time_ms", timeMs);
+            extras.putString("video_id", videoId);
+            extras.putString("title", title);
+            extras.putString("channel", channel);
+            extras.putString("channel_id", channelId);
+            Bundle result = context.getContentResolver().call(uri(hearth, "active"), "report_started", null, extras);
+            return result != null && result.getBoolean("ok");
+        } catch (Exception e) {
+            Log.d(TAG, "Hearth didn't take the started video: %s", e.getMessage());
             return false;
         }
     }

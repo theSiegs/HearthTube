@@ -333,7 +333,7 @@ public class VideoLoaderController extends BasePlayerController {
         }
 
         // HearthTube: nor a video with a blocked word (in every profile), nor one from an AI channel (kids profiles)
-        if (refuseBlockedWord(formatInfo) || refuseAiChannel(formatInfo.getChannelId())) {
+        if (refuseBlockedWord(formatInfo) || refuseAiChannel(formatInfo.getChannelId()) || refuseParentBlock(formatInfo.getChannelId())) {
             return;
         }
 
@@ -601,7 +601,8 @@ public class VideoLoaderController extends BasePlayerController {
     @Override
     public void onMetadata(MediaItemMetadata metadata) {
         // HearthTube: a link or a cast has no title until now, so the kids checks by title run again
-        if (refuseClip() || refuseBlockedWord(null) || refuseAiChannel(metadata != null ? metadata.getChannelId() : null)) {
+        if (refuseClip() || refuseBlockedWord(null) || refuseAiChannel(metadata != null ? metadata.getChannelId() : null)
+                || refuseParentBlock(metadata != null ? metadata.getChannelId() : null)) {
             return;
         }
 
@@ -634,6 +635,26 @@ public class VideoLoaderController extends BasePlayerController {
         }
 
         refuseQuietly(R.string.kids_blocked_word);
+        return true;
+    }
+
+    /** HearthTube: a video or channel a parent blocked doesn't play in a kids profile, however it got here (a link, a cast) */
+    private boolean refuseParentBlock(String channelId) {
+        PlaybackView player = getPlayer();
+        Video video = getVideo();
+
+        if (player == null || video == null || !com.liskovsoft.smartyoutubetv2.common.utils.ParentGate.isKidsProfile(getContext())) {
+            return false;
+        }
+
+        com.liskovsoft.smartyoutubetv2.common.prefs.ParentBlockData blocks =
+                com.liskovsoft.smartyoutubetv2.common.prefs.ParentBlockData.instance(getContext());
+
+        if (!blocks.isVideoBlocked(video.videoId) && !blocks.isChannelBlocked(channelId != null ? channelId : video.channelId)) {
+            return false;
+        }
+
+        refuseQuietly(R.string.parent_blocked);
         return true;
     }
 

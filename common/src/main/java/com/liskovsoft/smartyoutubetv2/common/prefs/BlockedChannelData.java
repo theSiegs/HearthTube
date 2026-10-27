@@ -22,6 +22,7 @@ public class BlockedChannelData implements ProfileChangeListener {
     @SuppressLint("StaticFieldLeak")
     private static BlockedChannelData sInstance;
     private final AppPrefs mPrefs;
+    private final Context mContext;
     private final TreeSet<Channel> mChannels =
             new TreeSet<>((channel1, channel2) -> Helpers.compareToIgnoreCase(channel1.channelName, channel2.channelName));
     private final Runnable mPersistStateInt = this::persistStateInt;
@@ -80,6 +81,7 @@ public class BlockedChannelData implements ProfileChangeListener {
     }
 
     private BlockedChannelData(Context context) {
+        mContext = context;
         mPrefs = AppPrefs.instance(context);
         mPrefs.addListener(this);
         restoreState();
@@ -127,6 +129,11 @@ public class BlockedChannelData implements ProfileChangeListener {
      * Check if a channel is blocked
      */
     public boolean containsChannel(String channelId, String channelName) {
+        // What a parent blocked counts too (by channel id)
+        if (channelId != null && ParentBlockData.instance(mContext).isChannelBlocked(channelId)) {
+            return true;
+        }
+
         if (Helpers.allNulls(channelId, channelName) || mChannels.isEmpty()) {
             return false;
         }

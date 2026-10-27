@@ -62,6 +62,17 @@ public class WatchLogDataTest {
     }
 
     @Test
+    public void theChannelIdSurvivesSavingAndAnOldEntryHasNone() {
+        Entry entry = WatchLogData.parse(WatchLogData.serialize(new Entry(T0, "abc123", "T", "Chan", "UCchan123")));
+        assertEquals("UCchan123", entry.channelId);
+
+        // an entry saved before the channel id was kept: four fields
+        Entry old = WatchLogData.parse(com.liskovsoft.sharedutils.helpers.Helpers.mergeObj(T0, "abc123", "T", "Chan"));
+        assertEquals("", old.channelId);
+        assertEquals("Chan", old.channel);
+    }
+
+    @Test
     public void noTitleOrChannelSurvivesSaving() {
         Entry entry = WatchLogData.parse(WatchLogData.serialize(new Entry(T0, "abc123", null, null)));
 

@@ -12,6 +12,8 @@ import com.liskovsoft.smartyoutubetv2.common.app.presenters.AppDialogPresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.BrowsePresenter;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.menu.VideoMenuPresenter.VideoMenuCallback;
 import com.liskovsoft.smartyoutubetv2.common.prefs.MainUIData;
+import com.liskovsoft.smartyoutubetv2.common.prefs.ParentBlockData;
+import com.liskovsoft.smartyoutubetv2.common.prefs.ParentBlockData.Item;
 import com.liskovsoft.smartyoutubetv2.common.utils.AiSlopList;
 import com.liskovsoft.smartyoutubetv2.common.utils.AppDialogUtil;
 import com.liskovsoft.smartyoutubetv2.common.utils.KeywordFilter;
@@ -62,9 +64,12 @@ public final class BlockedWordsPresenter {
 
     private static void showManager(Context context) {
         AppDialogPresenter dialog = AppDialogPresenter.instance(context);
-        int videos = com.liskovsoft.smartyoutubetv2.common.prefs.HiddenVideoData.instance(context).getVideos().size();
-        int creators = com.liskovsoft.smartyoutubetv2.common.prefs.BlockedChannelData.instance(context).getChannelCount();
-        int words = KeywordFilter.getWords(context).size();
+        ParentBlockData parent = ParentBlockData.instance(context);
+        int videos = com.liskovsoft.smartyoutubetv2.common.prefs.HiddenVideoData.instance(context).getVideos().size()
+                + parent.getItems(Item.VIDEO).size();
+        int creators = com.liskovsoft.smartyoutubetv2.common.prefs.BlockedChannelData.instance(context).getChannelCount()
+                + parent.getItems(Item.CHANNEL).size();
+        int words = KeywordFilter.getWords(context).size() + parent.getItems(Item.WORD).size();
 
         dialog.appendSingleButton(UiOptionItem.from(context.getString(R.string.hidden_videos) + " (" + videos + ")",
                 option -> showHiddenVideos(context)));
@@ -87,17 +92,20 @@ public final class BlockedWordsPresenter {
             String name = entry.second == null || entry.second.isEmpty() ? entry.first : entry.second;
             dialog.appendSingleButton(UiOptionItem.from(
                     SettingsMenuPresenter.withIcon(context, R.drawable.ic_hearth_action_delete, name),
-                    // A parent may have blocked it: in a kids profile, showing a creator again takes the PIN
+                    // A parent may have blocked it: in a kids profile, showing a creator again takes the PIN (not one the kid blocked)
                     option -> AppDialogUtil.showConfirmationDialog(context, context.getString(R.string.hidden_video_show, name),
-                            () -> ParentGate.run(context, () -> {
+                            () -> ParentBlockData.unblockGate(context, Item.CHANNEL, entry.first != null ? entry.first : entry.second, () -> {
                                 blocked.removeChannel(entry.first, entry.second);
                                 sChanged = true;
                                 reopenCreators(context);
                             }))));
         }
 
+        appendParentRows(context, dialog, Item.CHANNEL);
+
         dialog.appendSingleButton(UiOptionItem.from(
-                context.getString(blocked.isEmpty() ? R.string.blocked_creators_empty : R.string.hidden_videos_hint)));
+                context.getString(blocked.isEmpty() && ParentBlockData.instance(context).getItems(Item.CHANNEL).isEmpty()
+                        ? R.string.blocked_creators_empty : R.string.hidden_videos_hint)));
 
         sOnTop = dialog.isDialogShown();
         dialog.showDialog(context.getString(R.string.blocked_creators), () -> onClosed(context));
@@ -119,15 +127,19 @@ public final class BlockedWordsPresenter {
             String title = entry.second == null || entry.second.isEmpty() ? entry.first : entry.second;
             dialog.appendSingleButton(UiOptionItem.from(
                     SettingsMenuPresenter.withIcon(context, R.drawable.ic_hearth_action_delete, title),
-                    option -> AppDialogUtil.showConfirmationDialog(context, context.getString(R.string.hidden_video_show, title), () -> {
-                        hidden.unhide(entry.first);
-                        sChanged = true;
-                        reopenHidden(context);
-                    })));
+                    option -> AppDialogUtil.showConfirmationDialog(context, context.getString(R.string.hidden_video_show, title),
+                            () -> ParentBlockData.unblockGate(context, Item.VIDEO, entry.first, () -> {
+                                hidden.unhide(entry.first);
+                                sChanged = true;
+                                reopenHidden(context);
+                            }))));
         }
 
+        appendParentRows(context, dialog, Item.VIDEO);
+
         dialog.appendSingleButton(UiOptionItem.from(
-                context.getString(hidden.isEmpty() ? R.string.hidden_videos_empty : R.string.hidden_videos_hint)));
+                context.getString(hidden.isEmpty() && ParentBlockData.instance(context).getItems(Item.VIDEO).isEmpty()
+                        ? R.string.hidden_videos_empty : R.string.hidden_videos_hint)));
 
         sOnTop = dialog.isDialogShown();
         dialog.showDialog(context.getString(R.string.hidden_videos), () -> onClosed(context));
@@ -166,17 +178,20 @@ public final class BlockedWordsPresenter {
         for (String word : words) {
             dialog.appendSingleButton(UiOptionItem.from(
                     SettingsMenuPresenter.withIcon(context, R.drawable.ic_hearth_action_delete, word),
-                    // A parent may have added it: in a kids profile, removing a word takes the PIN
+                    // A parent may have added it: in a kids profile, removing a word takes the PIN (not one the kid added)
                     option -> AppDialogUtil.showConfirmationDialog(context, context.getString(R.string.blocked_words_remove, word),
-                            () -> ParentGate.run(context, () -> {
+                            () -> ParentBlockData.unblockGate(context, Item.WORD, word, () -> {
                                 KeywordFilter.remove(context, word);
                                 sChanged = true;
                                 reopen(context);
                             }))));
         }
 
+        appendParentRows(context, dialog, Item.WORD);
+
         dialog.appendSingleButton(UiOptionItem.from(
-                context.getString(words.isEmpty() ? R.string.blocked_words_empty : R.string.blocked_words_hint)));
+                context.getString(words.isEmpty() && ParentBlockData.instance(context).getItems(Item.WORD).isEmpty()
+                        ? R.string.blocked_words_empty : R.string.blocked_words_hint)));
 
         sOnTop = dialog.isDialogShown();
         dialog.showDialog(context.getString(R.string.blocked_words), () -> onClosed(context));
@@ -198,6 +213,7 @@ public final class BlockedWordsPresenter {
                     }
 
                     if (KeywordFilter.add(context, word)) {
+                        ParentBlockData.kidMade(context, Item.WORD, word);
                         sChanged = true;
                     } else {
                         MessageHelpers.showMessage(context, R.string.blocked_words_already, word.trim());
@@ -206,6 +222,31 @@ public final class BlockedWordsPresenter {
                     return true;
                 },
                 () -> Utils.post(() -> show(context)));
+    }
+
+    /**
+     * What a parent blocked, below the viewer's own, and locked: one set here (a parent's PIN) comes back after the PIN, one
+     * from Hearth is taken back there.
+     */
+    private static void appendParentRows(Context context, AppDialogPresenter dialog, char kind) {
+        for (Item item : ParentBlockData.instance(context).getItems(kind)) {
+            dialog.appendSingleButton(UiOptionItem.from(
+                    context.getString(R.string.parent_blocked_row, item.label),
+                    option -> {
+                        if (item.source != Item.LOCAL) {
+                            MessageHelpers.showMessage(context, R.string.parent_blocked_in_hearth);
+                            return;
+                        }
+
+                        AppDialogUtil.showConfirmationDialog(context, context.getString(R.string.hidden_video_show, item.label),
+                                () -> ParentGate.run(context, () -> {
+                                    ParentBlockData.instance(context).removeLocal(kind, item.id);
+                                    sChanged = true;
+                                    AppDialogPresenter.instance(context).closeDialog();
+                                    MessageHelpers.showMessage(context, R.string.shown_again);
+                                }));
+                    }));
+        }
     }
 
     /** The list again, as it is now (a panel can't change once shown) */
@@ -277,9 +318,12 @@ public final class BlockedWordsPresenter {
     private static OptionItem pickOption(Context context, String label, String word, boolean[] added) {
         return UiOptionItem.from(label, option -> {
             if (option.isSelected()) {
-                added[0] |= KeywordFilter.add(context, word);
+                boolean put = KeywordFilter.add(context, word);
+                added[0] |= put;
+                if (put) ParentBlockData.kidMade(context, Item.WORD, word);
             } else {
                 KeywordFilter.remove(context, word);
+                ParentBlockData.instance(context).unmarkKidMade(Item.WORD, word);
             }
         }, KeywordFilter.contains(context, word));
     }

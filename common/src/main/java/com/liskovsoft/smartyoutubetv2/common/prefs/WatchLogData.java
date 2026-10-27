@@ -22,6 +22,7 @@ import java.util.TimeZone;
  */
 public class WatchLogData implements ProfileChangeListener {
     private static final String WATCH_LOG_DATA = "watch_log";
+    private static final String WATCH_LOG_SENT = "watch_log_sent";
     static final int MAX = 2000;
     /** The same video started again within this time is one entry (a resume, a reload) */
     static final long SAME_VIDEO_MS = 30 * 60_000;
@@ -29,6 +30,8 @@ public class WatchLogData implements ProfileChangeListener {
     private static WatchLogData sInstance;
     private final AppPrefs mPrefs;
     private final List<Entry> mEntries = new ArrayList<>();
+    /** The time of the newest entry Hearth took (the parent channel); later ones are sent again */
+    private long mSentMs;
     private final Runnable mPersistStateInt = this::persistStateInt;
 
     public static class Entry {
@@ -36,12 +39,19 @@ public class WatchLogData implements ProfileChangeListener {
         public final String videoId;
         public final String title;
         public final String channel;
+        /** Empty when not known (entries saved before it was kept) */
+        public final String channelId;
 
         public Entry(long timeMs, String videoId, String title, String channel) {
+            this(timeMs, videoId, title, channel, null);
+        }
+
+        public Entry(long timeMs, String videoId, String title, String channel, String channelId) {
             this.timeMs = timeMs;
             this.videoId = videoId;
             this.title = title == null ? "" : title;
             this.channel = channel == null ? "" : channel;
+            this.channelId = channelId == null ? "" : channelId;
         }
     }
 
@@ -60,11 +70,15 @@ public class WatchLogData implements ProfileChangeListener {
     }
 
     /** A video started playing in this profile */
-    public synchronized void record(String videoId, String title, String channel) {
-        record(videoId, title, channel, System.currentTimeMillis());
+    public synchronized void record(String videoId, String title, String channel, String channelId) {
+        record(videoId, title, channel, channelId, System.currentTimeMillis());
     }
 
     synchronized void record(String videoId, String title, String channel, long nowMs) {
+        record(videoId, title, channel, null, nowMs);
+    }
+
+    synchronized void record(String videoId, String title, String channel, String channelId, long nowMs) {
         if (videoId == null || videoId.isEmpty()) {
             return;
         }
@@ -73,7 +87,7 @@ public class WatchLogData implements ProfileChangeListener {
             return;
         }
 
-        mEntries.add(new Entry(nowMs, videoId, title, channel));
+        mEntries.add(new Entry(nowMs, videoId, title, channel, channelId));
 
         while (mEntries.size() > MAX) {
             mEntries.remove(0);
@@ -97,6 +111,27 @@ public class WatchLogData implements ProfileChangeListener {
         }
 
         return false;
+    }
+
+    /** Entries Hearth hasn't taken yet, oldest first, at most {@code limit} */
+    public synchronized List<Entry> getUnsent(int limit) {
+        List<Entry> unsent = new ArrayList<>();
+
+        for (Entry entry : mEntries) {
+            if (entry.timeMs > mSentMs && unsent.size() < limit) {
+                unsent.add(entry);
+            }
+        }
+
+        return unsent;
+    }
+
+    /** Hearth took everything up to this time */
+    public synchronized void markSent(long timeMs) {
+        if (timeMs > mSentMs) {
+            mSentMs = timeMs;
+            persistState();
+        }
     }
 
     /** Oldest first */
@@ -153,6 +188,7 @@ public class WatchLogData implements ProfileChangeListener {
                     .append("\",\"videoId\":").append(quote(entry.videoId))
                     .append(",\"title\":").append(quote(entry.title))
                     .append(",\"channel\":").append(quote(entry.channel))
+                    .append(",\"channelId\":").append(quote(entry.channelId))
                     .append(",\"url\":").append(quote("https://youtu.be/" + entry.videoId)).append('}');
         }
 
@@ -198,25 +234,29 @@ public class WatchLogData implements ProfileChangeListener {
             return null;
         }
 
-        return new Entry(time, id, fields.length > 2 ? Helpers.parseStr(fields[2]) : null, fields.length > 3 ? Helpers.parseStr(fields[3]) : null);
+        String channelId = fields.length > 4 ? Helpers.parseStr(fields[4]) : null;
+
+        return new Entry(time, id, fields.length > 2 ? Helpers.parseStr(fields[2]) : null, fields.length > 3 ? Helpers.parseStr(fields[3]) : null,
+                "-".equals(channelId) ? null : channelId);
     }
 
     static String serialize(Entry entry) {
         // An empty field would not survive being saved (it is stored as a space)
         return Helpers.mergeObj(entry.timeMs, entry.videoId, entry.title.isEmpty() ? entry.videoId : entry.title,
-                entry.channel.isEmpty() ? "-" : entry.channel);
+                entry.channel.isEmpty() ? "-" : entry.channel, entry.channelId.isEmpty() ? "-" : entry.channelId);
     }
 
     private synchronized void restoreState() {
         String[] split = Helpers.splitData(mPrefs.getProfileData(WATCH_LOG_DATA));
 
         mEntries.clear();
+        mSentMs = Helpers.parseLong(mPrefs.getProfileData(WATCH_LOG_SENT), 0);
 
         for (String spec : Helpers.parseList(split, 0, item -> item)) {
             Entry entry = parse(spec);
 
             if (entry != null) {
-                mEntries.add(new Entry(entry.timeMs, entry.videoId, entry.title, "-".equals(entry.channel) ? "" : entry.channel));
+                mEntries.add(new Entry(entry.timeMs, entry.videoId, entry.title, "-".equals(entry.channel) ? "" : entry.channel, entry.channelId));
             }
         }
     }
@@ -237,6 +277,7 @@ public class WatchLogData implements ProfileChangeListener {
         }
 
         mPrefs.setProfileData(WATCH_LOG_DATA, Helpers.mergeData(specs));
+        mPrefs.setProfileData(WATCH_LOG_SENT, String.valueOf(mSentMs));
     }
 
     @Override
