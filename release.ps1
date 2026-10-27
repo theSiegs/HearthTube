@@ -198,19 +198,17 @@ try {
             --lineage $lineage --rotation-min-sdk-version $rotationMinSdk
         if ($LASTEXITCODE -ne 0) { throw "Signing failed: $apk" }
 
-        # Android 9+ must see Hearth's key with the whole lineage (v3); Android 8 and older the debug key (v2)
+        # The apps need Android 12+ (minSdk 31), which reads v3: Hearth's key with the whole lineage
         $verified = & $apksigner verify -v $signed
         if ($LASTEXITCODE -ne 0) { throw "Doesn't verify: $signed" }
-        # No v1 (JAR): the apps need Android 8+, which checks v2 and v3
-        $schemes = 'v2 scheme (APK Signature Scheme v2): true', 'v3 scheme (APK Signature Scheme v3): true'
+        # No v1 (JAR) or v2: Android 12+ checks v3
+        $schemes = ,'v3 scheme (APK Signature Scheme v3): true'
         foreach ($scheme in $schemes) {
             if (-not ($verified -match [regex]::Escape("Verified using $scheme"))) { throw "Not signed with ${scheme}: $signed" }
         }
         $newAndroid = @(Get-CertDigests (& $apksigner verify --print-certs --min-sdk-version $rotationMinSdk $signed) 'V3')
-        $oldAndroid = @(Get-CertDigests (& $apksigner verify --print-certs --max-sdk-version ($rotationMinSdk - 1) $signed) 'V2')
         $apkLineage = @(Get-CertDigests (& $apksigner lineage --in $signed --print-certs) 'in lineage')
         if ($newAndroid.Count -ne 1 -or $newAndroid[0] -ne $lineageDigests[-1] -or
-                $oldAndroid.Count -ne 1 -or $oldAndroid[0] -ne $lineageDigests[0] -or
                 ($apkLineage -join ',') -ne ($lineageDigests -join ',')) {
             throw "Not signed with Hearth's key, the debug key and the lineage: $signed"
         }
