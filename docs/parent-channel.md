@@ -124,8 +124,10 @@ Written and committed on branch `parent-channel-contract-8` in the Hearth repo (
    player; locked rows in Hidden and blocked; a parent blocks a video or channel from a log row. The phone keeps its
    menu items: a kid's phone now gets Not interested, Don't show this creator and Hidden and blocked with no PIN, as on
    the TV (it was behind the PIN), and adult phones are unchanged.
-3. **Hearth's settings screens** (no Home Assistant needed): per kid, Videos started (read, save as files, block a
-   video or channel from a row) and Blocked on YouTube (the lists), behind Hearth's parent PIN.
+3. **Hearth's settings screens** (no Home Assistant needed): **done, on Hearth's branch `parent-channel-contract-8`**:
+   Settings > Family > Kids profiles > the kid has Videos started (newest first; a row blocks the video or its channel)
+   and Blocked on YouTube (words, channels, videos; add a word, take back what was set in Hearth; Home Assistant's are
+   shown and taken back there). Saving the log as files is not there (HearthTube's PIN menu has it).
 4. **Hearth to Home Assistant**: events endpoint and its queue (Hearth), then the integration's stored log, event,
    sensor, `hearth.watch_digest`, the lists and their services, the state document field, the weekly digest blueprint,
    dashboard card and tests (`ha_tests`).
