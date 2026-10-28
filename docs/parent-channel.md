@@ -1,6 +1,6 @@
 # Parent channel (design draft)
 
-> **Design draft, nothing built.** How a parent reads what a kids profile started, and sets what it may not show,
+> **Design, mostly built** (see Build order). How a parent reads what a kids profile started, and sets what it may not show,
 > without sitting at the kid's TV. Builds on what exists: HearthTube's watch log (`WatchLogData`) and its PIN-gated
 > Parent options, Hearth's provider contract (version 7, `docs/provider-contract.md` in Hearth) and Hearth's Home
 > Assistant integration (`docs/home-assistant-integration.md` there).
@@ -128,14 +128,22 @@ Written and committed on branch `parent-channel-contract-8` in the Hearth repo (
    Settings > Family > Kids profiles > the kid has Videos started (newest first; a row blocks the video or its channel)
    and Blocked on YouTube (words, channels, videos; add a word, take back what was set in Hearth; Home Assistant's are
    shown and taken back there). Saving the log as files is not there (HearthTube's PIN menu has it).
-4. **Hearth to Home Assistant**: events endpoint and its queue (Hearth), then the integration's stored log, event,
-   sensor, `hearth.watch_digest`, the lists and their services, the state document field, the weekly digest blueprint,
-   dashboard card and tests (`ha_tests`).
+4. **Hearth to Home Assistant**: **built, on Hearth's branch `parent-channel-ha` (not merged, not on a TV yet)**: the
+   events endpoint and Hearth's sending after each status post (the last day's entries Home Assistant hasn't had),
+   the integration's stored log per person, `hearth_video_started`, the Last video started sensor,
+   `hearth.get_watch_log`, `hearth.watch_digest`, the block and unblock services, `youtube_blocks` in the state
+   document (read into Hearth's Home Assistant lists), the weekly digest blueprint, and tests. A dashboard card with
+   Block buttons per row is not built (the services and the sensor's attributes are what one would use).
 5. Kid's hides sent up (the second "Up" row).
+
+## Decided
+
+- **Words** (2026-10-28): the parent's words match titles only, as HearthTube's own do; a channel is blocked by its id.
+  Matching channel names too would hide a whole channel for a word in its name, which a channel block already does on
+  purpose.
+- **Retention**: 2,000 entries per kid, in HearthTube, Hearth and Home Assistant alike.
 
 ## Open questions
 
-- **Words:** does the parent's word list apply to titles only, as HearthTube's own does, or to channel names too?
-- **Retention:** 2,000 entries per kid in Home Assistant matches the app; a longer record would need its own file.
 - **A kid on two TVs:** each TV's HearthTube has its own log; Home Assistant's is the merge, keyed by the kid's
   `profile_id` mapped to a person (the integration's People step).
