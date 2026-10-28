@@ -62,6 +62,12 @@ public final class ParentChannel {
                     ParentBlockData.instance(app).setFromHearth(hearth.parentBlocks);
                 }
 
+                // What a parent took back in Hearth of the kid's own hides, then the kid's lists up (contract 10)
+                if (hearth != null && hearth.contractVersion >= 10) {
+                    KidBlocks.applyUndo(app, hearth.kidUnblocks);
+                    KidBlocks.flush(app);
+                }
+
                 flush(app);
             } catch (RuntimeException e) {
                 Log.e(TAG, "Parent channel sync failed: %s", e.getMessage());
@@ -69,6 +75,14 @@ public final class ParentChannel {
                 sRunning.set(false);
             }
         });
+    }
+
+    /** The kid hid or blocked something, or took one back: Hearth hears of it in a moment (after the change is saved) */
+    public static void syncSoon(Context context) {
+        if (context != null && ParentGate.isKidsProfile(context)) {
+            Context app = context.getApplicationContext();
+            new Handler(Looper.getMainLooper()).postDelayed(() -> sync(app), 1_500);
+        }
     }
 
     /** Sends the entries Hearth hasn't got, oldest first, until one isn't taken; on the caller's thread */

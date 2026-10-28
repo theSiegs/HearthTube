@@ -30,7 +30,7 @@ Home Assistant is optional for Hearth, so nothing here may need it.
 | Direction | What | Why |
 |---|---|---|
 | Up | each video a kids profile starts (time, id, title, channel) | the parent reads it; an AI agent reviews it |
-| Up (later) | what the kid hid or blocked | the parent sees it and can undo it |
+| Up | what the kid hid or blocked | the parent sees it and can show it to them again |
 | Down | the parent's blocked videos, channels and words, per kid | the kid's HearthTube applies them and can't undo them |
 
 ## Path
@@ -134,7 +134,12 @@ Written and committed on branch `parent-channel-contract-8` in the Hearth repo (
    `hearth.get_watch_log`, `hearth.watch_digest`, the block and unblock services, `youtube_blocks` in the state
    document (read into Hearth's Home Assistant lists), the weekly digest blueprint, and tests. A dashboard card with
    Block buttons per row is not built (the services and the sensor's attributes are what one would use).
-5. Kid's hides sent up (the second "Up" row).
+5. **Kid's hides sent up**: **built (contract 10; Hearth branch `parent-channel-ha`, HearthTube master, not yet on a TV)**:
+   HearthTube sends its own hidden videos, blocked creators and words, the whole list each time it changes
+   (`report_kid_blocks`, `KidBlocks`); Hearth shows them under "Hidden by them" on the kid's Blocked on YouTube page,
+   where a parent can show one again. That goes down in `kid_unblocks`; HearthTube takes it back from the kid's own
+   lists (never the parent's), and Hearth drops the undo once the kid's next list no longer has it. Not sent to Home
+   Assistant yet.
 
 ## Decided
 

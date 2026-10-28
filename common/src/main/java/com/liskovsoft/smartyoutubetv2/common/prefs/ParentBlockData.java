@@ -274,6 +274,8 @@ public class ParentBlockData implements ProfileChangeListener {
     public static void kidMade(Context context, char kind, String key) {
         if (context != null && com.liskovsoft.smartyoutubetv2.common.utils.ParentGate.isKidsProfile(context)) {
             instance(context).markKidMade(kind, key);
+            // And up to Hearth, for a parent to see (contract 10)
+            com.liskovsoft.smartyoutubetv2.common.utils.ParentChannel.syncSoon(context);
         }
     }
 
@@ -287,6 +289,7 @@ public class ParentBlockData implements ProfileChangeListener {
         if (!com.liskovsoft.smartyoutubetv2.common.utils.ParentGate.isKidsProfile(context) || data.isKidMade(kind, key)) {
             unblock.run();
             data.unmarkKidMade(kind, key);
+            com.liskovsoft.smartyoutubetv2.common.utils.ParentChannel.syncSoon(context);
             return;
         }
 

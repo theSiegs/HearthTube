@@ -145,8 +145,14 @@ public class HearthProfile {
      */
     @Nullable
     public final String parentBlocks;
+    /**
+     * What a parent took back in Hearth of what this kids profile hid or blocked itself (contract 10):
+     * {"videos":[…],"channels":[…],"words":[…]} ({@link KidBlocks}); null when nothing, or Hearth is older.
+     */
+    @Nullable
+    public final String kidUnblocks;
     /** The newest contract this code was written against: a newer Hearth may mean columns changed meaning. */
-    private static final int KNOWN_CONTRACT = 8;
+    private static final int KNOWN_CONTRACT = 10;
     /** Hearth takes at most this much playing time in one {@link #reportPlaying} */
     public static final long MAX_REPORT_MS = 10 * 60_000;
     /** HearthTube was last opened by Hearth (Android 14+, Hearth's share-identity launch); null when unknown */
@@ -187,6 +193,7 @@ public class HearthProfile {
         Long share = contractVersion >= 7 ? getLongOrNull(cursor, "ha_share_now_playing") : null;
         this.shareNowPlaying = share != null ? share.intValue() : null;
         this.parentBlocks = contractVersion >= 8 ? getString(cursor, "parent_blocks") : null;
+        this.kidUnblocks = contractVersion >= 10 ? getString(cursor, "kid_unblocks") : null;
 
         if (contractVersion > KNOWN_CONTRACT && !sWarnedNewerContract) {
             sWarnedNewerContract = true;
@@ -451,6 +458,27 @@ public class HearthProfile {
             return result != null && result.getBoolean("ok");
         } catch (Exception e) {
             Log.d(TAG, "Hearth didn't take the started video: %s", e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Sends Hearth what this kids profile hid or blocked itself, the whole of it (contract 10, {@link KidBlocks}).
+     * Blocking: call it off the main thread. False when Hearth didn't take it; it is sent again the next time.
+     */
+    public static boolean reportKidBlocks(Context context, String json) {
+        String hearth = context != null && json != null ? trustedPackage(context) : null;
+        if (hearth == null) {
+            return false;
+        }
+
+        try {
+            Bundle extras = new Bundle();
+            extras.putString("blocks", json);
+            Bundle result = context.getContentResolver().call(uri(hearth, "active"), "report_kid_blocks", null, extras);
+            return result != null && result.getBoolean("ok");
+        } catch (Exception e) {
+            Log.d(TAG, "Hearth didn't take the kid's blocks: %s", e.getMessage());
             return false;
         }
     }
