@@ -31,6 +31,7 @@ import com.liskovsoft.smartyoutubetv2.common.app.models.data.VideoGroup;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.HearthSections;
 import com.liskovsoft.smartyoutubetv2.common.app.presenters.dialogs.menu.HearthChannelMenu;
 import com.liskovsoft.smartyoutubetv2.common.prefs.GeneralData;
+import com.liskovsoft.smartyoutubetv2.common.utils.PublishedDates;
 import com.liskovsoft.smartyoutubetv2.tv.R;
 import com.liskovsoft.smartyoutubetv2.tv.adapter.VideoGroupObjectAdapter;
 import com.liskovsoft.smartyoutubetv2.tv.presenter.LargeVideoCardPresenter;
@@ -61,6 +62,8 @@ public class HearthRowsFragment extends VideoRowsFragment {
     private View mRows;
     private TextView mTitle;
     private TextView mMeta;
+    /** The video the details show, for a date that comes back after focus moved on */
+    private String mFocusedVideoId;
     private TextView mDescription;
     private List<String> mTitles = new ArrayList<>();
     /** Channel pictures (Subscriptions): circles instead of chips */
@@ -416,11 +419,28 @@ public class HearthRowsFragment extends VideoRowsFragment {
         }
 
         mTitle.setText(video.getTitle());
-        CharSequence meta = com.liskovsoft.smartyoutubetv2.common.utils.AiSlopList.withLabel(getContext(), video, video.getSecondTitle());
-        mMeta.setText(meta);
-        mMeta.setVisibility(TextUtils.isEmpty(meta) ? View.GONE : View.VISIBLE);
+        // When it was published too: Home's tiles have the channel and views only, so the date is asked for
+        String date = PublishedDates.known(video.videoId);
+        showMeta(video, date);
+        if (date == null && video.videoId != null && !video.isChannel() && !video.isPlaylistAsChannel()) {
+            PublishedDates.request(video.videoId, (videoId, published) -> {
+                if (mTitle != null && videoId.equals(mFocusedVideoId)) {
+                    showMeta(video, published);
+                }
+            });
+        } else {
+            PublishedDates.cancel();
+        }
+        mFocusedVideoId = video.videoId;
         mDescription.setText(video.description);
         mDescription.setVisibility(TextUtils.isEmpty(video.description) ? View.GONE : View.VISIBLE);
+    }
+
+    private void showMeta(Video video, String date) {
+        CharSequence meta = com.liskovsoft.smartyoutubetv2.common.utils.AiSlopList.withLabel(getContext(), video,
+                PublishedDates.withDate(video.getSecondTitle(), date));
+        mMeta.setText(meta);
+        mMeta.setVisibility(TextUtils.isEmpty(meta) ? View.GONE : View.VISIBLE);
     }
 
     private void showChips() {

@@ -150,7 +150,8 @@ public class VideoCardPresenter extends LongClickPresenter {
         cardView.setTitleText(video.getTitle());
         cardView.setContentText(video.getSecondTitle());
         // Count progress that very close to zero. E.g. when user closed video immediately.
-        cardView.setProgress(video.percentWatched > 0 && video.percentWatched < 1 ? 1 : Math.round(video.percentWatched));
+        float percentWatched = percentWatched(context, video);
+        cardView.setProgress(percentWatched > 0 && percentWatched < 1 ? 1 : Math.round(percentWatched));
         cardView.setBadgeText(
                 video.hasNewContent ? context.getString(R.string.badge_new_content) :
                 video.isLive ? context.getString(R.string.badge_live) :
@@ -194,6 +195,26 @@ public class VideoCardPresenter extends LongClickPresenter {
                         .error(R.drawable.card_placeholder) // R.color.lb_grey
                 )
                 .into(cardView.getMainImageView());
+    }
+
+    /**
+     * HearthTube: YouTube's progress for the card, or, when it sends none, where this TV last stopped the video (YouTube
+     * often leaves it out of Home and search tiles though the video resumes from there).
+     */
+    private static float percentWatched(Context context, Video video) {
+        if (video.percentWatched > 0 || video.videoId == null) {
+            return video.percentWatched;
+        }
+
+        com.liskovsoft.smartyoutubetv2.common.app.models.playback.service.VideoStateService.State state =
+                com.liskovsoft.smartyoutubetv2.common.app.models.playback.service.VideoStateService.instance(context)
+                        .getByVideoId(video.videoId);
+
+        if (state == null || state.durationMs <= 0 || state.positionMs <= 0) {
+            return video.percentWatched;
+        }
+
+        return Math.min(100f, state.positionMs * 100f / state.durationMs);
     }
 
     @Override

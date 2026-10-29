@@ -16,7 +16,15 @@ import com.liskovsoft.smartyoutubetv2.tv.ui.widgets.complexcardview.ComplexImage
  * below it. The duration and progress move to the top, where Hearth shows its progress badge.
  */
 public final class HearthCardStyle {
+    /** The focus outline's width: hearth_card_focus_outline.xml */
+    private static final int OUTLINE_DP = 4;
+    private static final int BAR_DP = 4;
+
     private HearthCardStyle() {
+    }
+
+    private static int dp(View view, int dp) {
+        return Math.round(dp * view.getResources().getDisplayMetrics().density);
     }
 
     public static void apply(ComplexImageCardView card) {
@@ -42,6 +50,16 @@ public final class HearthCardStyle {
         if (progress != null && clipInfo instanceof LinearLayout) {
             ((ViewGroup) clipInfo).removeView(progress);
             ((ViewGroup) clipInfo).addView(progress, 0);
+
+            // Inside the focus outline (2dp accent and 2dp black over the card's edge), which would cover it on the
+            // focused card, and thick enough that a few minutes into a long video still shows
+            if (progress.getLayoutParams() instanceof ViewGroup.MarginLayoutParams) {
+                ViewGroup.MarginLayoutParams bar = (ViewGroup.MarginLayoutParams) progress.getLayoutParams();
+                int inset = dp(card, OUTLINE_DP);
+                bar.setMargins(inset, inset, inset, 0);
+                bar.height = dp(card, BAR_DP);
+                progress.setLayoutParams(bar);
+            }
         }
 
         if (badge != null && badge.getLayoutParams() instanceof ViewGroup.MarginLayoutParams) {
