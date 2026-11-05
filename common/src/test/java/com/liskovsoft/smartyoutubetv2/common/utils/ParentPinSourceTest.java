@@ -75,4 +75,29 @@ public class ParentPinSourceTest {
     public void aLocalPinIsAskedForInAKidsProfileWithoutHearth() {
         assertEquals(Choice.LOCAL, ParentPinSource.decide(false, false, false, NOT_INSTALLED, true, true, true));
     }
+
+    // decide(hearthLive, hearthHasPin, usingHearthPin, hearthGenuine, glintInstalled, glintHasPin, hasLocalPin, kids, signedIn)
+
+    @Test
+    public void glintsPinIsThePhonesOnePin() {
+        assertEquals(Choice.GLINT, ParentPinSource.decide(false, false, false, NOT_INSTALLED, true, true, false, true, false));
+        assertEquals(Choice.GLINT, ParentPinSource.decide(false, false, false, NOT_INSTALLED, true, true, true, true, false));
+    }
+
+    @Test
+    public void aKidNeverChoosesThePinWhileGlintIsThere() {
+        assertEquals(Choice.SET_IN_GLINT, ParentPinSource.decide(false, false, false, NOT_INSTALLED, true, false, false, true, false));
+        assertEquals(Choice.GLINT_SILENT, ParentPinSource.decide(false, false, false, NOT_INSTALLED, true, null, false, true, false));
+    }
+
+    @Test
+    public void glintWithoutAPinKeepsHearthTubesOldOne() {
+        assertEquals(Choice.LOCAL, ParentPinSource.decide(false, false, false, NOT_INSTALLED, true, false, true, true, false));
+        assertEquals(Choice.LOCAL, ParentPinSource.decide(false, false, false, NOT_INSTALLED, true, null, true, true, false));
+    }
+
+    @Test
+    public void withoutGlintNothingChanges() {
+        assertEquals(Choice.CREATE, ParentPinSource.decide(false, false, false, NOT_INSTALLED, false, null, false, true, false));
+    }
 }

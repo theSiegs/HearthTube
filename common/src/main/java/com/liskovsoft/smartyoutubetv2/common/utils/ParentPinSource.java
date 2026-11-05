@@ -5,7 +5,7 @@ import androidx.annotation.Nullable;
 /**
  * Which parent PIN a kids profile asks for, and who may choose one (ParentGate). Pure logic, so every case is tested.
  * The person at the screen of a kids profile never gets to choose the PIN while a parent could still have set it
- * elsewhere (Hearth is there, or an account is signed in already).
+ * elsewhere (Hearth is there, Glint is there, or an account is signed in already).
  */
 final class ParentPinSource {
     enum Choice {
@@ -19,6 +19,12 @@ final class ParentPinSource {
         HEARTH_SILENT,
         /** Hearth is installed and has no PIN (or isn't live): stay locked until a parent sets it in Hearth */
         SET_IN_HEARTH,
+        /** Ask for Glint's PIN (a phone with Glint, the phone launcher: one PIN per phone) */
+        GLINT,
+        /** Glint is installed but not answering: its PIN can't be checked, and none may be chosen meanwhile */
+        GLINT_SILENT,
+        /** Glint is installed and has no PIN: stay locked until a parent sets it in Glint */
+        SET_IN_GLINT,
         /** No PIN to ask for and none may be chosen here: stay locked */
         LOCKED
     }
@@ -37,12 +43,35 @@ final class ParentPinSource {
      */
     static Choice decide(boolean hearthLive, boolean hearthHasPin, boolean usingHearthPin, @Nullable Boolean hearthGenuine,
                          boolean hasLocalPin, boolean kids, boolean signedIn) {
+        return decide(hearthLive, hearthHasPin, usingHearthPin, hearthGenuine, false, null, hasLocalPin, kids, signedIn);
+    }
+
+    /**
+     * @param glintInstalled a Glint signed with Glint's key is installed (phone build)
+     * @param glintHasPin Glint's answer: whether it has a parent PIN; null when it didn't answer
+     */
+    static Choice decide(boolean hearthLive, boolean hearthHasPin, boolean usingHearthPin, @Nullable Boolean hearthGenuine,
+                         boolean glintInstalled, @Nullable Boolean glintHasPin, boolean hasLocalPin, boolean kids,
+                         boolean signedIn) {
         if (hearthLive && hearthHasPin) {
             return Choice.HEARTH;
         }
 
         if (!kids) {
             return hasLocalPin ? Choice.LOCAL : Choice.CREATE; // an adult's own profile
+        }
+
+        if (glintInstalled) {
+            if (Boolean.TRUE.equals(glintHasPin)) {
+                return Choice.GLINT;
+            }
+
+            // Glint is silent or has no PIN: HearthTube's own old one stays, never a new one
+            if (hasLocalPin) {
+                return Choice.LOCAL;
+            }
+
+            return glintHasPin == null ? Choice.GLINT_SILENT : Choice.SET_IN_GLINT;
         }
 
         if (Boolean.TRUE.equals(hearthGenuine)) {

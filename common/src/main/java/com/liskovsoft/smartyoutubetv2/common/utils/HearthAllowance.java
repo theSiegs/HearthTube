@@ -21,7 +21,9 @@ import java.util.concurrent.Executors;
  * playing starts and stops. When Hearth can't be relied on (older than contract 6, suspended, or in a kids profile
  * whose Hearth agent isn't connected) the last allowance it gave is kept for the rest of the day and counted down here
  * ({@link SilentHearthLimit}), and the time played meanwhile is kept for Hearth ({@link PlayTimer}). A kid Hearth never
- * gave a limit for has none, unless a parent set one on the device ({@link LocalAllowance}).
+ * gave a limit for has none, unless a parent set one on the device ({@link LocalAllowance}). On a phone with Glint, Glint
+ * owns the daily limit instead of Hearth ({@link GlintChannel}): its minutes and lock, kept the same way when it goes
+ * silent, with the device's own limit as an extra cap.
  */
 public final class HearthAllowance {
     private static final String TAG = HearthAllowance.class.getSimpleName();
@@ -32,6 +34,8 @@ public final class HearthAllowance {
     private static final String PREF_LOCAL = "local_allowance";
     private static final String PREF_DAY = "allowance_day";
     private static final String PREF_SILENT = "silent_hearth_limit";
+    /** Glint's limit among the kept ones ({@link SilentHearthLimit}), apart from any Hearth profile's */
+    private static final String GLINT_KEY = "glint";
     /** Reports go to Hearth one at a time, off the main thread (a kids profile's Hearth agent passes them on) */
     private static final ExecutorService sReporter = Executors.newSingleThreadExecutor();
     private static YouTubeAllowance sAllowance;
@@ -103,7 +107,7 @@ public final class HearthAllowance {
             case USED_UP_HOME_ASSISTANT:
                 return decision.message != null ? decision.message : context.getString(R.string.youtube_time_used_up_shared);
             case USED_UP:
-                return context.getString(R.string.youtube_time_used_up);
+                return decision.message != null ? decision.message : context.getString(R.string.youtube_time_used_up);
             default:
                 return null;
         }
@@ -124,6 +128,15 @@ public final class HearthAllowance {
 
         HearthProfile hearth = HearthProfile.isHearthSuspended(context) ? null
                 : HearthProfile.live(context, HearthProfile.queryHearth(context));
+
+        // A phone with Glint: Glint's word on the phone's one daily limit
+        if (hearth == null) {
+            GlintChannel.Limit glint = GlintChannel.limit(context);
+
+            if (glint != null) {
+                return glintDecision(context, glint);
+            }
+        }
 
         // No Hearth to ask (a phone or tablet, or Hearth is silent), or mid-switch, when its row may still be the last
         // profile's: what it last gave counts down here, and a limit a parent set on the device itself
@@ -160,6 +173,34 @@ public final class HearthAllowance {
 
         return left != null && left <= 0
                 ? new YouTubeAllowance.Decision(YouTubeAllowance.Verdict.USED_UP, null, 0L)
+                : new YouTubeAllowance.Decision(YouTubeAllowance.Verdict.PLAY, null, left);
+    }
+
+    /**
+     * Glint's minutes (counted up to the last report it had), less what played here since, kept for when it goes
+     * silent; its lock; and the device's own limit as an extra cap
+     */
+    private static YouTubeAllowance.Decision glintDecision(Context context, GlintChannel.Limit glint) {
+        String today = today(context);
+        Long left = glint.minutes == null ? null
+                : Math.max(0, glint.minutes * 60_000L - GlintChannel.playedSince(glint.asOf));
+        silent(context).remember(GLINT_KEY, left, today, System.currentTimeMillis());
+        saveSilent(context);
+
+        if (glint.locked) {
+            return new YouTubeAllowance.Decision(YouTubeAllowance.Verdict.LOCKED, glint.message, 0L);
+        }
+
+        Long local = local(context).msLeft(today);
+        boolean localBinds = local != null && (left == null || local < left);
+
+        if (localBinds) {
+            left = local;
+        }
+
+        // Glint's wording is about Glint's limit, not the device's own
+        return left != null && left <= 0
+                ? new YouTubeAllowance.Decision(YouTubeAllowance.Verdict.USED_UP, localBinds ? null : glint.message, 0L)
                 : new YouTubeAllowance.Decision(YouTubeAllowance.Verdict.PLAY, null, left);
     }
 

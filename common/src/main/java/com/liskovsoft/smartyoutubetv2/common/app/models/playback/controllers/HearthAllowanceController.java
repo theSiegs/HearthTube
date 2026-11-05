@@ -21,7 +21,8 @@ import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
  * Assistant's schedule is locked: checked as a video starts playing, every half minute while it plays, and when Hearth
  * announces a change (it does after each report). A video that hasn't started yet is checked as it opens
  * (PlaybackPresenter, VideoLoaderController). The same events go to Glint's HearthTube tile on a phone
- * ({@link GlintChannel}), its "playing" updates paced by the same tick.
+ * ({@link GlintChannel}), its "playing" updates paced by the same tick; Glint's own limit is checked here like Hearth's,
+ * and again when Glint announces a change.
  */
 public class HearthAllowanceController extends BasePlayerController {
     private static final long TICK_MS = 30_000;
@@ -31,6 +32,7 @@ public class HearthAllowanceController extends BasePlayerController {
     private final ContentObserver mHearthObserver = new ContentObserver(new Handler(Looper.getMainLooper())) {
         @Override
         public void onChange(boolean selfChange) {
+            GlintChannel.onGlintChanged();
             HearthAllowance.stopIfRefused(getContext(), getPlayer());
         }
     };
@@ -165,6 +167,15 @@ public class HearthAllowanceController extends BasePlayerController {
                 resolver.registerContentObserver(hearth, false, mHearthObserver);
             } catch (Exception e) {
                 // No Hearth (or too old): the half-minute check stays
+            }
+        }
+
+        // Glint announces a change of the phone's limit, lock or kids mode there
+        for (Uri glint : GlintChannel.observeUris()) {
+            try {
+                resolver.registerContentObserver(glint, false, mHearthObserver);
+            } catch (Exception e) {
+                // No Glint: the half-minute check stays
             }
         }
     }

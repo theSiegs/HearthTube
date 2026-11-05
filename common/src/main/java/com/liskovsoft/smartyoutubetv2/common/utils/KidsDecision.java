@@ -19,6 +19,8 @@ public final class KidsDecision {
         @Nullable public Boolean hearthKids;
         /** Hearth is there and answering now, so its "not a kids profile" can be trusted */
         public boolean hearthLive;
+        /** Glint's kids mode on a phone, when a Glint signed with its key answered */
+        @Nullable public Boolean glintKids;
         /** Family Link supervision restrictions on our own user */
         public boolean supervised;
         /** The suspended launcher apps guess is used on this device (TV only) */
@@ -28,14 +30,17 @@ public final class KidsDecision {
     }
 
     public static boolean isKids(Signals s) {
-        // A parent switched it on, or Hearth says so, or Family Link supervises this user: always kids. Nothing a kid
-        // can turn off here beats supervision.
-        if (Boolean.TRUE.equals(s.explicit) || Boolean.TRUE.equals(s.hearthKids) || s.supervised) {
+        // A parent switched it on, or Hearth or Glint says so, or Family Link supervises this user: always kids. Nothing
+        // a kid can turn off here beats supervision.
+        if (Boolean.TRUE.equals(s.explicit) || Boolean.TRUE.equals(s.hearthKids) || Boolean.TRUE.equals(s.glintKids)
+                || s.supervised) {
             return true;
         }
 
-        // A parent switched it off in HearthTube, or Hearth is up and says it isn't: apps an adult paused don't count
-        if (Boolean.FALSE.equals(s.explicit) || (Boolean.FALSE.equals(s.hearthKids) && s.hearthLive)) {
+        // A parent switched it off in HearthTube, or Hearth is up and says it isn't, or Glint's kids mode is off:
+        // apps an adult paused don't count
+        if (Boolean.FALSE.equals(s.explicit) || (Boolean.FALSE.equals(s.hearthKids) && s.hearthLive)
+                || Boolean.FALSE.equals(s.glintKids)) {
             return false;
         }
 

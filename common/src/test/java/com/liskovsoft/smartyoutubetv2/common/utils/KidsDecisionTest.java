@@ -75,4 +75,24 @@ public class KidsDecisionTest {
         mSignals.manySuspended = true;
         assertFalse(KidsDecision.isKids(mSignals));
     }
+
+    @Test
+    public void glintsKidsModeMakesAKidsProfileEvenWhenAParentTurnedItOffHere() {
+        mSignals.glintKids = true;
+        mSignals.explicit = false;
+        assertTrue(KidsDecision.isKids(mSignals));
+    }
+
+    @Test
+    public void glintsKidsModeOffEndsKidsModeOnlyWhenNothingStrongerSaysKids() {
+        mSignals.glintKids = false;
+        assertFalse(KidsDecision.isKids(mSignals));
+
+        mSignals.explicit = true;
+        assertTrue(KidsDecision.isKids(mSignals));
+
+        mSignals.explicit = null;
+        mSignals.supervised = true;
+        assertTrue(KidsDecision.isKids(mSignals));
+    }
 }

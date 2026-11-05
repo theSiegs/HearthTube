@@ -20,7 +20,8 @@ import java.util.List;
  * knows their own. The person at the screen of a kids profile never chooses the PIN (see {@link ParentPinSource}):
  * with Hearth there, a PIN comes from Hearth only, and a PIN of HearthTube's own is chosen only without Hearth and
  * before any account is signed in (the parent's first setup), or in an adult's profile. Otherwise it stays locked; a
- * parent changes accounts from their own Google TV profile. Wrong PINs are throttled like Hearth's.
+ * parent changes accounts from their own Google TV profile. Wrong PINs are throttled like Hearth's. On a phone with
+ * Glint, Glint's PIN is the one PIN, and none is chosen here while Glint is there.
  */
 public final class ParentGate {
     /** One PIN covers a few steps in a row (e.g. Accounts settings, then Sign in); playing a video locks again */
@@ -61,8 +62,12 @@ public final class ParentGate {
         boolean signedIn = !KidsMode.isMobileBuild(context) && KidsRefused.isSignedIn();
         Runnable ask;
 
+        // A phone with Glint: one parent PIN per phone, Glint's
+        boolean glint = GlintChannel.isInstalled(context);
+        Boolean glintHasPin = glint ? GlintChannel.hasParentPin(context) : null;
+
         switch (ParentPinSource.decide(hearth != null, hearth != null && hearth.hasParentPin, links.isUsingHearthPin(),
-                HearthProfile.isGenuine(context), links.hasParentPin(), isKidsProfile(context), signedIn)) {
+                HearthProfile.isGenuine(context), glint, glintHasPin, links.hasParentPin(), isKidsProfile(context), signedIn)) {
             case HEARTH:
                 links.setUsingHearthPin(true);
                 ask = () -> askPin(context, hearthPinChecker(context), action, onCancel);
@@ -84,6 +89,15 @@ public final class ParentGate {
                 return;
             case SET_IN_HEARTH:
                 refuse(context, R.string.parent_pin_set_in_hearth, onCancel);
+                return;
+            case GLINT:
+                ask = () -> askPin(context, glintPinChecker(context), action, onCancel);
+                break;
+            case GLINT_SILENT:
+                refuse(context, R.string.parent_pin_glint_silent, onCancel);
+                return;
+            case SET_IN_GLINT:
+                refuse(context, R.string.parent_pin_set_in_glint, onCancel);
                 return;
             default:
                 refuse(context, R.string.kids_profile_accounts_locked, onCancel);
@@ -151,6 +165,19 @@ public final class ParentGate {
             } else if (result == HearthProfile.PIN_UNAVAILABLE) {
                 // Not a wrong PIN: Hearth (or its agent's link to it) didn't answer in time
                 MessageHelpers.showLongMessage(context, R.string.parent_pin_hearth_silent);
+            }
+            return result == HearthProfile.PIN_OK;
+        };
+    }
+
+    /** Glint's PIN, which Glint throttles */
+    private static PinChecker glintPinChecker(Context context) {
+        return pin -> {
+            int result = GlintChannel.verifyParentPin(context, pin);
+            if (result > 0) {
+                MessageHelpers.showMessage(context, R.string.parent_pin_wait, result);
+            } else if (result == HearthProfile.PIN_UNAVAILABLE) {
+                MessageHelpers.showLongMessage(context, R.string.parent_pin_glint_silent);
             }
             return result == HearthProfile.PIN_OK;
         };
@@ -270,6 +297,9 @@ public final class ParentGate {
         // Family Link supervision, read for our own user (Hearth does the same): true even when a kid's apps are all
         // approved, and in a kid's own profile user, where Google TV runs HearthTube apart from user 0 and Hearth
         signals.supervised = isSupervisedUser(context);
+
+        // Glint's kids mode on a phone (Glint contract 2)
+        signals.glintKids = GlintChannel.kids(context);
 
         if (KidsDecision.isKids(signals)) {
             return true;
