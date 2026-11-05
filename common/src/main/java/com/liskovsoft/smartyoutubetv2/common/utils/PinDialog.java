@@ -49,6 +49,7 @@ public class PinDialog {
     private static final long WINDOW_RETRY_MS = 500;
     private final Context mContext;
     private final OnChange mOnChange;
+    private final AsyncCheck mAsyncCheck;
     private final StringBuilder mEntered = new StringBuilder();
     private final View[] mDots = new View[PIN_LENGTH];
     private final View[] mUnderlines = new View[PIN_LENGTH];
@@ -59,6 +60,21 @@ public class PinDialog {
     private View mBackspace;
     private TextView mLabel;
     private boolean mError;
+
+    /** A PIN check that answers later (it asks another app, off the main thread): the dialog waits for it */
+    public interface AsyncCheck {
+        /** Calls {@code result} once, on any thread: true accepts the PIN and closes the dialog */
+        void check(String pin, Result result);
+
+        interface Result {
+            void done(boolean ok);
+        }
+    }
+
+    /** Like {@link #show(Context, String, String, OnChange, Runnable)}, with a check that answers later */
+    public static void showAsync(Context context, String dialogTitle, String message, AsyncCheck check, Runnable onDismiss) {
+        showWhenOnScreen(context, dialogTitle, message, null, check, onDismiss, 0);
+    }
 
     /**
      * @param onChange return true to accept the PIN and close the dialog, false to reject it (slots are cleared)
@@ -72,7 +88,7 @@ public class PinDialog {
     }
 
     public static void show(Context context, String dialogTitle, String message, OnChange onChange, Runnable onDismiss) {
-        showWhenOnScreen(context, dialogTitle, message, onChange, onDismiss, 0);
+        showWhenOnScreen(context, dialogTitle, message, onChange, null, onDismiss, 0);
     }
 
     /**
@@ -81,21 +97,22 @@ public class PinDialog {
      * activity in front, waiting a little for one to come up.
      */
     private static void showWhenOnScreen(Context context, String dialogTitle, String message, OnChange onChange,
-                                         Runnable onDismiss, int tries) {
+                                         AsyncCheck asyncCheck, Runnable onDismiss, int tries) {
         Context target = context instanceof Activity ? context : MotherActivity.getFrontActivity();
 
         if (target == null && tries < WINDOW_TRIES) {
-            Utils.postDelayed(() -> showWhenOnScreen(context, dialogTitle, message, onChange, onDismiss, tries + 1),
+            Utils.postDelayed(() -> showWhenOnScreen(context, dialogTitle, message, onChange, asyncCheck, onDismiss, tries + 1),
                     WINDOW_RETRY_MS);
             return;
         }
 
-        new PinDialog(target != null ? target : context, onChange).showInt(dialogTitle, message, onDismiss);
+        new PinDialog(target != null ? target : context, onChange, asyncCheck).showInt(dialogTitle, message, onDismiss);
     }
 
-    private PinDialog(Context context, OnChange onChange) {
+    private PinDialog(Context context, OnChange onChange, AsyncCheck asyncCheck) {
         mContext = context;
         mOnChange = onChange;
+        mAsyncCheck = asyncCheck;
     }
 
     private void showInt(String dialogTitle, String message, Runnable onDismiss) {
@@ -348,7 +365,21 @@ public class PinDialog {
             return;
         }
 
-        if (mOnChange.onChange(mEntered.toString())) {
+        if (mAsyncCheck != null) {
+            // The full PIN stays on screen (no more digits) until the answer comes
+            mAsyncCheck.check(mEntered.toString(), ok -> Utils.post(() -> onChecked(ok)));
+            return;
+        }
+
+        onChecked(mOnChange.onChange(mEntered.toString()));
+    }
+
+    private void onChecked(boolean ok) {
+        if (!mDialog.isShowing()) {
+            return; // left meanwhile (Back)
+        }
+
+        if (ok) {
             mDialog.dismiss();
             return;
         }

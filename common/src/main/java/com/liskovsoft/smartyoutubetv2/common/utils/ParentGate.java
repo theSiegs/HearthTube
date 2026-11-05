@@ -62,9 +62,11 @@ public final class ParentGate {
         boolean signedIn = !KidsMode.isMobileBuild(context) && KidsRefused.isSignedIn();
         Runnable ask;
 
-        // A phone with Glint: one parent PIN per phone, Glint's
-        boolean glint = GlintChannel.isInstalled(context);
-        Boolean glintHasPin = glint ? GlintChannel.hasParentPin(context) : null;
+        // A phone with Glint: one parent PIN per phone, Glint's (a Glint too old for PINs counts as none)
+        int glintPin = GlintChannel.pinStatus(context);
+        boolean glint = glintPin != GlintChannel.PIN_NO_GLINT;
+        Boolean glintHasPin = glintPin == GlintChannel.PIN_SET ? Boolean.TRUE
+                : glintPin == GlintChannel.PIN_NOT_SET ? Boolean.FALSE : null;
 
         switch (ParentPinSource.decide(hearth != null, hearth != null && hearth.hasParentPin, links.isUsingHearthPin(),
                 HearthProfile.isGenuine(context), glint, glintHasPin, links.hasParentPin(), isKidsProfile(context), signedIn)) {
@@ -91,7 +93,7 @@ public final class ParentGate {
                 refuse(context, R.string.parent_pin_set_in_hearth, onCancel);
                 return;
             case GLINT:
-                ask = () -> askPin(context, glintPinChecker(context), action, onCancel);
+                ask = () -> askGlintPin(context, action, onCancel);
                 break;
             case GLINT_SILENT:
                 refuse(context, R.string.parent_pin_glint_silent, onCancel);
@@ -170,17 +172,38 @@ public final class ParentGate {
         };
     }
 
-    /** Glint's PIN, which Glint throttles */
-    private static PinChecker glintPinChecker(Context context) {
-        return pin -> {
-            int result = GlintChannel.verifyParentPin(context, pin);
-            if (result > 0) {
-                MessageHelpers.showMessage(context, R.string.parent_pin_wait, result);
-            } else if (result == HearthProfile.PIN_UNAVAILABLE) {
-                MessageHelpers.showLongMessage(context, R.string.parent_pin_glint_silent);
-            }
-            return result == HearthProfile.PIN_OK;
-        };
+    /**
+     * Glint's PIN, which Glint throttles. Checked off the main thread (Glint may ask Hearth's Home Assistant
+     * integration), the PIN screen waiting; an answer that comes after the screen was left unlocks nothing.
+     */
+    private static void askGlintPin(Context context, Runnable action, Runnable onCancel) {
+        boolean[] passed = {false};
+        boolean[] closed = {false};
+        PinDialog.showAsync(
+                context,
+                context.getString(R.string.parent_pin_title),
+                context.getString(R.string.parent_pin_message),
+                (pin, result) -> GlintChannel.verifyParentPin(context, pin, code -> Utils.post(() -> {
+                    if (code > 0) {
+                        MessageHelpers.showMessage(context, R.string.parent_pin_wait, code);
+                    } else if (code == HearthProfile.PIN_UNAVAILABLE) {
+                        MessageHelpers.showLongMessage(context, R.string.parent_pin_glint_silent);
+                    }
+
+                    boolean ok = code == HearthProfile.PIN_OK && !closed[0];
+                    if (ok) {
+                        passed[0] = true;
+                        sUnlockedUntilMs = android.os.SystemClock.elapsedRealtime() + UNLOCK_MS;
+                        Utils.post(action); // after the PIN screen closes
+                    }
+                    result.done(ok);
+                })),
+                () -> {
+                    closed[0] = true;
+                    if (!passed[0] && onCancel != null) {
+                        onCancel.run();
+                    }
+                });
     }
 
     /** Stays locked: says why, and counts as the PIN screen left without the PIN */

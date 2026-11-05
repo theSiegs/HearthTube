@@ -11,8 +11,13 @@ import androidx.annotation.Nullable;
 
 import com.liskovsoft.sharedutils.mylogger.Log;
 
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * HearthTube and Glint (the phone launcher), Glint contract 2. Phone and tablet build only, and only with a Glint
@@ -41,11 +46,22 @@ public final class GlintChannel {
     private static final long PLAYING_UPDATE_MS = 5 * 60_000;
     /** Glint's kids mode is asked again after this (sooner when Glint announces a change) */
     private static final long KIDS_CACHE_MS = 60_000;
+    /** A question asked while the screen waits (limit, kids mode, whether there's a PIN) */
+    private static final long QUICK_TIMEOUT_MS = 1_500;
+    /** A PIN check, which Glint may pass on to Hearth's Home Assistant integration over the network */
+    private static final long PIN_TIMEOUT_MS = 10_000;
+    public static final int PIN_NO_GLINT = 0;
+    public static final int PIN_SET = 1;
+    public static final int PIN_NOT_SET = 2;
+    public static final int PIN_SILENT = 3;
     public static final String STATE_PLAYING = "playing";
     public static final String STATE_PAUSED = "paused";
     public static final String STATE_STOPPED = "stopped";
     /** Reports go out one at a time, off the main thread */
     private static final ExecutorService sReporter = Executors.newSingleThreadExecutor();
+    /** Questions to Glint, each on a thread of its own so that a stuck one doesn't hold up the next */
+    private static final ExecutorService sCaller = Executors.newCachedThreadPool();
+    private static final AtomicBoolean sKidsRefreshing = new AtomicBoolean();
     /** One stretch counts at most the update interval twice over (a missed stop mustn't count for hours) */
     private static final PlayTimer sTimer = new PlayTimer(2 * PLAYING_UPDATE_MS, Long.MAX_VALUE);
     private static final GlintPlayLedger sLedger = new GlintPlayLedger();
@@ -54,8 +70,8 @@ public final class GlintChannel {
     private static long sLastStateAt;
     private static String sTrustedPackage;
     private static long sTrustedInstall;
-    private static Boolean sKids;
-    private static long sKidsCheckedAt = -1;
+    private static volatile Boolean sKids;
+    private static volatile long sKidsCheckedAt = -1;
 
     /** Glint's answer to minutes_left */
     public static final class Limit {
@@ -164,12 +180,13 @@ public final class GlintChannel {
     }
 
     /**
-     * Asks Glint for the phone's daily limit (blocking: a quick call to Glint's provider). Null without a Glint, or
+     * Asks Glint for the phone's daily limit (blocking, at most {@link #QUICK_TIMEOUT_MS}). Null without a Glint, or
      * when it doesn't answer (too old, busy, failing).
      */
     @Nullable
-    public static synchronized Limit limit(Context context) {
-        Bundle result = isMobileBuild(context) ? call(context, "minutes_left", new Bundle()) : null;
+    public static Limit limit(Context context) {
+        Reply reply = isMobileBuild(context) ? call(context, "minutes_left", new Bundle(), QUICK_TIMEOUT_MS) : null;
+        Bundle result = reply != null ? reply.answer : null;
 
         if (result == null) {
             return null;
@@ -190,29 +207,46 @@ public final class GlintChannel {
         return limit;
     }
 
-    /** Glint's kids mode: null without a Glint, or when it doesn't answer. Kept a minute, or until Glint announces a change. */
+    /**
+     * Glint's kids mode: null without a Glint, or when it doesn't answer. Kept a minute, or until Glint announces a
+     * change; an old answer is used while a fresh one is asked off the main thread, so only the first one waits.
+     */
     @Nullable
-    public static synchronized Boolean kids(Context context) {
+    public static Boolean kids(Context context) {
         if (!isMobileBuild(context)) {
             return null;
         }
 
-        if (sKidsCheckedAt != -1 && SystemClock.elapsedRealtime() - sKidsCheckedAt < KIDS_CACHE_MS) {
+        long checkedAt = sKidsCheckedAt;
+
+        if (checkedAt == -1) {
+            refreshKids(context);
             return sKids;
         }
 
-        Limit limit = limit(context);
-
-        if (limit == null) {
-            sKids = null;
-            sKidsCheckedAt = SystemClock.elapsedRealtime();
+        if (SystemClock.elapsedRealtime() - checkedAt >= KIDS_CACHE_MS && sKidsRefreshing.compareAndSet(false, true)) {
+            Context app = context.getApplicationContext();
+            sCaller.execute(() -> {
+                try {
+                    refreshKids(app);
+                } finally {
+                    sKidsRefreshing.set(false);
+                }
+            });
         }
 
         return sKids;
     }
 
+    private static void refreshKids(Context context) {
+        if (limit(context) == null) {
+            sKids = null;
+            sKidsCheckedAt = SystemClock.elapsedRealtime();
+        }
+    }
+
     /** Glint announced a change (limit, lock or kids mode): the next question asks it afresh */
-    public static synchronized void onGlintChanged() {
+    public static void onGlintChanged() {
         sKidsCheckedAt = -1;
     }
 
@@ -222,57 +256,99 @@ public final class GlintChannel {
                 Uri.parse("content://" + DEBUG_PACKAGE + ".hearthtube/minutes_left")};
     }
 
-    /** A Glint signed with Glint's key is installed (on the phone build) */
-    public static boolean isInstalled(Context context) {
-        return isMobileBuild(context) && trustedPackage(context) != null;
+    /**
+     * Glint's parent PIN (blocking, at most {@link #QUICK_TIMEOUT_MS}): {@link #PIN_NO_GLINT} without a Glint, or one
+     * too old for PINs (then HearthTube's own PIN goes on as before), {@link #PIN_SET}, {@link #PIN_NOT_SET}, or
+     * {@link #PIN_SILENT} when it didn't answer in time
+     */
+    public static int pinStatus(Context context) {
+        Reply reply = isMobileBuild(context) ? call(context, "parent_pin_status", new Bundle(), QUICK_TIMEOUT_MS) : null;
+
+        if (reply == null || reply.old) {
+            return PIN_NO_GLINT;
+        }
+
+        if (reply.answer == null) {
+            return PIN_SILENT;
+        }
+
+        return reply.answer.getBoolean("hasPin") ? PIN_SET : PIN_NOT_SET;
     }
 
-    /** Whether Glint has a parent PIN: null without a Glint, or when it doesn't answer */
-    @Nullable
-    public static Boolean hasParentPin(Context context) {
-        Bundle result = isMobileBuild(context) ? call(context, "parent_pin_status", new Bundle()) : null;
-        return result != null ? result.getBoolean("hasPin") : null;
+    /** What a PIN check gave: like {@link HearthProfile#verifyParentPin} */
+    public interface PinResult {
+        void done(int result);
     }
 
     /**
-     * Checks a parent PIN with Glint, which throttles wrong ones. Like {@link HearthProfile#verifyParentPin}:
-     * {@link HearthProfile#PIN_OK}, {@link HearthProfile#PIN_WRONG}, {@link HearthProfile#PIN_UNAVAILABLE} or seconds
-     * to wait.
+     * Checks a parent PIN with Glint off the main thread (Glint may ask Hearth's Home Assistant integration, over the
+     * network), and gives {@link HearthProfile#PIN_OK}, {@link HearthProfile#PIN_WRONG},
+     * {@link HearthProfile#PIN_UNAVAILABLE} or seconds to wait, on a background thread. Glint throttles wrong PINs.
      */
-    public static int verifyParentPin(Context context, String pin) {
-        Bundle extras = new Bundle();
-        extras.putString("pin", pin);
-        Bundle result = isMobileBuild(context) && pin != null ? call(context, "verify_parent_pin", extras) : null;
+    public static void verifyParentPin(Context context, String pin, PinResult result) {
+        Context app = context.getApplicationContext();
 
-        if (result == null) {
-            return HearthProfile.PIN_UNAVAILABLE;
-        }
+        sCaller.execute(() -> {
+            Bundle extras = new Bundle();
+            extras.putString("pin", pin);
+            Reply reply = isMobileBuild(app) && pin != null ? call(app, "verify_parent_pin", extras, PIN_TIMEOUT_MS) : null;
+            Bundle answer = reply != null ? reply.answer : null;
 
-        if (result.getBoolean("ok")) {
-            return HearthProfile.PIN_OK;
-        }
-
-        Long lockedUntil = number(result, "lockedUntil");
-        long waitMs = (lockedUntil != null ? lockedUntil : 0) - System.currentTimeMillis();
-        return waitMs > 0 ? (int) Math.max(1, (waitMs + 999) / 1000) : HearthProfile.PIN_WRONG;
+            if (answer == null) {
+                result.done(HearthProfile.PIN_UNAVAILABLE);
+            } else if (answer.getBoolean("ok")) {
+                result.done(HearthProfile.PIN_OK);
+            } else {
+                Long lockedUntil = number(answer, "lockedUntil");
+                long waitMs = (lockedUntil != null ? lockedUntil : 0) - System.currentTimeMillis();
+                result.done(waitMs > 0 ? (int) Math.max(1, (waitMs + 999) / 1000) : HearthProfile.PIN_WRONG);
+            }
+        });
     }
 
-    /** One call to Glint's provider, blocking; null without a Glint, on failure, or from a Glint older than contract 2 */
+    /** Glint's reply: its answer (contract 2 or newer), or it's too old for the call, or (neither) it didn't answer */
+    private static final class Reply {
+        @Nullable final Bundle answer;
+        final boolean old;
+
+        Reply(@Nullable Bundle answer, boolean old) {
+            this.answer = answer;
+            this.old = old;
+        }
+    }
+
+    /**
+     * One call to Glint's provider, waiting at most {@code timeoutMs} (on a thread of its own, so a stuck Glint only
+     * costs the wait). Null without a Glint signed with its key.
+     */
     @Nullable
-    private static Bundle call(Context context, String method, Bundle extras) {
+    private static Reply call(Context context, String method, Bundle extras, long timeoutMs) {
         String glint = trustedPackage(context);
 
         if (glint == null) {
             return null;
         }
 
+        extras.putInt("contract", CONTRACT);
+        Context app = context.getApplicationContext();
+        Future<Bundle> future = sCaller.submit(() -> app.getContentResolver().call(uri(glint), method, null, extras));
+
         try {
-            extras.putInt("contract", CONTRACT);
-            Bundle result = context.getContentResolver().call(uri(glint), method, null, extras);
-            return result != null && result.getInt("contract", 0) >= CONTRACT ? result : null;
-        } catch (Exception e) {
-            Log.d(TAG, "Glint didn't answer %s: %s", method, e.getMessage());
-            return null;
+            Bundle result = future.get(timeoutMs, TimeUnit.MILLISECONDS);
+            // An older Glint doesn't know the call: no answer, or one without this contract
+            return result != null && result.getInt("contract", 0) >= CONTRACT ? new Reply(result, false) : new Reply(null, true);
+        } catch (ExecutionException e) {
+            Throwable cause = e.getCause();
+            boolean old = cause instanceof IllegalArgumentException || cause instanceof UnsupportedOperationException;
+            Log.d(TAG, "Glint didn't answer %s: %s", method, cause != null ? cause.getMessage() : null);
+            return new Reply(null, old);
+        } catch (TimeoutException e) {
+            future.cancel(true);
+            Log.d(TAG, "Glint didn't answer %s in %s ms", method, timeoutMs);
+            return new Reply(null, false);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return new Reply(null, false);
         }
     }
 
