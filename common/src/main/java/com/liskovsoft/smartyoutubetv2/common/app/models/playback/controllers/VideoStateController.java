@@ -195,8 +195,8 @@ public class VideoStateController extends BasePlayerController {
         // Need to contain channel id
         restoreSpeedAndPositionIfNeeded();
 
-        // HearthTube: what a kids profile started, for a parent to read (not a remote cast shown here)
-        if (getVideo() != null && getVideo().videoId != null && !getVideo().isRemote
+        // HearthTube: what a kids profile started, for a parent to read (a video cast from a phone too)
+        if (getVideo() != null && getVideo().videoId != null
                 && com.liskovsoft.smartyoutubetv2.common.utils.ParentGate.isKidsProfile(getContext())) {
             com.liskovsoft.smartyoutubetv2.common.prefs.WatchLogData.instance(getContext())
                     .record(getVideo().videoId, getVideo().getTitleFull(), getVideo().getAuthor(), getVideo().channelId);

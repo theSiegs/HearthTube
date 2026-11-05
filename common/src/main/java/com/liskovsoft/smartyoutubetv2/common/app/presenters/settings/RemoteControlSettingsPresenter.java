@@ -16,11 +16,14 @@ import com.liskovsoft.smartyoutubetv2.common.misc.MotherActivity;
 import com.liskovsoft.smartyoutubetv2.common.prefs.RemoteControlData;
 import com.liskovsoft.sharedutils.rx.RxHelper;
 import com.liskovsoft.smartyoutubetv2.common.utils.AppDialogUtil;
+import com.liskovsoft.smartyoutubetv2.common.utils.CastApprovals;
+import com.liskovsoft.smartyoutubetv2.common.utils.CastApprovalsStore;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 import com.liskovsoft.youtubeapi.service.YouTubeServiceManager;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class RemoteControlSettingsPresenter extends BasePresenter<Void> {
     @SuppressLint("StaticFieldLeak")
@@ -59,6 +62,7 @@ public class RemoteControlSettingsPresenter extends BasePresenter<Void> {
         appendDeviceLinkSwitch(settingsPresenter);
         appendAddDeviceButton(settingsPresenter);
         appendRemoveAllDevicesButton(settingsPresenter);
+        appendKidsPhonesCategory(settingsPresenter);
         appendMiscCategory(settingsPresenter);
 
         settingsPresenter.showDialog(getContext().getString(R.string.settings_cast_from_phone), this::unhold);
@@ -113,6 +117,12 @@ public class RemoteControlSettingsPresenter extends BasePresenter<Void> {
         OptionItem confirmItem = UiOptionItem.from(
                 getContext().getString(R.string.btn_confirm), option -> {
                     RxHelper.execute(mRemoteManager.resetDataObserve());
+                    // HearthTube: the phones approved for kids profiles go too
+                    CastApprovals approvals = CastApprovalsStore.get(getContext());
+                    for (String id : approvals.list().keySet()) {
+                        approvals.revoke(id);
+                    }
+                    CastApprovalsStore.save(getContext());
                     MessageHelpers.showMessage(getContext(), R.string.msg_done);
                     settingsPresenter.closeDialog();
 
@@ -124,6 +134,32 @@ public class RemoteControlSettingsPresenter extends BasePresenter<Void> {
         options.add(confirmItem);
 
         settingsPresenter.appendStringsCategory(getContext().getString(R.string.dialog_remove_all_devices), options);
+    }
+
+    /**
+     * HearthTube: the phones a parent approved to cast into kids profiles here; choosing one takes it off (it needs the
+     * parent PIN again). Settings in a kids profile are behind the PIN already.
+     */
+    private void appendKidsPhonesCategory(AppDialogPresenter settingsPresenter) {
+        List<OptionItem> options = new ArrayList<>();
+        CastApprovals approvals = CastApprovalsStore.get(getContext());
+
+        for (Map.Entry<String, String> phone : approvals.list().entrySet()) {
+            String name = phone.getValue() != null && !phone.getValue().isEmpty()
+                    ? phone.getValue() : getContext().getString(R.string.cast_phone_unknown);
+            options.add(UiOptionItem.from(name, option -> {
+                approvals.revoke(phone.getKey());
+                CastApprovalsStore.save(getContext());
+                MessageHelpers.showMessage(getContext(), R.string.cast_phone_removed);
+                settingsPresenter.closeDialog();
+            }));
+        }
+
+        if (options.isEmpty()) {
+            options.add(UiOptionItem.from(getContext().getString(R.string.cast_phones_none), option -> { }));
+        }
+
+        settingsPresenter.appendStringsCategory(getContext().getString(R.string.cast_phones_allowed), options);
     }
 
     private void appendMiscCategory(AppDialogPresenter settingsPresenter) {

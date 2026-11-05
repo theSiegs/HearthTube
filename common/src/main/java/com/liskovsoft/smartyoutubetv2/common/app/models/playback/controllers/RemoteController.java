@@ -21,11 +21,16 @@ import com.liskovsoft.smartyoutubetv2.common.app.models.playback.manager.PlayerU
 import com.liskovsoft.smartyoutubetv2.common.exoplayer.selector.FormatItem;
 import com.liskovsoft.smartyoutubetv2.common.prefs.common.DataChangeBase.OnDataChange;
 import com.liskovsoft.smartyoutubetv2.common.prefs.RemoteControlData;
+import com.liskovsoft.smartyoutubetv2.common.utils.CastApprovals;
+import com.liskovsoft.smartyoutubetv2.common.utils.CastApprovalsStore;
+import com.liskovsoft.smartyoutubetv2.common.utils.ParentGate;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 import com.liskovsoft.youtubeapi.service.YouTubeServiceManager;
 import io.reactivex.disposables.Disposable;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public class RemoteController extends BasePlayerController implements OnDataChange {
     private static final String TAG = RemoteController.class.getSimpleName();
@@ -43,6 +48,10 @@ public class RemoteController extends BasePlayerController implements OnDataChan
     private Disposable mActionUp;
     private ContentObserver mVolumeObserver;
     private long mVolumeSelfChangeMs;
+    /** HearthTube: the phones connected now (id to name), as the lounge announced them */
+    private final Map<String, String> mConnectedPhones = new LinkedHashMap<>();
+    /** HearthTube: a parent's PIN is being asked for a phone; its other commands wait (are dropped) meanwhile */
+    private boolean mAskingParent;
 
     public RemoteController(Context context) {
         // Start receiving a commands as early as possible
@@ -269,7 +278,93 @@ public class RemoteController extends BasePlayerController implements OnDataChan
         Utils.removeCallbacks(mStartListeningInt);
     }
 
+    /**
+     * HearthTube: in a kids profile, only phones a parent approved here may start or steer playback (any phone paired
+     * by "Link with TV code" could, the official YouTube app included). Stopping, pausing and volume stay open to all.
+     */
     private void processCommand(Command command) {
+        trackPhones(command);
+
+        if (isSteering(command.getType()) && getContext() != null && ParentGate.isKidsProfile(getContext())
+                && !CastApprovalsStore.get(getContext()).allApproved(mConnectedPhones.keySet())) {
+            askParent(command);
+            return;
+        }
+
+        processApproved(command);
+    }
+
+    private void trackPhones(Command command) {
+        String id = command.getDeviceId();
+
+        if (id == null) {
+            return;
+        }
+
+        if (command.getType() == Command.TYPE_CONNECTED) {
+            mConnectedPhones.put(id, command.getDeviceName());
+        } else if (command.getType() == Command.TYPE_DISCONNECTED) {
+            mConnectedPhones.remove(id);
+        }
+    }
+
+    private static boolean isSteering(int type) {
+        switch (type) {
+            case Command.TYPE_OPEN_VIDEO:
+            case Command.TYPE_SUBTITLES:
+            case Command.TYPE_SEEK:
+            case Command.TYPE_PLAY:
+            case Command.TYPE_NEXT:
+            case Command.TYPE_PREVIOUS:
+            case Command.TYPE_DPAD:
+            case Command.TYPE_VOICE:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    /**
+     * A phone that isn't approved for this kids profile: a parent's PIN on the TV approves the phones connected now and
+     * runs the command. A sender the lounge didn't name gets this one command only, and asks again next time.
+     */
+    private void askParent(Command command) {
+        if (mAskingParent) {
+            return;
+        }
+
+        mAskingParent = true;
+        Context context = getContext();
+        Map<String, String> phones = new LinkedHashMap<>(mConnectedPhones);
+        String names = phones.isEmpty() ? context.getString(R.string.cast_phone_unknown) : joinNames(context, phones);
+
+        getViewManager().moveAppToForeground();
+        MessageHelpers.showLongMessage(context, context.getString(R.string.cast_phone_needs_parent, names));
+        ParentGate.run(context, () -> {
+            mAskingParent = false;
+            CastApprovals approvals = CastApprovalsStore.get(context);
+            for (Map.Entry<String, String> phone : phones.entrySet()) {
+                approvals.approve(phone.getKey(), phone.getValue());
+            }
+            CastApprovalsStore.save(context);
+            processApproved(command);
+        }, () -> mAskingParent = false);
+    }
+
+    private static String joinNames(Context context, Map<String, String> phones) {
+        StringBuilder names = new StringBuilder();
+
+        for (String name : phones.values()) {
+            if (names.length() > 0) {
+                names.append(", ");
+            }
+            names.append(name != null && !name.isEmpty() ? name : context.getString(R.string.cast_phone_unknown));
+        }
+
+        return names.toString();
+    }
+
+    private void processApproved(Command command) {
         switch (command.getType()) {
             case Command.TYPE_IDLE:
             case Command.TYPE_UNDEFINED:
@@ -527,6 +622,8 @@ public class RemoteController extends BasePlayerController implements OnDataChan
             postStartPlaying(getVideo(), getPlayer().isPlaying() ? RemoteControlService.STATE_PLAYING : RemoteControlService.STATE_PAUSED);
         } else if (newVideo != null) {
             newVideo.isRemote = true;
+            // HearthTube: in a kids profile a cast plays that video only, like a shared link
+            newVideo.finishOnEnded = ParentGate.isKidsProfile(getContext());
             getPlaybackPresenter().openVideo(newVideo);
         }
     }

@@ -31,6 +31,11 @@
     <string name="first_parent_pin_hint">This is a kids profile. Choose a PIN for parents: it unlocks settings and accounts here. Don\'t reuse a kid\'s PIN.</string>
     <string name="parent_pin_hearth_gone">HearthTube was using Hearth\'s parent PIN, and Hearth no longer has one. Choose a new parent PIN for HearthTube.</string>
     <string name="parent_pin_hearth_silent">Hearth isn\'t answering, so its parent PIN can\'t be checked. Try again in a moment.</string>
+    <string name="cast_phone_needs_parent">%s wants to cast here. A parent\'s PIN lets it cast in this kids profile.</string>
+    <string name="cast_phone_unknown">A phone</string>
+    <string name="cast_phones_allowed">Phones allowed in kids profiles</string>
+    <string name="cast_phones_none">None yet: a parent approves a phone with the PIN when it first casts</string>
+    <string name="cast_phone_removed">Removed. It needs the parent PIN to cast here again.</string>
     <string name="parent_pin_glint_silent">Glint isn\'t answering, so its parent PIN can\'t be checked. Try again in a moment.</string>
     <string name="parent_pin_set_in_glint">Glint has no parent PIN to ask for here. A parent can set one in Glint.</string>
     <string name="parent_pin_set_in_hearth">Hearth has no parent PIN to ask for here. A parent can set one in Hearth.</string>
