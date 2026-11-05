@@ -236,6 +236,26 @@ public class MobilePlaybackActivity extends MotherActivity implements PlaybackVi
             mActions.add(0, getString(R.string.player_queue), () -> click(ID_QUEUE));
         }
 
+        // To a TV at the same spot; in kids mode behind the parent PIN, and HearthTube TVs only
+        mActions.add(0, getString(R.string.player_cast), () -> com.thesiegs.hearthtube.mobile.cast.CastToTv.open(this,
+                new com.thesiegs.hearthtube.mobile.cast.CastToTv.Source() {
+                    @Override
+                    public String videoId() {
+                        Video video = mEngine != null ? mEngine.getVideo() : null;
+                        return video != null ? video.videoId : null;
+                    }
+
+                    @Override
+                    public long positionMs() {
+                        return mEngine != null ? mEngine.getPositionMs() : 0;
+                    }
+
+                    @Override
+                    public void pauseHere() {
+                        setPlayWhenReady(false);
+                    }
+                }));
+
         mActions.add(0, getString(R.string.player_report), () -> {
             Video video = mEngine != null ? mEngine.getVideo() : null;
 
