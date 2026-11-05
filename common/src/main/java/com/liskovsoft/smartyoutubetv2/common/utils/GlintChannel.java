@@ -39,6 +39,11 @@ public final class GlintChannel {
     private static final int CONTRACT = 2;
     private static final String RELEASE_PACKAGE = "com.thesiegs.glint";
     private static final String DEBUG_PACKAGE = "com.thesiegs.glint.debug";
+    /** Glint's nightly build, signed with the release key for now */
+    private static final String NIGHTLY_PACKAGE = "com.thesiegs.glint.nightly";
+    private static final String PREFS = "glint_channel";
+    /** Glint's last kids-mode answer, kept for when it goes silent */
+    private static final String PREF_LAST_KIDS = "last_kids";
     /** Glint's release key, and the debug key Glint, Hearth and HearthTube's debug builds share */
     private static final String RELEASE_CERT = "e2a4d2ecbdf91e437f3c72e310ebac5b21ee7dfbf163fd1b42ff0972189ea0eb";
     private static final String DEBUG_CERT = "6748528ff4d17fd57c30b6c5d522c467920d9951ea5d208597f91b66df9a2bfe";
@@ -89,6 +94,8 @@ public final class GlintChannel {
         @Nullable public String message;
         /** The ts of the last report_state Glint counted in {@link #minutes} */
         @Nullable public Long asOf;
+        /** What made it a kid phone in Glint: "setting", "supervision", "hearth" or "none" (read, not acted on yet) */
+        @Nullable public String kidsBy;
     }
 
     private GlintChannel() {
@@ -201,9 +208,11 @@ public final class GlintChannel {
         limit.until = number(result, "until");
         limit.message = result.getString("message");
         limit.asOf = number(result, "asOf");
+        limit.kidsBy = result.getString("kidsBy");
 
         sKids = limit.kids;
         sKidsCheckedAt = SystemClock.elapsedRealtime();
+        prefs(context).edit().putBoolean(PREF_LAST_KIDS, limit.kids).apply();
         return limit;
     }
 
@@ -238,11 +247,19 @@ public final class GlintChannel {
         return sKids;
     }
 
+    /**
+     * Asks Glint afresh. A Glint that's installed but silent keeps its last "kids" (kept across restarts), so a kid
+     * phone doesn't loosen while Glint is failing; without a Glint there's no word.
+     */
     private static void refreshKids(Context context) {
         if (limit(context) == null) {
-            sKids = null;
+            sKids = trustedPackage(context) != null && prefs(context).getBoolean(PREF_LAST_KIDS, false) ? Boolean.TRUE : null;
             sKidsCheckedAt = SystemClock.elapsedRealtime();
         }
+    }
+
+    private static android.content.SharedPreferences prefs(Context context) {
+        return context.getApplicationContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE);
     }
 
     /** Glint announced a change (limit, lock or kids mode): the next question asks it afresh */
@@ -253,6 +270,7 @@ public final class GlintChannel {
     /** Where Glint announces a change, for a ContentObserver */
     public static Uri[] observeUris() {
         return new Uri[] {Uri.parse("content://" + RELEASE_PACKAGE + ".hearthtube/minutes_left"),
+                Uri.parse("content://" + NIGHTLY_PACKAGE + ".hearthtube/minutes_left"),
                 Uri.parse("content://" + DEBUG_PACKAGE + ".hearthtube/minutes_left")};
     }
 
@@ -335,13 +353,16 @@ public final class GlintChannel {
 
         try {
             Bundle result = future.get(timeoutMs, TimeUnit.MILLISECONDS);
-            // An older Glint doesn't know the call: no answer, or one without this contract
-            return result != null && result.getInt("contract", 0) >= CONTRACT ? new Reply(result, false) : new Reply(null, true);
+            // Only an answer that says it's from an older contract is "too old"; no answer at all from a Glint that's
+            // installed is silence (it may be failing), never a reason to loosen anything
+            if (result == null) {
+                return new Reply(null, false);
+            }
+            return result.getInt("contract", 0) >= CONTRACT ? new Reply(result, false) : new Reply(null, true);
         } catch (ExecutionException e) {
             Throwable cause = e.getCause();
-            boolean old = cause instanceof IllegalArgumentException || cause instanceof UnsupportedOperationException;
             Log.d(TAG, "Glint didn't answer %s: %s", method, cause != null ? cause.getMessage() : null);
-            return new Reply(null, old);
+            return new Reply(null, false);
         } catch (TimeoutException e) {
             future.cancel(true);
             Log.d(TAG, "Glint didn't answer %s in %s ms", method, timeoutMs);
@@ -398,7 +419,7 @@ public final class GlintChannel {
     @Nullable
     private static synchronized String trustedPackage(Context context) {
         String[] candidates = com.liskovsoft.smartyoutubetv2.common.BuildConfig.DEBUG
-                ? new String[] {RELEASE_PACKAGE, DEBUG_PACKAGE} : new String[] {RELEASE_PACKAGE};
+                ? new String[] {RELEASE_PACKAGE, NIGHTLY_PACKAGE, DEBUG_PACKAGE} : new String[] {RELEASE_PACKAGE, NIGHTLY_PACKAGE};
         PackageManager packageManager = context.getPackageManager();
 
         for (String glint : candidates) {
@@ -414,7 +435,7 @@ public final class GlintChannel {
                 }
 
                 String[] digests = HearthProfile.signerDigests(packageManager, glint);
-                String expected = RELEASE_PACKAGE.equals(glint) ? RELEASE_CERT : DEBUG_CERT;
+                String expected = DEBUG_PACKAGE.equals(glint) ? DEBUG_CERT : RELEASE_CERT;
                 if (digests != null && digests.length == 1 && expected.equals(digests[0])) {
                     sTrustedPackage = glint;
                     sTrustedInstall = installed;

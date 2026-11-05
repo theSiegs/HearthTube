@@ -30,17 +30,20 @@ public final class KidsDecision {
     }
 
     public static boolean isKids(Signals s) {
-        // A parent switched it on, or Hearth or Glint says so, or Family Link supervises this user: always kids. Nothing
-        // a kid can turn off here beats supervision.
-        if (Boolean.TRUE.equals(s.explicit) || Boolean.TRUE.equals(s.hearthKids) || Boolean.TRUE.equals(s.glintKids)
-                || s.supervised) {
+        // A phone with Glint: the parent's choice there (behind Glint's PIN) decides, or a parent's switch here turning
+        // kids mode on. Glint reads Family Link supervision itself, so it isn't read twice (the chosen rule, option B).
+        if (s.glintKids != null) {
+            return s.glintKids || Boolean.TRUE.equals(s.explicit);
+        }
+
+        // A parent switched it on, or Hearth says so, or Family Link supervises this user: always kids. Nothing a kid
+        // can turn off here beats supervision.
+        if (Boolean.TRUE.equals(s.explicit) || Boolean.TRUE.equals(s.hearthKids) || s.supervised) {
             return true;
         }
 
-        // A parent switched it off in HearthTube, or Hearth is up and says it isn't, or Glint's kids mode is off:
-        // apps an adult paused don't count
-        if (Boolean.FALSE.equals(s.explicit) || (Boolean.FALSE.equals(s.hearthKids) && s.hearthLive)
-                || Boolean.FALSE.equals(s.glintKids)) {
+        // A parent switched it off in HearthTube, or Hearth is up and says it isn't: apps an adult paused don't count
+        if (Boolean.FALSE.equals(s.explicit) || (Boolean.FALSE.equals(s.hearthKids) && s.hearthLive)) {
             return false;
         }
 

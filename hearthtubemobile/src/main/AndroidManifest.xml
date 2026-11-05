@@ -25,6 +25,7 @@
         <provider android:authorities="com.thesiegs.glint.hearthtube" />
         <package android:name="com.thesiegs.glint" />
         <package android:name="com.thesiegs.glint.debug" />
+        <package android:name="com.thesiegs.glint.nightly" />
     </queries>
 
     <!-- The TV libraries say Leanback is required: not on a phone or tablet -->

@@ -84,14 +84,18 @@ public class KidsDecisionTest {
     }
 
     @Test
-    public void glintsKidsModeOffEndsKidsModeOnlyWhenNothingStrongerSaysKids() {
+    public void withGlintTheParentsChoiceThereDecidesUnlessKidsModeIsOnHere() {
         mSignals.glintKids = false;
+        mSignals.supervised = true; // Glint reads supervision itself
         assertFalse(KidsDecision.isKids(mSignals));
 
         mSignals.explicit = true;
         assertTrue(KidsDecision.isKids(mSignals));
+    }
 
-        mSignals.explicit = null;
+    @Test
+    public void withoutAWordFromGlintSupervisionStillCounts() {
+        mSignals.glintKids = null;
         mSignals.supervised = true;
         assertTrue(KidsDecision.isKids(mSignals));
     }
