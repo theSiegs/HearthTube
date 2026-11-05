@@ -20,7 +20,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * HearthTube and Glint (the phone launcher), Glint contract 2. Phone and tablet build only, and only with a Glint
+ * HearthTube and Glint (the phone launcher), Glint contract 3. Phone and tablet build only, and only with a Glint
  * signed with Glint's key; without one nothing is sent or asked, and HearthTube goes its own way.
  * <ul>
  * <li>What plays here, for Glint's live HearthTube tile and the shared allowance, on events only (no timer of its own:
@@ -36,7 +36,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public final class GlintChannel {
     private static final String TAG = GlintChannel.class.getSimpleName();
-    private static final int CONTRACT = 2;
+    /** What HearthTube speaks: Glint answers a failure as {contract: 3, error} instead of a null */
+    private static final int CONTRACT = 3;
+    /** The oldest answer HearthTube reads (v2 has every call; only an older one is "too old") */
+    private static final int MIN_ANSWER = 2;
     private static final String RELEASE_PACKAGE = "com.thesiegs.glint";
     private static final String DEBUG_PACKAGE = "com.thesiegs.glint.debug";
     /** Glint's nightly build, signed with the release key for now */
@@ -324,7 +327,7 @@ public final class GlintChannel {
         });
     }
 
-    /** Glint's reply: its answer (contract 2 or newer), or it's too old for the call, or (neither) it didn't answer */
+    /** Glint's reply: its answer (contract 2 or newer), or it's too old for the call, or (neither) it didn't or couldn't answer */
     private static final class Reply {
         @Nullable final Bundle answer;
         final boolean old;
@@ -358,7 +361,12 @@ public final class GlintChannel {
             if (result == null) {
                 return new Reply(null, false);
             }
-            return result.getInt("contract", 0) >= CONTRACT ? new Reply(result, false) : new Reply(null, true);
+            // Glint couldn't answer (busy, unavailable, failing): silence, so nothing loosens
+            if (result.containsKey("error")) {
+                Log.d(TAG, "Glint couldn't answer %s: %s", method, result.getString("error"));
+                return new Reply(null, false);
+            }
+            return result.getInt("contract", 0) >= MIN_ANSWER ? new Reply(result, false) : new Reply(null, true);
         } catch (ExecutionException e) {
             Throwable cause = e.getCause();
             Log.d(TAG, "Glint didn't answer %s: %s", method, cause != null ? cause.getMessage() : null);
