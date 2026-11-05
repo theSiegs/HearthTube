@@ -527,28 +527,13 @@ public class HearthProfile {
                 return true;
             }
 
-            android.content.pm.Signature[] signers;
-            if (android.os.Build.VERSION.SDK_INT >= 28) {
-                android.content.pm.SigningInfo signing = packageManager.getPackageInfo(
-                        hearth, android.content.pm.PackageManager.GET_SIGNING_CERTIFICATES).signingInfo;
-                if (signing == null) {
-                    return false;
-                }
-                signers = signing.hasMultipleSigners() ? signing.getApkContentsSigners() : signing.getSigningCertificateHistory();
-                if (!signing.hasMultipleSigners() && signers != null && signers.length > 0) {
-                    signers = new android.content.pm.Signature[] {signers[signers.length - 1]}; // the current key
-                }
-            } else {
-                signers = packageManager.getPackageInfo(hearth, android.content.pm.PackageManager.GET_SIGNATURES).signatures;
-            }
+            String[] digests = signerDigests(packageManager, hearth);
 
-            if (signers == null || signers.length == 0) {
+            if (digests == null || digests.length == 0) {
                 return false;
             }
 
-            java.security.MessageDigest sha256 = java.security.MessageDigest.getInstance("SHA-256");
-            for (android.content.pm.Signature signer : signers) {
-                String digest = toHex(sha256.digest(signer.toByteArray()));
+            for (String digest : digests) {
                 if (!java.util.Arrays.asList(HEARTH_CERTS).contains(digest)) {
                     Log.e(TAG, "Not Hearth's signing key: %s", digest);
                     return false;
@@ -564,6 +549,40 @@ public class HearthProfile {
             Log.e(TAG, "Hearth's signature unreadable: %s", e.getMessage());
             return null;
         }
+    }
+
+    /**
+     * The SHA-256 of each key an installed app is signed with now (lower-case hex); null when it can't be read. Also
+     * checks Glint ({@link GlintChannel}).
+     */
+    @Nullable
+    static String[] signerDigests(android.content.pm.PackageManager packageManager, String packageName)
+            throws android.content.pm.PackageManager.NameNotFoundException, java.security.NoSuchAlgorithmException {
+        android.content.pm.Signature[] signers;
+        if (android.os.Build.VERSION.SDK_INT >= 28) {
+            android.content.pm.SigningInfo signing = packageManager.getPackageInfo(
+                    packageName, android.content.pm.PackageManager.GET_SIGNING_CERTIFICATES).signingInfo;
+            if (signing == null) {
+                return null;
+            }
+            signers = signing.hasMultipleSigners() ? signing.getApkContentsSigners() : signing.getSigningCertificateHistory();
+            if (!signing.hasMultipleSigners() && signers != null && signers.length > 0) {
+                signers = new android.content.pm.Signature[] {signers[signers.length - 1]}; // the current key
+            }
+        } else {
+            signers = packageManager.getPackageInfo(packageName, android.content.pm.PackageManager.GET_SIGNATURES).signatures;
+        }
+
+        if (signers == null) {
+            return null;
+        }
+
+        java.security.MessageDigest sha256 = java.security.MessageDigest.getInstance("SHA-256");
+        String[] digests = new String[signers.length];
+        for (int i = 0; i < signers.length; i++) {
+            digests[i] = toHex(sha256.digest(signers[i].toByteArray()));
+        }
+        return digests;
     }
 
     private static String toHex(byte[] bytes) {

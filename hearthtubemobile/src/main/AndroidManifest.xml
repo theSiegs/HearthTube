@@ -20,6 +20,13 @@
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" tools:node="remove" />
     <uses-permission android:name="android.permission.BLUETOOTH" tools:node="remove" />
 
+    <!-- Glint, the phone launcher whose HearthTube tile shows what plays here (GlintChannel) -->
+    <queries>
+        <provider android:authorities="com.thesiegs.glint.hearthtube" />
+        <package android:name="com.thesiegs.glint" />
+        <package android:name="com.thesiegs.glint.debug" />
+    </queries>
+
     <!-- The TV libraries say Leanback is required: not on a phone or tablet -->
     <uses-feature android:name="android.software.leanback" android:required="false" tools:node="replace" />
     <uses-feature android:name="android.hardware.touchscreen" android:required="true" tools:node="replace" />

@@ -203,6 +203,12 @@ public class VideoStateController extends BasePlayerController {
             com.liskovsoft.smartyoutubetv2.common.utils.ParentChannel.sync(getContext()); // to the parent through Hearth, when it is there
         }
 
+        // HearthTube: Glint's HearthTube tile on a phone, any profile (nothing goes out without Glint)
+        if (getVideo() != null && getVideo().videoId != null && !getVideo().isRemote) {
+            com.liskovsoft.smartyoutubetv2.common.utils.GlintChannel.onStarted(getContext(), getVideo().videoId,
+                    getVideo().getTitleFull(), getVideo().getAuthor(), getVideo().channelId);
+        }
+
         // NOTE: needed for the restore after oom crash?
         saveState(); // start watching?
     }

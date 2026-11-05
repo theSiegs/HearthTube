@@ -7,7 +7,9 @@ import android.os.Handler;
 import android.os.Looper;
 
 import com.liskovsoft.smartyoutubetv2.common.app.models.playback.BasePlayerController;
+import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
 import com.liskovsoft.smartyoutubetv2.common.app.views.PlaybackView;
+import com.liskovsoft.smartyoutubetv2.common.utils.GlintChannel;
 import com.liskovsoft.smartyoutubetv2.common.utils.HearthAllowance;
 import com.liskovsoft.smartyoutubetv2.common.utils.HearthProfile;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
@@ -18,7 +20,8 @@ import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
  * the player closes or HearthTube goes to the background. Stops playback when the allowance is used up or Home
  * Assistant's schedule is locked: checked as a video starts playing, every half minute while it plays, and when Hearth
  * announces a change (it does after each report). A video that hasn't started yet is checked as it opens
- * (PlaybackPresenter, VideoLoaderController).
+ * (PlaybackPresenter, VideoLoaderController). The same events go to Glint's HearthTube tile on a phone
+ * ({@link GlintChannel}), its "playing" updates paced by the same tick.
  */
 public class HearthAllowanceController extends BasePlayerController {
     private static final long TICK_MS = 30_000;
@@ -39,6 +42,8 @@ public class HearthAllowanceController extends BasePlayerController {
 
     @Override
     public void onPlay() {
+        GlintChannel.onPlaying(getContext(), videoId(), positionMs());
+
         if (HearthAllowance.onPlaying()) {
             startTicking();
             HearthAllowance.stopIfRefused(getContext(), getPlayer());
@@ -48,37 +53,39 @@ public class HearthAllowanceController extends BasePlayerController {
     @Override
     public void onBuffering() {
         HearthAllowance.onWaiting(getContext());
+        GlintChannel.onWaiting(getContext());
     }
 
     @Override
     public void onPause() {
         stopped();
+        GlintChannel.onPaused(getContext(), videoId(), positionMs());
     }
 
     @Override
     public void onPlayEnd() {
-        stopped();
+        closed();
     }
 
     @Override
     public void onEngineError(int type, int rendererIndex, Throwable error) {
-        stopped();
+        closed();
     }
 
     @Override
     public void onFinish() {
-        stopped();
+        closed();
     }
 
     @Override
     public void onEngineReleased() {
-        stopped();
+        closed();
         observe(false);
     }
 
     @Override
     public void onViewDestroyed() {
-        stopped();
+        closed();
         observe(false);
     }
 
@@ -94,6 +101,22 @@ public class HearthAllowanceController extends BasePlayerController {
         mTicking = false;
     }
 
+    /** Ended, failed or closed: stopped for Hearth, and for Glint too */
+    private void closed() {
+        stopped();
+        GlintChannel.onStopped(getContext(), videoId(), positionMs());
+    }
+
+    private String videoId() {
+        Video video = getVideo();
+        return video != null ? video.videoId : null;
+    }
+
+    private long positionMs() {
+        PlaybackView player = getPlayer();
+        return player != null ? player.getPositionMs() : -1;
+    }
+
     private void startTicking() {
         if (!mTicking) {
             mTicking = true;
@@ -106,12 +129,18 @@ public class HearthAllowanceController extends BasePlayerController {
         PlaybackView player = getPlayer();
 
         // A stop that went unnoticed
-        if (player == null || !player.isPlaying()) {
-            stopped();
+        if (player == null) {
+            closed();
+            return;
+        }
+
+        if (!player.isPlaying()) {
+            onPause();
             return;
         }
 
         HearthAllowance.report(getContext());
+        GlintChannel.onPlaying(getContext(), videoId(), positionMs());
 
         if (!HearthAllowance.stopIfRefused(getContext(), player)) {
             startTicking();
