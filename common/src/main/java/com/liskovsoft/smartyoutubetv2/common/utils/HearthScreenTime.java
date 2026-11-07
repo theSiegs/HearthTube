@@ -15,8 +15,11 @@ import java.lang.ref.WeakReference;
 
 /**
  * Google TV screen time for kids: when Hearth says time's up (Google TV's time-up or bedtime screen), HearthTube
- * stops the video and goes to the launcher, where Google TV's own screen takes over. Checked as each screen opens
- * and every half minute while one is showing, and at once when Hearth announces a change.
+ * stops the video and goes to the launcher, where Google TV's own screen takes over. And Hearth's daily YouTube
+ * allowance ({@link HearthAllowance}): once it's used up (or Home Assistant's schedule is locked), a kid can't browse
+ * or search either; HearthTube closes behind a full-screen "Out of YouTube time" page ({@link HearthTimeUpActivity})
+ * that then goes home. It decides the way the player does, so where the player would play, HearthTube stays open.
+ * Checked as each screen opens and every half minute while one is showing, and at once when Hearth announces a change.
  */
 public final class HearthScreenTime {
     private static final long CHECK_MS = 30_000;
@@ -99,12 +102,52 @@ public final class HearthScreenTime {
         if (hearth != null && hearth.screenTimeUp) {
             message = R.string.screen_time_up;
         } else {
-            return true;
+            return !closeIfOutOfTime(activity);
         }
 
         PlaybackPresenter.instance(activity).forceFinish();
         MessageHelpers.showLongMessage(activity, message);
         HearthProfile.goHomeOrStepAside(activity);
         return false;
+    }
+
+    /**
+     * The kid's YouTube allowance is used up, or YouTube is locked: the "Out of YouTube time" page comes up and the
+     * whole app closes behind it. Adults and "no limit" never get here ({@link HearthAllowance} says play), nor does
+     * a parent who just typed the PIN in this profile. When the allowance can't be read, it's what the player does:
+     * no Hearth (or an old one) and no limit kept from earlier today means HearthTube stays open.
+     *
+     * @return true when HearthTube is closing
+     */
+    private static boolean closeIfOutOfTime(Activity activity) {
+        if (KidsMode.isMobileBuild(activity) || ParentGate.isUnlocked()) {
+            return false;
+        }
+
+        HearthAllowance.Refusal refusal;
+
+        try {
+            refusal = HearthAllowance.refusalNow(activity);
+        } catch (RuntimeException e) {
+            // Can't tell: never close on a doubt
+            return false;
+        }
+
+        if (refusal == null) {
+            return false;
+        }
+
+        PlaybackPresenter.instance(activity).forceFinish();
+
+        if (HearthTimeUpActivity.show(activity, refusal)) {
+            // The way Back on the home screen leaves: every screen goes, the app is ready to start over
+            com.liskovsoft.smartyoutubetv2.common.app.views.ViewManager.instance(activity).properlyFinishTheApp(activity);
+        } else {
+            // A build without the page (SmartTube's own flavors): what the player says, and step aside
+            MessageHelpers.showLongMessage(activity, refusal.message);
+            HearthProfile.goHomeOrStepAside(activity);
+        }
+
+        return true;
     }
 }

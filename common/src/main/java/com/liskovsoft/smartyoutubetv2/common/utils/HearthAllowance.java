@@ -99,15 +99,34 @@ public final class HearthAllowance {
     /** Why HearthTube mustn't play now (to show), or null when it may. Asks Hearth afresh each time. */
     @Nullable
     public static String refusal(Context context) {
+        Refusal refusal = refusalNow(context);
+        return refusal != null ? refusal.message : null;
+    }
+
+    /** Why HearthTube mustn't play now, or null when it may */
+    public static final class Refusal {
+        /** A lock (bedtime, school time, a pause), not time used up: asking for more time doesn't help */
+        public final boolean locked;
+        public final String message;
+
+        Refusal(boolean locked, String message) {
+            this.locked = locked;
+            this.message = message;
+        }
+    }
+
+    /** As {@link #refusal}, saying whether it's a lock or time used up. Asks Hearth afresh each time. */
+    @Nullable
+    public static Refusal refusalNow(Context context) {
         YouTubeAllowance.Decision decision = decide(context);
 
         switch (decision.verdict) {
             case LOCKED:
-                return decision.message != null ? decision.message : context.getString(R.string.youtube_bedtime);
+                return new Refusal(true, decision.message != null ? decision.message : context.getString(R.string.youtube_bedtime));
             case USED_UP_HOME_ASSISTANT:
-                return decision.message != null ? decision.message : context.getString(R.string.youtube_time_used_up_shared);
+                return new Refusal(false, decision.message != null ? decision.message : context.getString(R.string.youtube_time_used_up_shared));
             case USED_UP:
-                return decision.message != null ? decision.message : context.getString(R.string.youtube_time_used_up);
+                return new Refusal(false, decision.message != null ? decision.message : context.getString(R.string.youtube_time_used_up));
             default:
                 return null;
         }

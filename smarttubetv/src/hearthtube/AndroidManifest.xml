@@ -39,5 +39,13 @@
         <!-- A file manager's "open with" or "share" of a .zip must not replace the settings, PIN and account without a
              parent (a kids profile has no gate there); restoring stays in Settings → Backup and restore -->
         <activity android:name="com.liskovsoft.smartyoutubetv2.common.misc.BackupReceiverActivity" tools:node="remove"/>
+        <!-- "Out of YouTube time": a kid's allowance is used up, so HearthTube closes behind this page (HearthScreenTime) -->
+        <activity android:name="com.liskovsoft.smartyoutubetv2.common.utils.HearthTimeUpActivity"
+                  android:launchMode="singleInstance"
+                  android:excludeFromRecents="true"
+                  android:exported="false"
+                  android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation|layoutDirection"
+                  android:screenOrientation="unspecified"
+                  android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen"/>
     </application>
 </manifest>
