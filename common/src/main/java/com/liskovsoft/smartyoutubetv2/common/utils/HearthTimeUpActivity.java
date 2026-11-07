@@ -28,6 +28,8 @@ import com.liskovsoft.smartyoutubetv2.common.R;
  * YouTube is locked (bedtime, school time, a pause): "Out of YouTube time", why, and, for time used up, to ask an adult
  * for more. Every other HearthTube screen is closed behind it; after a few seconds (or any key) it goes to Hearth's
  * home and closes too. {@link HearthScreenTime} brings it up. Declared in the hearthtube flavor's manifest only.
+ * For time used up, with a Hearth that takes it (after 2026.11.07), "Ask for more time" (OK) opens Hearth's own time's
+ * up card, where the asking happens (its cooldown and already-asked handling included).
  */
 public class HearthTimeUpActivity extends Activity {
     private static final String TAG = HearthTimeUpActivity.class.getSimpleName();
@@ -35,6 +37,11 @@ public class HearthTimeUpActivity extends Activity {
     private static final String EXTRA_MESSAGE = "message";
     /** How long it stays before going home */
     private static final long SHOW_MS = 10_000;
+    /** With "Ask for more time" on it, long enough to read it and press OK */
+    private static final long SHOW_WITH_ASK_MS = 20_000;
+    /** Hearth's time's up card (docs/provider-contract.md in Hearth) */
+    private static final String HEARTH_TIME_UP = "com.thesiegs.hearth.action.TIME_UP";
+    private static final String HEARTH_PACKAGE = "com.thesiegs.hearth";
     /** Keys held or queued from the screen before don't dismiss it at once */
     private static final long IGNORE_KEYS_MS = 1_500;
     private final Handler mHandler = new Handler(Looper.getMainLooper());
@@ -43,6 +50,9 @@ public class HearthTimeUpActivity extends Activity {
     private TextView mTitle;
     private TextView mMessage;
     private TextView mAsk;
+    private GradientDrawable mAskButton;
+    /** "Ask for more time" is on the page: time is used up and Hearth takes the request */
+    private boolean mCanAsk;
 
     /** Brings the page up. False when this build has no such page (SmartTube's own flavors) or it can't start. */
     public static boolean show(Context context, HearthAllowance.Refusal refusal) {
@@ -85,7 +95,7 @@ public class HearthTimeUpActivity extends Activity {
         // Nothing of HearthTube is left behind it: Back or going home can't land on a HearthTube screen
         closeOtherScreens();
         mHandler.removeCallbacks(mLeave);
-        mHandler.postDelayed(mLeave, SHOW_MS);
+        mHandler.postDelayed(mLeave, mCanAsk ? SHOW_WITH_ASK_MS : SHOW_MS);
     }
 
     @Override
@@ -106,7 +116,14 @@ public class HearthTimeUpActivity extends Activity {
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-        if (SystemClock.elapsedRealtime() - mShownAtMs >= IGNORE_KEYS_MS) {
+        if (SystemClock.elapsedRealtime() - mShownAtMs < IGNORE_KEYS_MS) {
+            return true;
+        }
+
+        if (mCanAsk && isOk(keyCode)) {
+            askForMore();
+        } else if (!mCanAsk || !isArrow(keyCode)) {
+            // With the button on the page the arrows stay put, so a kid finding it doesn't leave by accident
             leave();
         }
 
@@ -128,6 +145,49 @@ public class HearthTimeUpActivity extends Activity {
         mHandler.removeCallbacks(mLeave);
         HearthProfile.goHome(this);
         finishAndRemoveTask();
+    }
+
+    /** Hearth's card for HearthTube: Hearth works out what holds it (its YouTube minutes, a group, a pause) */
+    private static Intent hearthTimeUp(Context context) {
+        return new Intent(HEARTH_TIME_UP)
+                .setPackage(HEARTH_PACKAGE)
+                .putExtra("package", context.getPackageName())
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+    }
+
+    private static boolean hearthTakesTimeUp(Context context) {
+        try {
+            return context.getPackageManager().resolveActivity(hearthTimeUp(context), 0) != null;
+        } catch (RuntimeException e) {
+            return false;
+        }
+    }
+
+    /** Hearth comes to the front with its card, so this page just goes; if Hearth can't be started, home as usual */
+    private void askForMore() {
+        if (isFinishing()) {
+            return;
+        }
+
+        mHandler.removeCallbacks(mLeave);
+
+        try {
+            startActivity(hearthTimeUp(this));
+            finishAndRemoveTask();
+        } catch (RuntimeException e) {
+            Log.e(TAG, "Can't open Hearth's time's up card: %s", e.getMessage());
+            leave();
+        }
+    }
+
+    private static boolean isOk(int keyCode) {
+        return keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyCode == KeyEvent.KEYCODE_ENTER ||
+                keyCode == KeyEvent.KEYCODE_NUMPAD_ENTER || keyCode == KeyEvent.KEYCODE_BUTTON_A;
+    }
+
+    private static boolean isArrow(int keyCode) {
+        return keyCode == KeyEvent.KEYCODE_DPAD_UP || keyCode == KeyEvent.KEYCODE_DPAD_DOWN ||
+                keyCode == KeyEvent.KEYCODE_DPAD_LEFT || keyCode == KeyEvent.KEYCODE_DPAD_RIGHT;
     }
 
     private void closeOtherScreens() {
@@ -155,7 +215,10 @@ public class HearthTimeUpActivity extends Activity {
         mTitle.setText(locked ? R.string.youtube_off_title : R.string.youtube_time_up_title);
         mMessage.setText(message);
         mMessage.setVisibility(message != null && !message.isEmpty() ? View.VISIBLE : View.GONE);
-        // Asking for more time helps only when time is used up, not at bedtime
+        // Asking for more time helps only when time is used up, not at bedtime; an older Hearth gets the hint only
+        mCanAsk = !locked && hearthTakesTimeUp(this);
+        mAsk.setText(mCanAsk ? R.string.youtube_time_up_ask_button : R.string.youtube_time_up_ask);
+        mAsk.setBackground(mCanAsk ? mAskButton : null);
         mAsk.setVisibility(locked ? View.GONE : View.VISIBLE);
     }
 
@@ -192,6 +255,11 @@ public class HearthTimeUpActivity extends Activity {
         column.addView(mMessage, margins(dp(20)));
         mAsk = text(24, accent, true);
         mAsk.setText(R.string.youtube_time_up_ask);
+        mAsk.setPadding(dp(32), dp(12), dp(32), dp(12));
+        // A button look (it's the one thing to press here), shown only when Hearth takes the request
+        mAskButton = new GradientDrawable();
+        mAskButton.setStroke(dp(3), accent);
+        mAskButton.setCornerRadius(dp(28));
         column.addView(mAsk, margins(dp(28)));
         TextView leaving = text(16, 0x99FFFFFF, false);
         leaving.setText(R.string.youtube_time_up_leaving);
