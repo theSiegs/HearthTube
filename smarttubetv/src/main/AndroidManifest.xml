@@ -123,6 +123,18 @@
                 <data android:scheme="vnd.youtube"/>
                 <data android:scheme="vnd.youtube.launch"/>
             </intent-filter>
+            <!-- HearthTube's own links, which the YouTube app doesn't claim, so a launcher (or a TV remote app link) reaches
+                 this app: hearthtube://home opens Home, hearthtube://watch?v=VIDEO_ID[&t=SECONDS] opens a video like a shared link.
+                 A filter of its own: data tags in one filter combine, so these hosts must not mix with the youtube ones -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+
+                <data android:scheme="hearthtube" android:host="home"/>
+                <data android:scheme="hearthtube" android:host="watch"/>
+            </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.SEND"/>
                 <category android:name="android.intent.category.DEFAULT"/>

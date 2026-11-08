@@ -216,7 +216,15 @@ public class IntentExtractor {
     public static boolean isRootUrl(Intent intent) {
         return intent != null
                 && extractUri(intent) != null
-                && Helpers.endsWithAny(extractUri(intent).toString(), ".com/", ".com", ".com/launch=remote");
+                && (Helpers.endsWithAny(extractUri(intent).toString(), ".com/", ".com", ".com/launch=remote")
+                    || isHearthTubeHome(extractUri(intent)));
+    }
+
+    /**
+     * HearthTube's own link to Home (hearthtube://home), for launchers that open apps by link
+     */
+    private static boolean isHearthTubeHome(Uri uri) {
+        return "hearthtube".equalsIgnoreCase(uri.getScheme()) && "home".equalsIgnoreCase(uri.getHost());
     }
 
     public static boolean isStartVoiceCommand(Intent intent) {
