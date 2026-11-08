@@ -40,7 +40,6 @@ import com.google.android.exoplayer2.source.sabr.protos.videostreaming.StreamerC
 import com.google.android.exoplayer2.source.sabr.protos.videostreaming.TimeRange;
 import com.google.protobuf.ByteString;
 import com.liskovsoft.sharedutils.helpers.Helpers;
-import com.liskovsoft.sharedutils.mylogger.Log;
 
 import java.io.IOException;
 import java.util.ArrayList;

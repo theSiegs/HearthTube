@@ -36,7 +36,6 @@ import com.google.android.exoplayer2.source.sabr.protos.videostreaming.StreamPro
 import com.google.android.exoplayer2.source.sabr.protos.videostreaming.StreamerContext;
 import com.google.android.exoplayer2.source.sabr.protos.videostreaming.StreamerContext.ClientInfo;
 import com.liskovsoft.sharedutils.helpers.Helpers;
-import com.liskovsoft.sharedutils.mylogger.Log;
 import com.liskovsoft.sharedutils.querystringparser.UrlQueryString;
 import com.liskovsoft.sharedutils.querystringparser.UrlQueryStringFactory;
 
