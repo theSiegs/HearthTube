@@ -1,0 +1,4 @@
+# Store every file exactly as written, with no line-ending conversion, whatever core.autocrlf is set to.
+# SmartTube keeps some files with Windows line endings and some with Unix ones; converting them made
+# upstream merges show whole files as changed. Files edited here keep the endings SmartTube gave them.
+* -text
