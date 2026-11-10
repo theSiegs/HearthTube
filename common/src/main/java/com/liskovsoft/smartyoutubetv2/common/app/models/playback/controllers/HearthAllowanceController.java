@@ -11,6 +11,7 @@ import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
 import com.liskovsoft.smartyoutubetv2.common.app.views.PlaybackView;
 import com.liskovsoft.smartyoutubetv2.common.utils.GlintChannel;
 import com.liskovsoft.smartyoutubetv2.common.utils.HearthAllowance;
+import com.liskovsoft.smartyoutubetv2.common.utils.HearthChanges;
 import com.liskovsoft.smartyoutubetv2.common.utils.HearthProfile;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 
@@ -36,6 +37,7 @@ public class HearthAllowanceController extends BasePlayerController {
             HearthAllowance.stopIfRefused(getContext(), getPlayer());
         }
     };
+    private final Runnable mHearthChanged = () -> mHearthObserver.onChange(false);
 
     @Override
     public void onEngineInitialized() {
@@ -159,16 +161,12 @@ public class HearthAllowanceController extends BasePlayerController {
 
         if (!observe) {
             resolver.unregisterContentObserver(mHearthObserver);
+            HearthChanges.remove(mHearthChanged);
             return;
         }
 
-        for (Uri hearth : HearthProfile.ACTIVE_URIS) {
-            try {
-                resolver.registerContentObserver(hearth, false, mHearthObserver);
-            } catch (Exception e) {
-                // No Hearth (or too old): the half-minute check stays
-            }
-        }
+        // Hearth's changes come read once for every part that reacts to them (no Hearth: the half-minute check stays)
+        HearthChanges.add(getContext(), mHearthChanged);
 
         // Glint announces a change of the phone's limit, lock or kids mode there
         for (Uri glint : GlintChannel.observeUris()) {

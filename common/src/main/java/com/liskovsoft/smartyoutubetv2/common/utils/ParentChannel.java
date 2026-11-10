@@ -30,7 +30,7 @@ public final class ParentChannel {
     private static final int BATCH = 50;
     private static final ExecutorService sWorker = Executors.newSingleThreadExecutor();
     private static final AtomicBoolean sRunning = new AtomicBoolean();
-    private static ContentObserver sObserver;
+    private static Runnable sObserver;
 
     private ParentChannel() {
     }
@@ -52,10 +52,12 @@ public final class ParentChannel {
         }
 
         Context app = context.getApplicationContext();
+        // Hearth's change, already read for every part that reacts to it (HearthChanges): no second read
+        HearthProfile.Snapshot given = HearthProfile.Snapshot.current();
 
         sWorker.execute(() -> {
             try {
-                HearthProfile hearth = HearthProfile.live(app, HearthProfile.queryHearth(app));
+                HearthProfile hearth = HearthProfile.live(app, given != null ? given.row : HearthProfile.queryHearth(app));
 
                 // An older Hearth, or none reachable now: what was last known stands
                 if (hearth != null && hearth.contractVersion >= 8) {
@@ -104,21 +106,9 @@ public final class ParentChannel {
             return;
         }
 
-        sObserver = new ContentObserver(new Handler(Looper.getMainLooper())) {
-            @Override
-            public void onChange(boolean selfChange) {
-                sync(app);
-            }
-        };
-
-        ContentResolver resolver = app.getContentResolver();
-
-        for (Uri hearth : HearthProfile.ACTIVE_URIS) {
-            try {
-                resolver.registerContentObserver(hearth, false, sObserver);
-            } catch (Exception e) {
-                // No Hearth (or too old): each start and each video still syncs
-            }
-        }
+        // Read once with the other parts that react to Hearth (HearthChanges). No Hearth (or too old): each start and
+        // each video still syncs
+        sObserver = () -> sync(app);
+        HearthChanges.add(app, sObserver);
     }
 }

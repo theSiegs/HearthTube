@@ -76,13 +76,7 @@ public class HearthRowsFragment extends VideoRowsFragment {
     private View mDetails;
     private View mScrim;
     /** Hearth changed something, maybe its wallpaper: the shade follows how bright the new one is */
-    private final android.database.ContentObserver mHearthObserver =
-            new android.database.ContentObserver(new android.os.Handler(android.os.Looper.getMainLooper())) {
-        @Override
-        public void onChange(boolean selfChange) {
-            updateScrim();
-        }
-    };
+    private final Runnable mHearthChanged = this::updateScrim;
     private int mRowHeight;
     private int mRowBottomMargin;
     /** The full row shown as a grid (More), or null */
@@ -243,23 +237,15 @@ public class HearthRowsFragment extends VideoRowsFragment {
         // The wallpaper may have changed while away (another profile's, Hearth's night picture): so may its brightness
         updateScrim();
 
-        Context context = getContext();
-        for (android.net.Uri hearth : com.liskovsoft.smartyoutubetv2.common.utils.HearthProfile.ACTIVE_URIS) {
-            try {
-                context.getContentResolver().registerContentObserver(hearth, false, mHearthObserver);
-            } catch (Exception e) {
-                // No Hearth
-            }
-        }
+        // Read once with the other parts that react to Hearth
+        com.liskovsoft.smartyoutubetv2.common.utils.HearthChanges.add(getContext(), mHearthChanged);
     }
 
     @Override
     public void onStop() {
         super.onStop();
 
-        if (getContext() != null) {
-            getContext().getContentResolver().unregisterContentObserver(mHearthObserver);
-        }
+        com.liskovsoft.smartyoutubetv2.common.utils.HearthChanges.remove(mHearthChanged);
     }
 
     /**

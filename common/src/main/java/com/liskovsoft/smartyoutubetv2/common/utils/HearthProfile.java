@@ -6,6 +6,7 @@ import android.database.Cursor;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Looper;
 
 import androidx.annotation.Nullable;
 
@@ -320,12 +321,47 @@ public class HearthProfile {
         return hearth != null && hearth.key() != null && !Boolean.FALSE.equals(hearth.profileReady) ? hearth : null;
     }
 
+    /**
+     * One reading of Hearth for everything that reacts to the same change ({@link HearthChanges}): taken off the main
+     * thread, then in place while the listeners run on the main thread, where it answers {@link #queryHearth},
+     * {@link #isHearthSuspended} and the package checks instead of asking again.
+     */
+    static final class Snapshot {
+        /** Set on the main thread only, while {@link HearthChanges} runs its listeners */
+        static volatile Snapshot sCurrent;
+        final boolean suspended;
+        @Nullable final String trusted;
+        @Nullable final HearthProfile row;
+
+        private Snapshot(boolean suspended, @Nullable String trusted, @Nullable HearthProfile row) {
+            this.suspended = suspended;
+            this.trusted = trusted;
+            this.row = row;
+        }
+
+        static Snapshot read(Context context) {
+            String trusted = trustedPackageNow(context);
+            return new Snapshot(isHearthSuspendedNow(context), trusted, queryHearthNow(context, trusted));
+        }
+
+        @Nullable
+        static Snapshot current() {
+            Snapshot snapshot = sCurrent;
+            return snapshot != null && Looper.myLooper() == Looper.getMainLooper() ? snapshot : null;
+        }
+    }
+
     /** Hearth is installed but suspended by Google TV (a kids profile that hasn't approved it) */
     public static boolean isHearthSuspended(Context context) {
         if (context == null) {
             return false;
         }
 
+        Snapshot snapshot = Snapshot.current();
+        return snapshot != null ? snapshot.suspended : isHearthSuspendedNow(context);
+    }
+
+    private static boolean isHearthSuspendedNow(Context context) {
         String hearth = hearthPackage(context);
 
         try {
@@ -341,7 +377,16 @@ public class HearthProfile {
      */
     @Nullable
     public static HearthProfile queryHearth(Context context) {
-        String hearth = context != null ? trustedPackage(context) : null;
+        if (context == null) {
+            return null;
+        }
+
+        Snapshot snapshot = Snapshot.current();
+        return snapshot != null ? snapshot.row : queryHearthNow(context, trustedPackageNow(context));
+    }
+
+    @Nullable
+    private static HearthProfile queryHearthNow(Context context, @Nullable String hearth) {
         if (hearth == null) {
             return null;
         }
@@ -494,6 +539,12 @@ public class HearthProfile {
      */
     @Nullable
     private static String trustedPackage(Context context) {
+        Snapshot snapshot = Snapshot.current();
+        return snapshot != null ? snapshot.trusted : trustedPackageNow(context);
+    }
+
+    @Nullable
+    private static String trustedPackageNow(Context context) {
         String hearth = hearthPackage(context);
 
         try {

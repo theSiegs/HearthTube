@@ -47,6 +47,8 @@ public final class HearthScreenTime {
             }
         }
     };
+    /** Read once with the other parts that react to Hearth ({@link HearthChanges}) */
+    private static final Runnable sChanged = () -> sObserver.onChange(false);
     private static boolean sObserving;
 
     private HearthScreenTime() {
@@ -59,13 +61,8 @@ public final class HearthScreenTime {
 
         if (!sObserving) {
             sObserving = true;
-            for (Uri hearth : HearthProfile.ACTIVE_URIS) {
-                try {
-                    activity.getApplicationContext().getContentResolver().registerContentObserver(hearth, false, sObserver);
-                } catch (Exception e) {
-                    // No Hearth (or too old): the half-minute check stays
-                }
-            }
+            // No Hearth (or too old): the half-minute check stays
+            HearthChanges.add(activity, sChanged);
         }
         if (check(activity)) {
             Utils.postDelayed(sCheck, CHECK_MS);

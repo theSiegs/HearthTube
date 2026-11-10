@@ -68,25 +68,19 @@ public class UriBackgroundManager {
     }
 
     /** Hearth changed something (its wallpaper, maybe): show it again; unchanged versions load from the cache */
-    private final android.database.ContentObserver mHearthObserver = new android.database.ContentObserver(new Handler()) {
-        @Override
-        public void onChange(boolean selfChange) {
-            if (mBackgroundManager != null && mBackgroundURI == null && mBackgroundColor == -1
-                    && !com.liskovsoft.smartyoutubetv2.common.utils.DailyBackground.isShowing(mActivity)) {
-                showDailyBackground();
-            }
+    private final Runnable mHearthChanged = this::onHearthChanged;
+
+    private void onHearthChanged() {
+        if (mBackgroundManager != null && mBackgroundURI == null && mBackgroundColor == -1
+                && !com.liskovsoft.smartyoutubetv2.common.utils.DailyBackground.isShowing(mActivity)) {
+            showDailyBackground();
         }
-    };
+    }
 
     public void onStart() {
         com.liskovsoft.smartyoutubetv2.common.utils.HearthProfile.noteLaunch(mActivity);
-        for (android.net.Uri hearth : com.liskovsoft.smartyoutubetv2.common.utils.HearthProfile.ACTIVE_URIS) {
-            try {
-                mActivity.getContentResolver().registerContentObserver(hearth, false, mHearthObserver);
-            } catch (Exception e) {
-                // No Hearth
-            }
-        }
+        // Read once with the other parts that react to Hearth
+        com.liskovsoft.smartyoutubetv2.common.utils.HearthChanges.add(mActivity, mHearthChanged);
 
         if (mBackgroundURI != null) {
             showBackground(mBackgroundURI.toString());
@@ -98,7 +92,7 @@ public class UriBackgroundManager {
     }
 
     public void onStop() {
-        mActivity.getContentResolver().unregisterContentObserver(mHearthObserver);
+        com.liskovsoft.smartyoutubetv2.common.utils.HearthChanges.remove(mHearthChanged);
         mBackgroundManager.release();
     }
 
