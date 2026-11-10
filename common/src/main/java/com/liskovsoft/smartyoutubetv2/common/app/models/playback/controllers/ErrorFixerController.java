@@ -26,7 +26,7 @@ public class ErrorFixerController extends BasePlayerController implements OnLong
     private static final String TAG = ErrorFixerController.class.getSimpleName();
     private static final long STREAM_END_THRESHOLD_MS = 180_000;
     private static final int MAX_BOT_BLOCK_RETRIES = 3;
-    private static final int MAX_SABR_ERROR_FIX_ATTEMPTS = 3;
+    private static final int MAX_SABR_ERROR_FIX_ATTEMPTS = 1;
     private static final long SEEK_END_THRESHOLD_MS = 1_000;
     private static final int MAX_FORMAT_RELOAD_NUM = 3;
     private final BufferingDetector mBufferingDetector = new BufferingDetector(this);
@@ -69,7 +69,8 @@ public class ErrorFixerController extends BasePlayerController implements OnLong
             boolean isCustomEngineEnabled = getPlayerTweaksData().getPlayerDataSource() == requiredEngine;
             boolean isCustomDnsEnabled = getPlayerTweaksData().getPreferredDnsType() == customDns;
             boolean isCustomDnsActive = isCustomEngineEnabled && isCustomDnsEnabled;
-            if (!isCustomDnsActive && !getPlayerTweaksData().isNetworkErrorFixingDisabled()) {
+            if (getPlayer().getPositionMs() == 0 && !isCustomDnsActive && !getPlayerTweaksData().isNetworkErrorFixingDisabled()) {
+                // Exclude possible PoToken errors. Upon resume there's no 60 sec PoToken attestation window, so a resumed video fails instantly.
                 // Wrong DNS resolving could cause hanging at start
                 // Do switch to only engine that respects custom DNS settings
                 MessageHelpers.showLongMessage(getContext(), "Fixing incorrect DNS resolution. App restart needed...");
