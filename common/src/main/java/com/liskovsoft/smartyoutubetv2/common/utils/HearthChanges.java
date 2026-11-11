@@ -59,6 +59,14 @@ public final class HearthChanges {
                 // No Hearth (or too old): each part's own timer still checks
             }
         }
+
+        // A first reading off the main thread, so the checks that come before Hearth's next change needn't ask again
+        Context app = sApp;
+        sReader.execute(() -> {
+            if (HearthProfile.Snapshot.sLatest == null) {
+                HearthProfile.Snapshot.sLatest = HearthProfile.Snapshot.read(app);
+            }
+        });
     }
 
     public static synchronized void remove(Runnable listener) {
@@ -67,7 +75,13 @@ public final class HearthChanges {
         if (sListeners.isEmpty() && sObserver != null) {
             sApp.getContentResolver().unregisterContentObserver(sObserver);
             sObserver = null;
+            HearthProfile.Snapshot.sLatest = null; // no longer kept fresh
         }
+    }
+
+    /** Hearth's changes are heard now, so its last reading stays current ({@link HearthProfile.Snapshot#current}) */
+    static boolean isListening() {
+        return sObserver != null;
     }
 
     private static void read() {
@@ -83,6 +97,7 @@ public final class HearthChanges {
 
             try {
                 snapshot = app != null ? HearthProfile.Snapshot.read(app) : null;
+                HearthProfile.Snapshot.sLatest = snapshot;
             } finally {
                 HearthProfile.Snapshot answer = snapshot;
                 sMain.post(() -> {

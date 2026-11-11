@@ -346,9 +346,27 @@ public class HearthProfile {
 
         @Nullable
         static Snapshot current() {
+            if (Looper.myLooper() != Looper.getMainLooper()) {
+                return null;
+            }
+
             Snapshot snapshot = sCurrent;
-            return snapshot != null && Looper.myLooper() == Looper.getMainLooper() ? snapshot : null;
+
+            if (snapshot != null) {
+                return snapshot;
+            }
+
+            // The player's half-minute checks and the time's-up check: Hearth's last reading, while HearthChanges is
+            // listening (Hearth announces every change, and stamps its allowance check each minute) and it is fresh
+            Snapshot latest = sLatest;
+            return latest != null && HearthChanges.isListening()
+                    && android.os.SystemClock.elapsedRealtime() - latest.readAtMs < MAX_REUSE_MS ? latest : null;
         }
+
+        /** Hearth's last reading by {@link HearthChanges}: fresh after each change it announces */
+        static volatile Snapshot sLatest;
+        private static final long MAX_REUSE_MS = 90_000;
+        final long readAtMs = android.os.SystemClock.elapsedRealtime();
     }
 
     /** Hearth is installed but suspended by Google TV (a kids profile that hasn't approved it) */
