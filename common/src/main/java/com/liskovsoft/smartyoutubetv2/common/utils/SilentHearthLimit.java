@@ -14,17 +14,27 @@ import java.util.Map;
  * goes silent (suspended, its agent not connected, stopped) isn't a way out of the limit. HearthTube counts down what
  * it plays itself; Hearth gets the full figure when it is back. Plain Java, so it's unit-tested;
  * {@link HearthAllowance} feeds it. A profile Hearth never gave a limit for has none here.
+ * <p>
+ * A new day while Hearth is still silent doesn't lift the limit: the day starts again from the most that day held
+ * (what Hearth gave plus what played here since), until Hearth speaks. Only minutes are kept; bedtimes and pauses come
+ * from Hearth alone.
  */
 public final class SilentHearthLimit {
     private static final class Entry {
-        final String day;
+        String day;
         final long checkedAt;
         long msLeft;
+        /** Played here on {@link #day} since Hearth gave the figure */
+        long playedMs;
+        /** The most {@link #day} held: Hearth's figure plus what had played here since; the next silent day starts from it */
+        long dayMs;
 
-        Entry(String day, long checkedAt, long msLeft) {
+        Entry(String day, long checkedAt, long msLeft, long playedMs, long dayMs) {
             this.day = day;
             this.checkedAt = checkedAt;
             this.msLeft = msLeft;
+            this.playedMs = playedMs;
+            this.dayMs = Math.max(dayMs, msLeft + playedMs);
         }
     }
 
@@ -42,7 +52,11 @@ public final class SilentHearthLimit {
         if (msLeft == null) {
             mEntries.remove(profileKey);
         } else {
-            mEntries.put(profileKey, new Entry(day, checkedAt, Math.max(0, msLeft)));
+            // The same day again: what played here since the earlier figure still counts toward the day's most
+            Entry earlier = mEntries.get(profileKey);
+            boolean sameDay = earlier != null && day.equals(earlier.day);
+            mEntries.put(profileKey, new Entry(day, checkedAt, Math.max(0, msLeft), sameDay ? earlier.playedMs : 0,
+                    sameDay ? earlier.dayMs : 0));
         }
     }
 
@@ -54,12 +68,14 @@ public final class SilentHearthLimit {
 
         for (Entry entry : mEntries.values()) {
             entry.msLeft = Math.max(0, entry.msLeft - ms);
+            entry.playedMs += ms;
         }
     }
 
     /**
      * Playing time left today (ms) by what was kept: the least of the profiles', as it can't tell which one is
-     * watching. Null when nothing is kept for {@code day}. Older days are let go.
+     * watching. Null when nothing is kept. A kept figure from an earlier day (Hearth silent since) starts {@code day}
+     * again from the most that earlier day held.
      */
     @Nullable
     public synchronized Long msLeft(String day) {
@@ -68,17 +84,21 @@ public final class SilentHearthLimit {
         for (Iterator<Entry> it = mEntries.values().iterator(); it.hasNext(); ) {
             Entry entry = it.next();
 
+            if (day != null && day.compareTo(entry.day) > 0) {
+                entry.day = day;
+                entry.msLeft = entry.dayMs;
+                entry.playedMs = 0;
+            }
+
             if (day != null && day.equals(entry.day)) {
                 least = least == null ? entry.msLeft : Math.min(least, entry.msLeft);
-            } else if (day != null && day.compareTo(entry.day) > 0) {
-                it.remove();
             }
         }
 
         return least;
     }
 
-    /** key|day|msLeft|checkedAt, one per profile, to keep across restarts; null when none */
+    /** key|day|msLeft|checkedAt|playedMs|dayMs, one per profile, to keep across restarts; null when none */
     @Nullable
     public synchronized String save() {
         if (mEntries.isEmpty()) {
@@ -92,7 +112,8 @@ public final class SilentHearthLimit {
                 sb.append(';');
             }
             sb.append(encode(e.getKey())).append('|').append(e.getValue().day).append('|').append(e.getValue().msLeft)
-                    .append('|').append(e.getValue().checkedAt);
+                    .append('|').append(e.getValue().checkedAt).append('|').append(e.getValue().playedMs)
+                    .append('|').append(e.getValue().dayMs);
         }
 
         return sb.toString();
@@ -107,7 +128,8 @@ public final class SilentHearthLimit {
         for (String item : saved.split(";")) {
             String[] parts = item.split("\\|", -1);
 
-            if (parts.length != 4) {
+            // 4 parts: saved before the day's most was kept (it is then the figure left)
+            if (parts.length != 4 && parts.length != 6) {
                 continue;
             }
 
@@ -115,7 +137,10 @@ public final class SilentHearthLimit {
                 String key = decode(parts[0]);
 
                 if (key != null && !parts[1].isEmpty()) {
-                    mEntries.put(key, new Entry(parts[1], Long.parseLong(parts[3]), Math.max(0, Long.parseLong(parts[2]))));
+                    long msLeft = Math.max(0, Long.parseLong(parts[2]));
+                    long playedMs = parts.length == 6 ? Math.max(0, Long.parseLong(parts[4])) : 0;
+                    long dayMs = parts.length == 6 ? Math.max(0, Long.parseLong(parts[5])) : 0;
+                    mEntries.put(key, new Entry(parts[1], Long.parseLong(parts[3]), msLeft, playedMs, dayMs));
                 }
             } catch (NumberFormatException e) {
                 // Unreadable: skip it

@@ -27,11 +27,49 @@ public class SilentHearthLimitTest {
     }
 
     @Test
-    public void aNewDayHasNoKeptLimit() {
-        mLimit.remember("alex", 5 * MINUTE, MON, 1_000);
-        assertNull(mLimit.msLeft(TUE));
-        // and it was let go: an earlier date doesn't bring it back
-        assertNull(mLimit.msLeft(MON));
+    public void aNewSilentDayStartsFromTheMostTheLastDayHeld() {
+        mLimit.remember("alex", 60 * MINUTE, MON, 1_000);
+        mLimit.played(55 * MINUTE);
+        assertEquals(Long.valueOf(5 * MINUTE), mLimit.msLeft(MON));
+        // Midnight with Hearth still silent: not unlimited, the day's 60 minutes again
+        assertEquals(Long.valueOf(60 * MINUTE), mLimit.msLeft(TUE));
+        mLimit.played(10 * MINUTE);
+        assertEquals(Long.valueOf(50 * MINUTE), mLimit.msLeft(TUE));
+    }
+
+    @Test
+    public void laterFiguresTheSameDayKeepWhatPlayedBetween() {
+        mLimit.remember("alex", 60 * MINUTE, MON, 1_000);
+        mLimit.played(20 * MINUTE);
+        // Hearth speaks again with 40 left: the day still held 60
+        mLimit.remember("alex", 40 * MINUTE, MON, 2_000);
+        mLimit.played(40 * MINUTE);
+        assertEquals(Long.valueOf(60 * MINUTE), mLimit.msLeft(TUE));
+    }
+
+    @Test
+    public void aDayThatHeldNothingStaysAtNothingUntilHearthSpeaks() {
+        mLimit.remember("alex", 0L, MON, 1_000);
+        assertEquals(Long.valueOf(0), mLimit.msLeft(TUE));
+        mLimit.remember("alex", 45 * MINUTE, TUE, 2_000);
+        assertEquals(Long.valueOf(45 * MINUTE), mLimit.msLeft(TUE));
+    }
+
+    @Test
+    public void theDaysMostSurvivesARestart() {
+        mLimit.remember("alex", 60 * MINUTE, MON, 1_000);
+        mLimit.played(30 * MINUTE);
+        SilentHearthLimit restored = new SilentHearthLimit();
+        restored.restore(mLimit.save());
+        assertEquals(Long.valueOf(30 * MINUTE), restored.msLeft(MON));
+        assertEquals(Long.valueOf(60 * MINUTE), restored.msLeft(TUE));
+    }
+
+    @Test
+    public void anOlderSaveStillReads() {
+        mLimit.restore("alex|" + MON + "|" + (5 * MINUTE) + "|1000");
+        assertEquals(Long.valueOf(5 * MINUTE), mLimit.msLeft(MON));
+        assertEquals(Long.valueOf(5 * MINUTE), mLimit.msLeft(TUE));
     }
 
     @Test
