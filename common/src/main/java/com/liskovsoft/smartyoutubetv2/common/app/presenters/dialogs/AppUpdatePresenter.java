@@ -17,6 +17,7 @@ import com.liskovsoft.smartyoutubetv2.common.app.presenters.base.BasePresenter;
 import com.liskovsoft.smartyoutubetv2.common.prefs.GeneralData;
 import com.liskovsoft.smartyoutubetv2.common.utils.HearthProfile;
 import com.liskovsoft.smartyoutubetv2.common.utils.LoadingManager;
+import com.liskovsoft.smartyoutubetv2.common.utils.UpdateApkCheck;
 import com.liskovsoft.smartyoutubetv2.common.utils.UpdateChannels;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 
@@ -139,6 +140,15 @@ public class AppUpdatePresenter extends BasePresenter<Void> implements AppUpdate
         onFinish();
     }
 
+    /** HearthTube: only a newer HearthTube signed with this app's key goes to the installer ({@link UpdateApkCheck}) */
+    private void installIfOurs(String apkPath) {
+        if (UpdateApkCheck.isOurs(getContext(), apkPath)) {
+            mUpdateChecker.installUpdate();
+        } else {
+            MessageHelpers.showLongMessage(getContext(), R.string.update_not_genuine);
+        }
+    }
+
     private void showUpdateDialog(String versionName, List<String> changelog, String apkPath) {
         // Don't show update dialog if the player opened or the app is collapsed
         if (getContext() == null || getViewManager().isPlayerInForeground() || !Utils.isAppInForegroundFixed()) {
@@ -148,7 +158,7 @@ public class AppUpdatePresenter extends BasePresenter<Void> implements AppUpdate
         mSettingsPresenter.appendSingleButton(
                 UiOptionItem.from(getContext().getString(R.string.install_update), optionItem -> {
                     GeneralData.instance(getContext()).setChangelog(changelog);
-                    mUpdateChecker.installUpdate();
+                    installIfOurs(apkPath);
                 }, false));
         mSettingsPresenter.appendStringsCategory(getContext().getString(R.string.update_changelog), createChangelogOptions(changelog));
         //mSettingsPresenter.appendSingleSwitch(UiOptionItem.from(getContext().getString(R.string.show_again), optionItem -> {
@@ -169,7 +179,7 @@ public class AppUpdatePresenter extends BasePresenter<Void> implements AppUpdate
             @Override
             public void onAction() {
                 GeneralData.instance(getContext()).setChangelog(changelog);
-                mUpdateChecker.installUpdate();
+                installIfOurs(apkPath);
             }
 
             @Override

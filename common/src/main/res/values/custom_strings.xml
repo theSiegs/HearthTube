@@ -154,6 +154,7 @@
     <string name="youtube_off_title">YouTube is off for now</string>
     <string name="youtube_time_up_ask">Ask an adult if you\'d like more time.</string>
     <string name="youtube_time_up_ask_button">Ask for more time (OK)</string>
+    <string name="update_not_genuine">This update isn\'t a HearthTube release signed by HearthTube, so it wasn\'t installed</string>
     <string name="youtube_time_up_leaving">Going back to the home screen…</string>
     <string name="blocked_words">Blocked words</string>
     <string name="video_hidden">Hidden. It can be shown again in Settings › General › Hidden videos.</string>
