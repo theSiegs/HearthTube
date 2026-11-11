@@ -120,6 +120,12 @@ public final class HearthAllowance {
     public static Refusal refusalNow(Context context) {
         YouTubeAllowance.Decision decision = decide(context);
 
+        // A parent just typed the PIN in this profile: the same few minutes the time's-up page stays away, the player
+        // plays too (what plays still counts toward the kid's day)
+        if (ParentGate.isUnlocked()) {
+            return null;
+        }
+
         switch (decision.verdict) {
             case LOCKED:
                 return new Refusal(true, decision.message != null ? decision.message : context.getString(R.string.youtube_bedtime));
