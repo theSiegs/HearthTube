@@ -91,8 +91,8 @@ public class ProfileLinkData {
 
     /**
      * Checks the parent PIN with the same throttle Hearth has ({@link PinThrottle}): {@link #PIN_OK}, {@link #PIN_WRONG},
-     * or the seconds to wait (a positive number; the PIN isn't looked at then, right or not). A PIN saved as plain
-     * digits by an older version is hashed on success.
+     * or the seconds to wait (a positive number; the PIN isn't looked at then, right or not). A PIN an older version
+     * saved (as digits, or with one salt for every app) is saved again in today's form on success ({@link PinHash}).
      */
     public int verifyParentPin(@Nullable String pin) {
         String saved = mPrefs.getString(PARENT_PIN_KEY, null);
@@ -111,8 +111,8 @@ public class ProfileLinkData {
             return wait;
         }
 
-        if (saved.equals(hash(pin)) || saved.equals(pin)) {
-            if (!saved.startsWith("sha256:")) { // older versions kept it as is
+        if (com.liskovsoft.smartyoutubetv2.common.utils.PinHash.verify(pin, saved)) {
+            if (!com.liskovsoft.smartyoutubetv2.common.utils.PinHash.isCurrent(saved)) {
                 setParentPin(pin);
             }
             mPrefs.edit().remove(PIN_FAILS_KEY).remove(PIN_LOCK_ELAPSED_KEY).remove(PIN_LOCK_WALL_KEY).apply();
@@ -127,23 +127,9 @@ public class ProfileLinkData {
         return wait > 0 ? wait : PIN_WRONG;
     }
 
-    /** Saved hashed, not as the digits themselves. Null removes it. */
+    /** Saved as a salted slow hash, as Hearth keeps its PIN ({@link com.liskovsoft.smartyoutubetv2.common.utils.PinHash}). Null removes it. */
     public void setParentPin(@Nullable String pin) {
-        mPrefs.edit().putString(PARENT_PIN_KEY, pin != null ? hash(pin) : null).apply();
-    }
-
-    private static String hash(String pin) {
-        try {
-            java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
-            byte[] bytes = digest.digest(("hearthtube-parent-pin:" + pin).getBytes(java.nio.charset.Charset.forName("UTF-8")));
-            StringBuilder hex = new StringBuilder("sha256:");
-            for (byte b : bytes) {
-                hex.append(String.format(Locale.US, "%02x", b));
-            }
-            return hex.toString();
-        } catch (java.security.NoSuchAlgorithmException e) {
-            throw new IllegalStateException(e);
-        }
+        mPrefs.edit().putString(PARENT_PIN_KEY, pin != null ? com.liskovsoft.smartyoutubetv2.common.utils.PinHash.hash(pin) : null).apply();
     }
 
     /** HearthTube has been using Hearth's parent PIN (so its own one, if any, is likely forgotten) */

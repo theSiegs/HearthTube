@@ -24,42 +24,49 @@ public class PinThrottleTest {
     }
 
     @Test
-    public void theFifthWrongTryStartsAMinuteWait() {
+    public void theFifthWrongTryStartsAHalfMinuteWait() {
         State state = wrong(State.fresh(), 5, 1_000, WALL);
-        assertEquals(60, PinThrottle.waitSeconds(state, 1_000, WALL));
-        assertEquals(30, PinThrottle.waitSeconds(state, 31_000, WALL + 30_000));
-        assertEquals(1, PinThrottle.waitSeconds(state, 60_500, WALL + 59_500));
+        assertEquals(30, PinThrottle.waitSeconds(state, 1_000, WALL));
+        assertEquals(10, PinThrottle.waitSeconds(state, 21_000, WALL + 20_000));
+        assertEquals(1, PinThrottle.waitSeconds(state, 30_500, WALL + 29_500));
     }
 
     @Test
-    public void theWaitEndsAndTriesStartOver() {
+    public void eachWrongTryAfterAWaitDoublesTheNext() {
         State state = wrong(State.fresh(), 5, 1_000, WALL);
-        assertEquals(0, PinThrottle.waitSeconds(state, 61_000, WALL + 60_000));
-        assertEquals(0, state.fails);
+        assertEquals(0, PinThrottle.waitSeconds(state, 31_000, WALL + 30_000));
 
-        state = wrong(state, 1, 70_000, WALL + 69_000);
-        assertEquals(1, state.fails);
-        assertEquals(0, PinThrottle.waitSeconds(state, 70_000, WALL + 69_000));
+        state = wrong(state, 1, 40_000, WALL + 39_000);
+        assertEquals(60, PinThrottle.waitSeconds(state, 40_000, WALL + 39_000));
+
+        state = wrong(state, 1, 200_000, WALL + 199_000);
+        assertEquals(120, PinThrottle.waitSeconds(state, 200_000, WALL + 199_000));
+    }
+
+    @Test
+    public void theWaitNeverPassesAnHour() {
+        assertEquals(PinThrottle.MAX_WAIT_MS, PinThrottle.waitMs(12));
+        assertEquals(PinThrottle.MAX_WAIT_MS, PinThrottle.waitMs(1_000));
     }
 
     @Test
     public void aClockSetBackDoesNotShortenTheWait() {
         State state = wrong(State.fresh(), 5, 1_000, WALL);
-        assertEquals(60, PinThrottle.waitSeconds(state, 1_000, WALL - 3_600_000));
-        assertEquals(50, PinThrottle.waitSeconds(state, 11_000, WALL - 3_600_000)); // the monotonic clock rules
+        assertEquals(30, PinThrottle.waitSeconds(state, 1_000, WALL - 3_600_000));
+        assertEquals(20, PinThrottle.waitSeconds(state, 11_000, WALL - 3_600_000)); // the monotonic clock rules
     }
 
     @Test
     public void afterARebootTheWallClockTellsTheWait() {
         State state = wrong(State.fresh(), 5, 500_000, WALL);
-        assertEquals(40, PinThrottle.waitSeconds(state, 2_000, WALL + 20_000));
+        assertEquals(10, PinThrottle.waitSeconds(state, 2_000, WALL + 20_000));
         assertEquals(0, PinThrottle.waitSeconds(state, 2_000, WALL + 90_000));
     }
 
     @Test
     public void afterARebootWithTheWallClockSetBackTheFullWaitStands() {
         State state = wrong(State.fresh(), 5, 500_000, WALL);
-        assertEquals(60, PinThrottle.waitSeconds(state, 2_000, WALL - 5_000_000));
+        assertEquals(30, PinThrottle.waitSeconds(state, 2_000, WALL - 5_000_000));
     }
 
     @Test
