@@ -311,6 +311,10 @@ public class HearthRowsFragment extends VideoRowsFragment {
         details.addView(mTitle);
         details.addView(mMeta);
         details.addView(mDescription);
+        // Where a card's other actions are (Open channel first): the remote's OK held, or its menu key
+        TextView hint = text(context, 12, false, 0x99FFFFFF, 1);
+        hint.setText(R.string.hearth_hold_ok_hint);
+        details.addView(hint);
         FrameLayout.LayoutParams detailParams = new FrameLayout.LayoutParams(
                 Math.round(context.getResources().getDisplayMetrics().widthPixels * 0.5f),
                 ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM | Gravity.START);

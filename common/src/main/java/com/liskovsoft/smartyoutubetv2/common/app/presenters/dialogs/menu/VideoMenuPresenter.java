@@ -196,7 +196,7 @@ public class VideoMenuPresenter extends BaseMenuPresenter {
 
         appendReturnToBackgroundVideoButton();
 
-        for (Long menuItem : MainUIData.instance(getContext()).getMenuItemsOrdered()) {
+        for (Long menuItem : menuOrder()) {
             MenuAction menuAction = mMenuMapping.get(menuItem);
             if (menuAction != null && isInMenu(menuItem)) {
                 menuAction.run();
@@ -221,7 +221,7 @@ public class VideoMenuPresenter extends BaseMenuPresenter {
 
         appendReturnToBackgroundVideoButton();
 
-        for (Long menuItem : MainUIData.instance(getContext()).getMenuItemsOrdered()) {
+        for (Long menuItem : menuOrder()) {
             MenuAction menuAction = mMenuMapping.get(menuItem);
             if (menuAction != null && !menuAction.isAuth() && isInMenu(menuItem)) {
                 menuAction.run();
@@ -236,6 +236,15 @@ public class VideoMenuPresenter extends BaseMenuPresenter {
             com.liskovsoft.smartyoutubetv2.common.utils.HearthMenuIcons.apply(getContext(), mDialogPresenter);
             mDialogPresenter.showDialog(title);
         }
+    }
+
+    /** HearthTube: Open channel heads the menu (OK already plays), the way it is reached from a card on the TV */
+    private List<Long> menuOrder() {
+        List<Long> order = new java.util.ArrayList<>(MainUIData.instance(getContext()).getMenuItemsOrdered());
+        if (order.remove(MainUIData.MENU_ITEM_OPEN_CHANNEL)) {
+            order.add(0, MainUIData.MENU_ITEM_OPEN_CHANNEL);
+        }
+        return order;
     }
 
     /** A kid's phone menu has opening the channel, (un)subscribing, Not interested and hiding and blocking; any other menu has everything that is switched on */
