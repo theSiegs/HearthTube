@@ -52,6 +52,8 @@ public class VideoGrid extends FrameLayout {
     private final VideoAdapter mAdapter;
     private final GridLayoutManager mLayout;
     private final RecyclerView mList;
+    /** Pulling the list down at its start loads it again ({@link #setOnPullRefresh}); off where nothing is set */
+    private final androidx.swiperefreshlayout.widget.SwipeRefreshLayout mPull;
     private final ProgressBar mProgress;
     private final TextView mMessage;
     private final TextView mAction;
@@ -111,7 +113,11 @@ public class VideoGrid extends FrameLayout {
                 }
             }
         });
-        addView(mList, new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        mPull = new androidx.swiperefreshlayout.widget.SwipeRefreshLayout(context);
+        mPull.setEnabled(false);
+        mPull.setColorSchemeColors(HearthLook.accent(context));
+        mPull.addView(mList, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        addView(mPull, new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
         mProgress = new ProgressBar(context);
         mProgress.setIndeterminateTintList(android.content.res.ColorStateList.valueOf(HearthLook.accent(context)));
@@ -142,12 +148,14 @@ public class VideoGrid extends FrameLayout {
 
     /** Applies a group the way its action says (replace, append, remove...) */
     public void update(VideoGroup group) {
+        mPull.setRefreshing(false);
         showMessage(null);
         mRows.update(group);
         refresh();
     }
 
     public void clear() {
+        mPull.setRefreshing(false);
         mRows.clear();
         refresh();
     }
@@ -208,6 +216,8 @@ public class VideoGrid extends FrameLayout {
         }
 
         boolean atStart = !mList.canScrollVertically(-1);
+        // The pull's spinner comes out below the floating header, not under it
+        mPull.setProgressViewOffset(false, px - dp(40), px + dp(24));
         mList.setPadding(mList.getPaddingLeft(), px, mList.getPaddingRight(), mList.getPaddingBottom());
 
         // The first card stays where it was unless told: at the start of the list it moves down below the header
@@ -248,6 +258,22 @@ public class VideoGrid extends FrameLayout {
         return mProgress.getVisibility() == VISIBLE;
     }
 
+    /**
+     * Pulling down at the start of the list runs {@code refresh} (load the section again), as YouTube's lists do; its
+     * spinner goes when the videos come (or after a while if none do). Null switches pulling off.
+     */
+    public void setOnPullRefresh(@Nullable Runnable refresh) {
+        mPull.setEnabled(refresh != null);
+        mPull.setOnRefreshListener(refresh == null ? null : () -> {
+            refresh.run();
+            mPull.postDelayed(() -> mPull.setRefreshing(false), 10_000);
+        });
+    }
+
+    public void stopPullRefresh() {
+        mPull.setRefreshing(false);
+    }
+
     /** Text over the list (an error, "nothing here"); null or empty hides it */
     public void showMessage(@Nullable CharSequence message) {
         showMessage(message, null, null);
@@ -255,6 +281,9 @@ public class VideoGrid extends FrameLayout {
 
     /** Like {@link #showMessage(CharSequence)}, with a button under it (such as "Sign in") when there is something to do */
     public void showMessage(@Nullable CharSequence message, @Nullable CharSequence actionText, @Nullable Runnable action) {
+        if (message != null && message.length() > 0) {
+            mPull.setRefreshing(false); // an error or "nothing here" came instead of videos
+        }
         mMessage.setText(message);
         mMessage.setVisibility(message != null && message.length() > 0 ? VISIBLE : GONE);
 

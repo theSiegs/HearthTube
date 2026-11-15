@@ -213,6 +213,9 @@ public class VideoAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
         thumb.addView(aiLabel, aiParams);
         card.addView(thumb, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
+        LinearLayout text = new LinearLayout(context);
+        text.setOrientation(LinearLayout.VERTICAL);
+
         TextView title = new TextView(context);
         title.setTextColor(Color.WHITE);
         title.setTextSize(14);
@@ -221,7 +224,7 @@ public class VideoAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
         title.setEllipsize(TextUtils.TruncateAt.END);
         title.setPadding(dp(context, 2), dp(context, 6), 0, 0);
         HearthLook.textShadow(title);
-        card.addView(title);
+        text.addView(title);
 
         TextView author = new TextView(context);
         author.setTextColor(0xFFC8C8C8);
@@ -230,9 +233,22 @@ public class VideoAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
         author.setEllipsize(TextUtils.TruncateAt.END);
         author.setPadding(dp(context, 2), dp(context, 4), dp(context, 8), dp(context, 6));
         HearthLook.textShadow(author);
-        card.addView(author);
+        text.addView(author);
 
-        return new VideoHolder(card, image, aiLabel, title, author);
+        // Under the picture: the texts, and a ⋮ that opens the card's menu (as a long press does), as on YouTube
+        LinearLayout below = new LinearLayout(context);
+        below.setOrientation(LinearLayout.HORIZONTAL);
+        below.addView(text, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+        ImageView more = new ImageView(context);
+        more.setImageResource(R.drawable.ic_more_vert);
+        more.setContentDescription(context.getString(R.string.card_more));
+        more.setPadding(dp(context, 8), dp(context, 8), dp(context, 2), dp(context, 8));
+        more.setAlpha(0.85f);
+        more.setBackgroundResource(selectableBorderless(context));
+        below.addView(more, new LinearLayout.LayoutParams(dp(context, 34), dp(context, 40)));
+        card.addView(below, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        return new VideoHolder(card, image, aiLabel, title, author, more);
     }
 
     private static void bindCard(VideoHolder card, Video video, Listener listener) {
@@ -250,6 +266,13 @@ public class VideoAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
             listener.onLongClick(video);
             return true;
         });
+        card.more.setOnClickListener(v -> listener.onLongClick(video));
+    }
+
+    private static int selectableBorderless(Context context) {
+        android.util.TypedValue value = new android.util.TypedValue();
+        context.getTheme().resolveAttribute(android.R.attr.selectableItemBackgroundBorderless, value, true);
+        return value.resourceId;
     }
 
     private static int dp(Context context, int dp) {
@@ -345,13 +368,15 @@ public class VideoAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
         final TextView aiLabel;
         final TextView title;
         final TextView author;
+        final ImageView more;
 
-        VideoHolder(View itemView, ImageView image, TextView aiLabel, TextView title, TextView author) {
+        VideoHolder(View itemView, ImageView image, TextView aiLabel, TextView title, TextView author, ImageView more) {
             super(itemView);
             this.image = image;
             this.aiLabel = aiLabel;
             this.title = title;
             this.author = author;
+            this.more = more;
         }
     }
 

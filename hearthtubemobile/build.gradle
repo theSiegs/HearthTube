@@ -126,6 +126,7 @@ android.applicationVariants.all { variant ->
 dependencies {
     implementation 'androidx.annotation:annotation:' + annotationXVersion
     implementation 'androidx.recyclerview:recyclerview:' + recyclerviewXVersion
+    implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.0.0' // pull down to load a list again
     implementation 'androidx.media:media:' + mediaXVersion // exoplayer fix
 
     implementation 'com.github.bumptech.glide:glide:' + glideVersion

@@ -271,6 +271,14 @@ public class MobileBrowseActivity extends HearthActivity implements BrowseView {
             }
         });
         mGrid.setScrollWatcher(this::onGridScrolled);
+        // Pull down at the top: the section on show loads again (not while a kids gate covers it)
+        mGrid.setOnPullRefresh(() -> {
+            if (!isGated()) {
+                mPresenter.refresh(false);
+            } else {
+                mGrid.stopPullRefresh();
+            }
+        });
         return mRoot;
     }
 
