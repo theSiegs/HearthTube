@@ -31,6 +31,8 @@
     <string name="player_chapters">Chapters</string>
     <string name="see_more">See more</string>
     <string name="card_more">More actions</string>
+    <string name="pip_play">Play</string>
+    <string name="pip_pause">Pause</string>
     <string name="settings_menu_title">Settings</string>
     <string name="sign_in_open">Open the sign-in page</string>
     <string name="search_button">Search</string>

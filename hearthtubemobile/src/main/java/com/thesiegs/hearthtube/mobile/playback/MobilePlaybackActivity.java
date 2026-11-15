@@ -58,8 +58,10 @@ import java.util.Map;
 /**
  * HearthTube Mobile's player: ExoPlayer's own touch controls over the same engine ({@link ExoPlayerController}) and
  * the same {@link PlaybackPresenter} the TV uses, so every kids rule (blocked words, no Shorts, signed-in playback
- * only, the allowance) applies before a frame plays. What the TV puts around the player (suggestion rows, chat,
- * storyboards, extra buttons) is left out for now; those {@link PlaybackView} methods do nothing here.
+ * only, the allowance) applies before a frame plays. Upright, a watch page sits under the video ({@link WatchPanel}:
+ * title, channel, buttons, Up next for adults); a phone turned sideways shows the video alone; a tablet turned sideways
+ * puts Up next beside it. For adults the video shrinks into a small window over other screens (picture-in-picture):
+ * swiped down, or on leaving the app while it plays. Chat and storyboards have no phone version yet.
  */
 public class MobilePlaybackActivity extends MotherActivity implements PlaybackView {
     private static final int ID_QUALITY = com.liskovsoft.smartyoutubetv2.common.R.id.lb_control_high_quality;
@@ -109,6 +111,33 @@ public class MobilePlaybackActivity extends MotherActivity implements PlaybackVi
     private boolean mControlsShown;
     private boolean mFinishing;
     private boolean mNoisyRegistered;
+    /** The video and what floats over it (controls, captions, spinner): 16:9 above or beside the watch page */
+    private AspectFrame mStage;
+    private LinearLayout mFrame;
+    private WatchPanel mPanel;
+    private boolean mKids;
+    private int mMode = -1;
+    private static final int MODE_STACK = 0; // upright: the video, the page under it
+    private static final int MODE_FULL = 1; // a phone sideways: the video alone
+    private static final int MODE_SIDE = 2; // a tablet sideways: the video and the page, Up next beside them
+    private static final int MODE_PIP = 3; // the small window
+    private static final String ACTION_PIP_TOGGLE = "com.thesiegs.hearthtube.mobile.PIP_TOGGLE";
+    /** The player in the small window, if one is: a video opened meanwhile closes it (one player at a time) */
+    private static java.lang.ref.WeakReference<MobilePlaybackActivity> sPip;
+    private final BroadcastReceiver mPipToggle = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (mEngine != null) {
+                mEngine.setPlayWhenReady(!mEngine.getPlayWhenReady());
+            }
+        }
+    };
+    private final com.google.android.exoplayer2.Player.EventListener mPlayState = new com.google.android.exoplayer2.Player.EventListener() {
+        @Override
+        public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
+            updatePip();
+        }
+    };
     /** Headphones unplugged (or a Bluetooth speaker gone): pause instead of playing on through the phone's speaker */
     private final BroadcastReceiver mBecomingNoisy = new BroadcastReceiver() {
         @Override
@@ -124,7 +153,21 @@ public class MobilePlaybackActivity extends MotherActivity implements PlaybackVi
         super.onCreate(savedInstanceState);
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        mKids = com.liskovsoft.smartyoutubetv2.common.utils.ParentGate.isKidsProfile(this);
+
+        // A video opened while another plays in the small window: that one closes, this one plays
+        MobilePlaybackActivity pip = sPip != null ? sPip.get() : null;
+        if (pip != null && pip != this && !pip.isFinishing()) {
+            if (pip.mEngine != null) {
+                pip.mEngine.setPlayWhenReady(false);
+            }
+            pip.finishReally();
+        }
+        sPip = null;
+
         setContentView(createContent());
+        applyLayout();
+        registerReceiver(mPipToggle, new IntentFilter(ACTION_PIP_TOGGLE), Context.RECEIVER_NOT_EXPORTED);
 
         mInitializer = new ExoPlayerInitializer(this);
         mPresenter = PlaybackPresenter.instance(this);
@@ -150,6 +193,11 @@ public class MobilePlaybackActivity extends MotherActivity implements PlaybackVi
     private View createContent() {
         FrameLayout root = new FrameLayout(this);
         root.setBackgroundColor(Color.BLACK);
+        mFrame = new LinearLayout(this);
+        root.addView(mFrame, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        FrameLayout outer = root;
+        root = mStage = new AspectFrame(this);
+        mStage.setBackgroundColor(Color.BLACK);
 
         mPlayerView = new com.google.android.exoplayer2.ui.PlayerView(this);
         mPlayerView.setControllerAutoShow(true);
@@ -204,7 +252,144 @@ public class MobilePlaybackActivity extends MotherActivity implements PlaybackVi
         mProgress.setIndeterminateTintList(android.content.res.ColorStateList.valueOf(accent));
         root.addView(mProgress, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER));
 
-        return root;
+        mPanel = new WatchPanel(this, !mKids, new WatchPanel.Listener() {
+            @Override
+            public void onSuggestionClick(Video video) {
+                mPresenter.onSuggestionItemClicked(video);
+            }
+
+            @Override
+            public void onSuggestionLongClick(Video video) {
+                mPresenter.onSuggestionItemLongClicked(video);
+            }
+
+            @Override
+            public void onSuggestionScrollEnd(Video last) {
+                mPresenter.onScrollEnd(last);
+            }
+        });
+
+        return outer;
+    }
+
+    /** The screen's arrangement for its shape now (see the MODE_ constants); rebuilt only when that changes */
+    private void applyLayout() {
+        Configuration config = getResources().getConfiguration();
+        boolean landscape = config.orientation == Configuration.ORIENTATION_LANDSCAPE;
+        int mode = isInPictureInPictureMode() ? MODE_PIP
+                : !landscape ? MODE_STACK
+                : config.smallestScreenWidthDp >= 600 && mPanel.hasUpNext() ? MODE_SIDE
+                : MODE_FULL;
+
+        if (mode == mMode) {
+            return;
+        }
+
+        mMode = mode;
+        detach(mStage);
+        detach(mPanel.details());
+        detach(mPanel.upNext());
+        detach(mActions.view());
+        mFrame.removeAllViews();
+        int match = ViewGroup.LayoutParams.MATCH_PARENT;
+        int wrap = ViewGroup.LayoutParams.WRAP_CONTENT;
+
+        // The buttons: on the page when it shows, else over the video under its title
+        boolean page = mode == MODE_STACK || mode == MODE_SIDE;
+        if (page) {
+            mPanel.actionsSlot().addView(mActions.view(), new LinearLayout.LayoutParams(match, wrap));
+        } else {
+            mTop.addView(mActions.view(), new LinearLayout.LayoutParams(match, wrap));
+        }
+        mTitle.setVisibility(page ? View.GONE : View.VISIBLE); // the page has it
+        mStage.setAspect(page);
+
+        if (mode == MODE_STACK) {
+            mFrame.setOrientation(LinearLayout.VERTICAL);
+            mFrame.addView(mStage, new LinearLayout.LayoutParams(match, wrap));
+            mFrame.addView(mPanel.details(), new LinearLayout.LayoutParams(match, wrap));
+            mFrame.addView(mPanel.upNext(), new LinearLayout.LayoutParams(match, 0, 1));
+        } else if (mode == MODE_SIDE) {
+            mFrame.setOrientation(LinearLayout.HORIZONTAL);
+            LinearLayout left = new LinearLayout(this);
+            left.setOrientation(LinearLayout.VERTICAL);
+            left.addView(mStage, new LinearLayout.LayoutParams(match, wrap));
+            left.addView(mPanel.details(), new LinearLayout.LayoutParams(match, wrap));
+            mFrame.addView(left, new LinearLayout.LayoutParams(0, match, 2));
+            mFrame.addView(mPanel.upNext(), new LinearLayout.LayoutParams(0, match, 1));
+        } else {
+            mFrame.addView(mStage, new LinearLayout.LayoutParams(match, match));
+        }
+
+        if (mode == MODE_PIP) {
+            showControls(false);
+        }
+
+        hideSystemBarsInLandscape();
+    }
+
+    private static void detach(View view) {
+        if (view.getParent() instanceof ViewGroup) {
+            ((ViewGroup) view.getParent()).removeView(view);
+        }
+    }
+
+    // The small window (adults only)
+
+    private boolean canPip() {
+        return !mKids && getPackageManager().hasSystemFeature(android.content.pm.PackageManager.FEATURE_PICTURE_IN_PICTURE);
+    }
+
+    /** Leaving the app while a video plays takes it along in the small window; its button plays or pauses */
+    private void updatePip() {
+        if (!canPip() || isFinishing()) {
+            return;
+        }
+
+        boolean playing = mEngine != null && mEngine.getPlayWhenReady();
+        android.app.PendingIntent toggle = android.app.PendingIntent.getBroadcast(this, 0,
+                new Intent(ACTION_PIP_TOGGLE).setPackage(getPackageName()), android.app.PendingIntent.FLAG_IMMUTABLE);
+        String label = getString(playing ? R.string.pip_pause : R.string.pip_play);
+        android.app.RemoteAction action = new android.app.RemoteAction(
+                android.graphics.drawable.Icon.createWithResource(this, playing ? android.R.drawable.ic_media_pause : android.R.drawable.ic_media_play),
+                label, label, toggle);
+
+        try {
+            setPictureInPictureParams(new android.app.PictureInPictureParams.Builder()
+                    .setAspectRatio(new android.util.Rational(16, 9))
+                    .setAutoEnterEnabled(playing)
+                    .setActions(java.util.Collections.singletonList(action))
+                    .build());
+        } catch (IllegalStateException | IllegalArgumentException e) {
+            // Not offered here after all
+        }
+    }
+
+    private void enterPip() {
+        if (!canPip() || isInPictureInPictureMode()) {
+            return;
+        }
+
+        updatePip();
+
+        try {
+            enterPictureInPictureMode(new android.app.PictureInPictureParams.Builder()
+                    .setAspectRatio(new android.util.Rational(16, 9)).build());
+        } catch (IllegalStateException e) {
+            // Not offered here after all
+        }
+    }
+
+    @Override
+    public void onPictureInPictureModeChanged(boolean inPip, Configuration newConfig) {
+        super.onPictureInPictureModeChanged(inPip, newConfig);
+        sPip = inPip ? new java.lang.ref.WeakReference<>(this) : null;
+        applyLayout();
+
+        // The small window's X: it was stopped there, so it closes (back to full size, it is resumed instead)
+        if (!inPip && getLifecycle().getCurrentState() == androidx.lifecycle.Lifecycle.State.CREATED) {
+            finishReally();
+        }
     }
 
     /**
@@ -303,6 +488,9 @@ public class MobilePlaybackActivity extends MotherActivity implements PlaybackVi
 
                 if (tap) {
                     onTap(event.getX(), view.getWidth(), event.getEventTime());
+                } else if (mMode == MODE_STACK && event.getY() - mDownY > 6 * slop
+                        && event.getY() - mDownY > 2 * Math.abs(event.getX() - mDownX)) {
+                    enterPip(); // swiped down, as YouTube shrinks its player
                 }
 
                 return true;
@@ -455,6 +643,10 @@ public class MobilePlaybackActivity extends MotherActivity implements PlaybackVi
         super.onDestroy();
         mHandler.removeCallbacksAndMessages(null); // taps, seek text and the segment retries must not outlive the screen
         releasePlayer();
+        unregisterReceiver(mPipToggle);
+        if (sPip != null && sPip.get() == this) {
+            sPip = null;
+        }
 
         ViewTeardown.destroyed(mPresenter, this);
     }
@@ -462,13 +654,14 @@ public class MobilePlaybackActivity extends MotherActivity implements PlaybackVi
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
+        applyLayout();
         hideSystemBarsInLandscape();
     }
 
-    /** Sideways, the picture takes the whole screen; upright, the system bars stay */
+    /** The video alone (a phone sideways) takes the whole screen; with the watch page, the system bars stay */
     private void hideSystemBarsInLandscape() {
-        boolean landscape = getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE;
-        int flags = landscape
+        boolean full = mMode == MODE_FULL;
+        int flags = full
                 ? View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
                 | View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
                 : View.SYSTEM_UI_FLAG_VISIBLE;
@@ -485,6 +678,7 @@ public class MobilePlaybackActivity extends MotherActivity implements PlaybackVi
         mPlayer = mInitializer.createPlayer(this, new CustomOverridesRenderersFactory(this), trackSelector);
         mEngine.setPlayer(mPlayer);
         mPlayerView.setPlayer(mPlayer);
+        mPlayer.addListener(mPlayState);
 
         // Captions drawn by the TV's own manager, so they follow the caption style and size chosen in Settings
         if (mPlayerView.getSubtitleView() != null) {
@@ -539,6 +733,7 @@ public class MobilePlaybackActivity extends MotherActivity implements PlaybackVi
         }
 
         mSubtitleManager = null;
+        mPlayer.removeListener(mPlayState);
         mPlayerView.setPlayer(null);
         mInitializer.release();
         mEngine.release();
@@ -558,6 +753,7 @@ public class MobilePlaybackActivity extends MotherActivity implements PlaybackVi
 
         if (video != null) {
             mTitle.setText(video.getTitleFull() != null ? video.getTitleFull() : "");
+            mPanel.setVideo(video);
         }
     }
 
@@ -738,10 +934,10 @@ public class MobilePlaybackActivity extends MotherActivity implements PlaybackVi
         return mEngineBlocked;
     }
 
-    /** A kid's phone doesn't play in a corner of the screen over other apps */
+    /** Adults only ({@link #canPip}): a kid's phone doesn't play in a corner of the screen over other apps */
     @Override
     public boolean isInPIPMode() {
-        return false;
+        return isInPictureInPictureMode();
     }
 
     @Override
@@ -809,18 +1005,33 @@ public class MobilePlaybackActivity extends MotherActivity implements PlaybackVi
     public void setVideoGravity(int gravity) {
     }
 
-    // PlayerUI: the TV's suggestion rows, chat, storyboards and button rows have no phone version yet
+    // PlayerUI: the TV's suggestion rows are Up next on the watch page; chat and storyboards have no phone version yet
 
     @Override
     public void updateSuggestions(VideoGroup group) {
-        if (group != null && group.isChapters()) { // the chapters ride in as a row; here they are a button's list
+        if (group == null) {
+            return;
+        }
+
+        if (group.isChapters()) { // the chapters ride in as a row; here they are a button's list
             mChapters = new ArrayList<>(group.getVideos());
             mActions.setVisible(ID_CHAPTERS, true);
+            return;
+        }
+
+        boolean first = mPanel.isSuggestionsEmpty();
+        mPanel.updateSuggestions(group);
+        if (first) {
+            mPanel.scrollUpNextToTop();
         }
     }
 
     @Override
     public void removeSuggestions(VideoGroup group) {
+        if (group != null) {
+            group.setAction(VideoGroup.ACTION_REMOVE);
+            mPanel.updateSuggestions(group);
+        }
     }
 
     @Override
@@ -847,11 +1058,12 @@ public class MobilePlaybackActivity extends MotherActivity implements PlaybackVi
 
     @Override
     public boolean isSuggestionsEmpty() {
-        return true;
+        return mPanel.isSuggestionsEmpty();
     }
 
     @Override
     public void clearSuggestions() {
+        mPanel.clearSuggestions();
     }
 
     @Override
@@ -901,6 +1113,7 @@ public class MobilePlaybackActivity extends MotherActivity implements PlaybackVi
 
     @Override
     public void setChannelIcon(String iconUrl) {
+        mPanel.setChannelIcon(iconUrl);
     }
 
     @Override
@@ -929,6 +1142,7 @@ public class MobilePlaybackActivity extends MotherActivity implements PlaybackVi
     @Override
     public void setTitle(String title) {
         mTitle.setText(title);
+        mPanel.setTitle(title);
     }
 
     @Override
@@ -949,5 +1163,34 @@ public class MobilePlaybackActivity extends MotherActivity implements PlaybackVi
 
     @Override
     public void setChatReceiver(ChatReceiver chatReceiver) {
+    }
+
+    /** The video's box: 16:9 of its width beside or above the watch page, the whole space otherwise */
+    private static final class AspectFrame extends FrameLayout {
+        private boolean mAspect;
+
+        AspectFrame(Context context) {
+            super(context);
+        }
+
+        void setAspect(boolean aspect) {
+            if (mAspect != aspect) {
+                mAspect = aspect;
+                requestLayout();
+            }
+        }
+
+        @Override
+        protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+            if (mAspect) {
+                int width = MeasureSpec.getSize(widthMeasureSpec);
+                int height = width * 9 / 16;
+                if (MeasureSpec.getMode(heightMeasureSpec) != MeasureSpec.UNSPECIFIED) {
+                    height = Math.min(height, MeasureSpec.getSize(heightMeasureSpec));
+                }
+                heightMeasureSpec = MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY);
+            }
+            super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        }
     }
 }

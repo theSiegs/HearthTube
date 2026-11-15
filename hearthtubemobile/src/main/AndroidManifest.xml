@@ -80,7 +80,7 @@
             android:exported="false"
             android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation|keyboardHidden"
             android:screenOrientation="fullUser"
-            android:supportsPictureInPicture="false" />
+            android:supportsPictureInPicture="true" />
 
         <activity
             android:name=".channel.MobileChannelActivity"

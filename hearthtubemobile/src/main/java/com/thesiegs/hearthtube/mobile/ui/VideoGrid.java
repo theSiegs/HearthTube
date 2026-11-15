@@ -48,6 +48,8 @@ public class VideoGrid extends FrameLayout {
     private final VideoRows mRows = new VideoRows();
     private StripListener mStripListener;
     private boolean mShelves;
+    /** A set number of columns (a narrow pane, such as the player's Up next), else by the screen's width */
+    private int mFixedColumns;
     private ScrollWatcher mScrollWatcher;
     private final VideoAdapter mAdapter;
     private final GridLayoutManager mLayout;
@@ -310,7 +312,17 @@ public class VideoGrid extends FrameLayout {
         mLayout.setSpanCount(columns());
     }
 
+    /** Always {@code columns} columns, whatever the screen's width (0: by the width again) */
+    public void setFixedColumns(int columns) {
+        mFixedColumns = columns;
+        mLayout.setSpanCount(columns());
+    }
+
     private int columns() {
+        if (mFixedColumns > 0) {
+            return mFixedColumns;
+        }
+
         return Math.max(1, (int) (getResources().getConfiguration().screenWidthDp / (float) COLUMN_DP));
     }
 
