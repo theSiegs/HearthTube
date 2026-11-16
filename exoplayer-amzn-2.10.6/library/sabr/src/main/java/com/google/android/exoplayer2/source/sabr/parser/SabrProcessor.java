@@ -5,6 +5,7 @@ import android.util.Base64;
 import androidx.annotation.NonNull;
 
 import com.google.android.exoplayer2.extractor.ExtractorInput;
+import com.google.android.exoplayer2.source.sabr.parser.exceptions.SabrPoTokenError;
 import com.google.android.exoplayer2.source.sabr.parser.exceptions.SabrStreamError;
 import com.google.android.exoplayer2.source.sabr.parser.misc.Utils;
 import com.google.android.exoplayer2.source.sabr.parser.models.ConsumedRange;
@@ -74,6 +75,7 @@ public class SabrProcessor {
     private final Set<Integer> sabrContextsToSend;
     private final Map<Integer, MediaHeader> initializedFormats;
     private final FormatSelector emptySelector;
+    private SabrStreamError fatalError;
 
     public SabrProcessor(
             @NonNull String videoPlaybackUstreamerConfig,
@@ -448,8 +450,8 @@ public class SabrProcessor {
             result.sabrPart = new PoTokenStatusSabrPart(resultStatus);
         }
 
-        // NOTE: Avoid to throw PoTokenError on bad status!
-        // PoToken attestation may fail a few times before passing, so a failure isn't proof it won't succeed.
+        // NOTE: PoToken attestation may fail a few times before passing, so a failure isn't proof it won't succeed.
+        this.fatalError = status != Status.OK ? new SabrPoTokenError("PoToken error: " + resultStatus) : null;
 
         return result;
     }
@@ -735,6 +737,10 @@ public class SabrProcessor {
 
     public int getBackoffTimeMs() {
         return nextRequestPolicy != null ? nextRequestPolicy.getBackoffTimeMs() : 0;
+    }
+
+    public SabrStreamError getFatalError() {
+        return fatalError;
     }
 
     //private List<FormatId> createSelectedFormatIds() {

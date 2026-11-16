@@ -3,6 +3,7 @@ package com.liskovsoft.smartyoutubetv2.common.app.models.playback.controllers;
 import android.annotation.SuppressLint;
 
 import com.google.android.exoplayer2.source.sabr.parser.exceptions.SabrBackoffError;
+import com.google.android.exoplayer2.source.sabr.parser.exceptions.SabrPoTokenError;
 import com.google.android.exoplayer2.source.sabr.parser.exceptions.SabrReloadPlayerError;
 import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.sharedutils.helpers.MessageHelpers;
@@ -18,7 +19,6 @@ import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerData;
 import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerTweaksData;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 import com.liskovsoft.youtubeapi.service.YouTubeServiceManager;
-import com.liskovsoft.youtubeapi.videoinfo.LoginRequiredException;
 
 import java.util.List;
 
@@ -332,7 +332,9 @@ public class ErrorFixerController extends BasePlayerController implements OnLong
             getPlayerData().setFormat(FormatItem.AUDIO_HQ_MP4A);
             restartEngine = false;
         } else if (type == PlayerEventListener.ERROR_TYPE_UNEXPECTED) {
-            if (error instanceof NullPointerException) {
+            if (error instanceof SabrPoTokenError) {
+                YouTubeServiceManager.instance().switchNextClient();
+            } else if (error instanceof NullPointerException) {
                 // SABR extractor throws NPE on subtitle error
                 // NOTE: the engine should be restarted
                 disableSubtitles();
@@ -464,9 +466,9 @@ public class ErrorFixerController extends BasePlayerController implements OnLong
 
     private boolean isBotBlocked(Throwable error) {
         // YouTube returned no playable format (e.g. LOGIN_REQUIRED "Sign in to confirm that you're not a bot").
-        // MediaServiceCore reports it from every client as LoginRequiredException (it's no network failure).
+        // MediaServiceCore tries every client, then returns no format info (it's no network failure):
         // RxHelper reports the empty result as "fromNullable result is null".
-        return error instanceof LoginRequiredException || Helpers.containsAny(error.getMessage(), "fromNullable result is null");
+        return Helpers.containsAny(error.getMessage(), "fromNullable result is null");
     }
 
     private void runBotBlockRetry(Throwable error) {

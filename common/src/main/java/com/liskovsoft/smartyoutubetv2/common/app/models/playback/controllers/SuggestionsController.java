@@ -155,6 +155,18 @@ public class SuggestionsController extends BasePlayerController {
         }
     }
 
+    public void onNextChapter() {
+        if (getPlayer() == null) {
+            return;
+        }
+
+        ChapterItem nextChapter = getNextChapter();
+        getPlayer().setPositionMs(nextChapter != null ? nextChapter.getStartTimeMs() : getPlayer().getDurationMs());
+        if (nextChapter != null) {
+            MessageHelpers.showMessage(getContext(), nextChapter.getTitle());
+        }
+    }
+
     @Override
     public void onTickle() {
         updateLiveDescription();
@@ -542,6 +554,10 @@ public class SuggestionsController extends BasePlayerController {
     }
 
     private void startChapterNotificationServiceIfNeededInt() {
+        if (getPlayer() == null) {
+            return;
+        }
+
         Utils.removeCallbacks(mChapterHandler);
 
         Pair<ChapterItem, Integer> currentChapter = getCurrentChapter();
@@ -795,8 +811,7 @@ public class SuggestionsController extends BasePlayerController {
                 option -> {
                     // return to previous dialog or close if no other dialogs in stack
                     dialogPresenter.closeDialog();
-                    ChapterItem nextChapter = getNextChapter();
-                    getPlayer().setPositionMs(nextChapter != null ? nextChapter.getStartTimeMs() : getPlayer().getDurationMs());
+                    onNextChapter();
                 }
         );
 
