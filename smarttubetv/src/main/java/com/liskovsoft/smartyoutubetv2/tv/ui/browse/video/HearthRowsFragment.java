@@ -688,6 +688,17 @@ public class HearthRowsFragment extends VideoRowsFragment {
         }
     }
 
+    /** The strip's next row in the big row, the focus on its first video */
+    private void showNextRow() {
+        selectStripRow(mSelected + 1);
+        View chip = selectedChip();
+        if (chip != null) {
+            mChipScroll.smoothScrollTo(Math.max(0, chip.getLeft() - dp(chip.getContext(), 56)), 0);
+        }
+        // The card that had the focus went with its row
+        mRows.post(this::focusRow);
+    }
+
     private View selectedChip() {
         if (mChipScroll.getVisibility() != View.VISIBLE || mChips.getChildCount() == 0) {
             return null;
@@ -735,6 +746,12 @@ public class HearthRowsFragment extends VideoRowsFragment {
                 }
             } else if (direction == View.FOCUS_DOWN && inChips) {
                 return mRows;
+            } else if (direction == View.FOCUS_DOWN && inRows && mGridSource == null && mChipScroll.getVisibility() == View.VISIBLE) {
+                // Down on the big row shows the next one (its chip lights up); on the last row it stays
+                if (mSelected + 1 < mChips.getChildCount()) {
+                    showNextRow();
+                }
+                return focused;
             } else if ((direction == View.FOCUS_LEFT || direction == View.FOCUS_RIGHT) && inChips) {
                 // Stay in the strip; nothing further left: the side menu (BrowseActivity)
                 View next = android.view.FocusFinder.getInstance().findNextFocus(mChips, focused, direction);
