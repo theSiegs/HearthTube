@@ -25,14 +25,11 @@ import java.util.List;
 public class ErrorFixerController extends BasePlayerController implements OnLongBuffering {
     private static final String TAG = ErrorFixerController.class.getSimpleName();
     private static final long STREAM_END_THRESHOLD_MS = 180_000;
-    private static final int MAX_BOT_BLOCK_RETRIES = 3;
     private static final int MAX_SABR_ERROR_FIX_ATTEMPTS = 1;
     private static final long SEEK_END_THRESHOLD_MS = 1_000;
     private static final int MAX_FORMAT_RELOAD_NUM = 3;
     private final BufferingDetector mBufferingDetector = new BufferingDetector(this);
     private VideoLoaderController mVideoLoaderController;
-    private String mBotBlockedVideoId;
-    private int mBotBlockRetryCount;
     private String mSabrErrorFixVideoId;
     private int mSabrErrorFixAttempts;
     private String mFormatErrorVideoId;
@@ -146,15 +143,13 @@ public class ErrorFixerController extends BasePlayerController implements OnLong
 
     @Override
     public void onVideoLoaded(Video item) {
-        // Successful playback clears any pending bot-block retry state.
-        resetBotBlockRetry();
+        // A video that loaded starts the reload count again
         mFormatErrorNum = 0;
     }
 
     @Override
     public void onFinish() {
         mBufferingDetector.reset();
-        resetBotBlockRetry();
     }
 
     @Override
@@ -428,8 +423,7 @@ public class ErrorFixerController extends BasePlayerController implements OnLong
         String fullMsg = String.format("loadFormatInfo error: %s: %s", className, Utils.getStackTraceAsString(error));
         Log.e(TAG, fullMsg);
 
-        // HearthTube: sign-in required from every client is a known answer, not a failure to dump on the screen
-        if (!isBotBlocked(error)) {
+        if (!Helpers.containsAny(message, "fromNullable result is null")) {
             MessageHelpers.showLongMessage(getContext(), fullMsg);
             if (getPlayer() != null) {
                 getPlayer().setTitle(fullMsg);
@@ -442,8 +436,7 @@ public class ErrorFixerController extends BasePlayerController implements OnLong
 
         // Don't reload the same video endlessly. Some videos can't be played at all
         // (e.g. members only content) and the reload below produces an infinite loading spinner.
-        // HearthTube: a bot block has its own bounded retry, ending in the message that says why YouTube refused
-        if (!isBotBlocked(error) && ++mFormatErrorNum > MAX_FORMAT_RELOAD_NUM) {
+        if (++mFormatErrorNum > MAX_FORMAT_RELOAD_NUM) {
             Log.e(TAG, "Can't load the video after %s attempts. Giving up...", MAX_FORMAT_RELOAD_NUM);
             showFormatError();
             return;
@@ -456,75 +449,10 @@ public class ErrorFixerController extends BasePlayerController implements OnLong
         } else if (Helpers.containsAny(message, "is not defined")) {
             YouTubeServiceManager.instance().invalidateCache();
             mVideoLoaderController.reloadVideo();
-        } else if (isBotBlocked(error)) {
-            runBotBlockRetry(error);
         } else {
             Log.e(TAG, "Probably no internet connection");
             mVideoLoaderController.reloadVideo();
         }
-    }
-
-    private boolean isBotBlocked(Throwable error) {
-        // YouTube returned no playable format (e.g. LOGIN_REQUIRED "Sign in to confirm that you're not a bot").
-        // MediaServiceCore tries every client, then returns no format info (it's no network failure):
-        // RxHelper reports the empty result as "fromNullable result is null".
-        return Helpers.containsAny(error.getMessage(), "fromNullable result is null");
-    }
-
-    private void runBotBlockRetry(Throwable error) {
-        String videoId = getVideo() != null ? getVideo().videoId : null;
-
-        if (!Helpers.equals(videoId, mBotBlockedVideoId)) {
-            mBotBlockedVideoId = videoId;
-            mBotBlockRetryCount = 0;
-        }
-
-        mBotBlockRetryCount++;
-
-        if (mBotBlockRetryCount > MAX_BOT_BLOCK_RETRIES) {
-            showPlaybackBlockedError(error);
-            return;
-        }
-
-        Log.e(TAG, "Playback blocked by YouTube. Retry %s/%s: switching client and refreshing poToken...",
-                mBotBlockRetryCount, MAX_BOT_BLOCK_RETRIES);
-
-        // Force a fresh poToken/visitor data and advance to the next client before retrying.
-        YouTubeServiceManager.instance().invalidateCache();      // resets poToken cache + resets client to default
-        YouTubeServiceManager.instance().switchNextClientNow();  // then advances to the next client
-
-        mVideoLoaderController.reloadVideo();
-    }
-
-    private void showPlaybackBlockedError(Throwable error) {
-        if (getPlayer() == null) {
-            return;
-        }
-
-        Log.e(TAG, "Giving up. Showing playback blocked error...");
-
-        String message = getBlockedMessage(error != null ? error.getMessage() : null, getContext().getString(R.string.msg_player_error_bot_blocked));
-        getPlayer().setTitle(message);
-        getPlayer().showProgressBar(false);
-        getPlayer().showOverlay(true);
-        MessageHelpers.showLongMessage(getContext(), message);
-    }
-
-    /**
-     * HearthTube: YouTube's own reason says why it refused (private video, sign-in needed...). The network/VPN advice is
-     * only right for the bot check, so it stays for that and for an answer without a reason.
-     */
-    static String getBlockedMessage(String reason, String botBlockedMessage) {
-        if (reason == null || reason.isEmpty() || reason.toLowerCase().matches("(?s).*\\bbot\\b.*") || reason.contains("fromNullable result is null")) {
-            return botBlockedMessage;
-        }
-
-        return reason;
-    }
-
-    private void resetBotBlockRetry() {
-        mBotBlockedVideoId = null;
-        mBotBlockRetryCount = 0;
     }
 
     /**
