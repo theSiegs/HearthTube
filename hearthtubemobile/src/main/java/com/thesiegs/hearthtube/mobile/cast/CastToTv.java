@@ -14,7 +14,6 @@ import com.liskovsoft.smartyoutubetv2.common.app.presenters.AppDialogPresenter;
 import com.liskovsoft.smartyoutubetv2.common.utils.ParentGate;
 import com.liskovsoft.smartyoutubetv2.common.utils.SimpleEditDialog;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
-import com.liskovsoft.youtubeapi.lounge.sender.LoungeSender;
 import com.thesiegs.hearthtube.mobile.R;
 
 import java.util.ArrayList;

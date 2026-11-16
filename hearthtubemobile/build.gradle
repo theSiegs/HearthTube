@@ -141,6 +141,10 @@ dependencies {
     implementation project(':exoplayer-library-ui')
     implementation project(':exoplayer-extension-mediasession')
 
+    // Cast to a TV (cast/LoungeSender): the same versions MediaServiceCore and SharedModules use
+    implementation 'com.google.code.gson:gson:' + gsonVersion
+    implementation 'com.squareup.okhttp3:okhttp:' + okhttpVersion
+
     implementation 'io.reactivex.rxjava2:rxandroid:' + rxAndroidVersion
     implementation 'io.reactivex.rxjava2:rxjava:' + rxJavaVersion
 
