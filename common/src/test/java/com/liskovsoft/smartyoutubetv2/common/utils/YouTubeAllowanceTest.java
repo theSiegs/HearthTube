@@ -93,21 +93,25 @@ public class YouTubeAllowanceTest {
         assertEquals(Verdict.LOCKED, decision.verdict);
         assertEquals("School time", decision.message);
 
-        // Once Home Assistant is gone long enough, its lock lapses and Hearth's 50 minutes count as given
+        // Home Assistant gone a while: its last word still locks
         Decision later = mAllowance.decide(new Row(6, KID, 50, true, "School time", HEARTH, NOW - MINUTE), NOW + 20 * MINUTE);
-        assertEquals(Verdict.PLAY, later.verdict);
-        assertEquals(Long.valueOf(50 * MINUTE), later.msLeft);
+        assertEquals(Verdict.LOCKED, later.verdict);
+
+        // Once the lock ends, Hearth's 50 minutes count as given
+        Decision unlocked = mAllowance.decide(new Row(6, KID, 50, false, null, HEARTH, NOW + 30 * MINUTE), NOW + 30 * MINUTE);
+        assertEquals(Verdict.PLAY, unlocked.verdict);
+        assertEquals(Long.valueOf(50 * MINUTE), unlocked.msLeft);
     }
 
     @Test
     public void homeAssistantMinutesUnderALockKeepCountingDown() {
-        // Home Assistant's own minutes while it locks: remembered, so when the lock lapses (Home Assistant away) they
-        // count down by what HearthTube plays
+        // Home Assistant's own minutes while it locks: remembered, so once the lock ends (Hearth keeps the read's
+        // minutes, Home Assistant away) they count down by what HearthTube plays
         long readAt = NOW - 30 * MINUTE;
         mAllowance.decide(locked(20, "Bedtime", readAt), readAt);
         play(readAt + 16 * MINUTE, 8);
 
-        Decision decision = mAllowance.decide(locked(20, "Bedtime", readAt), NOW);
+        Decision decision = mAllowance.decide(haRow(20, "Bedtime", readAt), NOW);
         assertEquals(Verdict.PLAY, decision.verdict);
         assertEquals(Long.valueOf(12 * MINUTE), decision.msLeft);
     }
@@ -217,16 +221,14 @@ public class YouTubeAllowanceTest {
     }
 
     @Test
-    public void staleLockLapses() {
-        // Home Assistant locked it, then went away: after 15 minutes without a read the lock no longer counts
-        Decision decision = mAllowance.decide(locked(null, null, NOW - 16 * MINUTE), NOW);
-        assertEquals(Verdict.PLAY, decision.verdict);
+    public void staleLockHolds() {
+        // Home Assistant locked it, then went away: its most recent word still counts, however old
+        Decision decision = mAllowance.decide(locked(null, "Bedtime", NOW - 16 * MINUTE), NOW);
+        assertEquals(Verdict.LOCKED, decision.verdict);
+        assertEquals("Bedtime", decision.message);
 
-        // Minutes left with it still count, as given (Hearth's own limit, maybe: a lock makes it say "home_assistant")
-        Decision withMinutes = mAllowance.decide(locked(20, null, NOW - 16 * MINUTE), NOW);
-        assertEquals(Long.valueOf(20 * MINUTE), withMinutes.msLeft);
-        Decision noneLeft = mAllowance.decide(locked(0, "Bedtime", NOW - 16 * MINUTE), NOW);
-        assertEquals(Verdict.USED_UP_HOME_ASSISTANT, noneLeft.verdict);
+        Decision overnight = mAllowance.decide(locked(20, null, NOW - 9 * 60 * MINUTE), NOW);
+        assertEquals(Verdict.LOCKED, overnight.verdict);
     }
 
     @Test

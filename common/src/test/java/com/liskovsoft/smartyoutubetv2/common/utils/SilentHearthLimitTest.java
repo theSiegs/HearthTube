@@ -1,7 +1,9 @@
 package com.liskovsoft.smartyoutubetv2.common.utils;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
@@ -105,6 +107,44 @@ public class SilentHearthLimitTest {
         assertEquals(Long.valueOf(7 * MINUTE), restored.msLeft(MON));
         restored.remember("sam", null, MON, 3_000);
         assertEquals(Long.valueOf(27 * MINUTE), restored.msLeft(MON));
+    }
+
+    @Test
+    public void theLastLockHoldsUntilHearthLiftsIt() {
+        mLimit.remember("alex", 30 * MINUTE, MON, 1_000);
+        mLimit.rememberLock("alex", true, "Bedtime");
+        assertTrue(mLimit.isLocked());
+        assertEquals("Bedtime", mLimit.lockMessage());
+        // The minutes Hearth gave before the lock are still there for after it
+        assertEquals(Long.valueOf(30 * MINUTE), mLimit.msLeft(MON));
+
+        // Across a restart and a new day, still locked: only Hearth lifts it
+        SilentHearthLimit restored = new SilentHearthLimit();
+        restored.restore(mLimit.save());
+        assertTrue(restored.isLocked());
+        assertEquals("Bedtime", restored.lockMessage());
+        restored.msLeft(TUE);
+        assertTrue(restored.isLocked());
+
+        restored.rememberLock("alex", false, null);
+        assertFalse(restored.isLocked());
+        assertNull(restored.lockMessage());
+    }
+
+    @Test
+    public void aLockWithoutWordsOrMinutesIsKept() {
+        mLimit.rememberLock("sam|1;2", true, null);
+        SilentHearthLimit restored = new SilentHearthLimit();
+        restored.restore(mLimit.save());
+        assertTrue(restored.isLocked());
+        assertNull(restored.lockMessage());
+        assertNull(restored.msLeft(MON));
+
+        // Minutes saved beside a lock read back too (an older HearthTube skips the three-part lock item)
+        mLimit.remember("alex", 5 * MINUTE, MON, 1_000);
+        SilentHearthLimit older = new SilentHearthLimit();
+        older.restore(mLimit.save());
+        assertEquals(Long.valueOf(5 * MINUTE), older.msLeft(MON));
     }
 
     @Test

@@ -206,8 +206,15 @@ public final class HearthAllowance {
         return decision;
     }
 
-    /** Hearth can't be asked: what it last gave for today, less what's played since, and the device's own limit */
+    /**
+     * Hearth can't be asked: its last lock still holds; otherwise what it last gave for today, less what's played since,
+     * and the device's own limit
+     */
     private static YouTubeAllowance.Decision silentDecision(Context context) {
+        if (silent(context).isLocked()) {
+            return new YouTubeAllowance.Decision(YouTubeAllowance.Verdict.LOCKED, silent(context).lockMessage(), 0L);
+        }
+
         String today = today(context);
         Long left = silent(context).msLeft(today);
         Long local = local(context).msLeft(today);
@@ -230,6 +237,7 @@ public final class HearthAllowance {
         Long left = glint.minutes == null ? null
                 : Math.max(0, glint.minutes * 60_000L - GlintChannel.playedSince(glint.asOf));
         silent(context).remember(GLINT_KEY, left, today, System.currentTimeMillis());
+        silent(context).rememberLock(GLINT_KEY, glint.locked, glint.message);
         saveSilent(context);
 
         if (glint.locked) {
@@ -249,13 +257,18 @@ public final class HearthAllowance {
                 : new YouTubeAllowance.Decision(YouTubeAllowance.Verdict.PLAY, null, left);
     }
 
-    /** Keeps what Hearth just gave, for when it goes silent. A bedtime lock lapses with Hearth, so it isn't kept. */
+    /**
+     * Keeps what Hearth just gave, for when it goes silent: its lock (held until Hearth says otherwise), or else its
+     * minutes. A lock leaves the kept minutes as they were (it says nothing about them).
+     */
     private static void rememberForSilence(Context context, String profileKey, YouTubeAllowance.Decision decision) {
-        if (decision.verdict == YouTubeAllowance.Verdict.LOCKED) {
-            return;
+        boolean locked = decision.verdict == YouTubeAllowance.Verdict.LOCKED;
+        silent(context).rememberLock(profileKey, locked, decision.message);
+
+        if (!locked) {
+            silent(context).remember(profileKey, decision.msLeft, today(context), System.currentTimeMillis());
         }
 
-        silent(context).remember(profileKey, decision.msLeft, today(context), System.currentTimeMillis());
         saveSilent(context);
     }
 

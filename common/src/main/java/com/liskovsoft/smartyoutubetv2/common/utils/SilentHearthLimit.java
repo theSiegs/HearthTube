@@ -16,8 +16,8 @@ import java.util.Map;
  * {@link HearthAllowance} feeds it. A profile Hearth never gave a limit for has none here.
  * <p>
  * A new day while Hearth is still silent doesn't lift the limit: the day starts again from the most that day held
- * (what Hearth gave plus what played here since), until Hearth speaks. Only minutes are kept; bedtimes and pauses come
- * from Hearth alone.
+ * (what Hearth gave plus what played here since), until Hearth speaks. A lock (bedtime, school time) Hearth last gave
+ * holds too, until Hearth says otherwise: the most recent word counts, and a parent's PIN plays anyway.
  */
 public final class SilentHearthLimit {
     private static final class Entry {
@@ -39,6 +39,40 @@ public final class SilentHearthLimit {
     }
 
     private final Map<String, Entry> mEntries = new LinkedHashMap<>();
+    /** The profiles Hearth last said were locked, with its wording ("" for none) */
+    private final Map<String, String> mLocks = new LinkedHashMap<>();
+    /** Marks a kept lock in {@link #save}: no profile key encodes to it */
+    private static final String LOCK_MARK = "!";
+
+    /** Hearth's latest word on the profile's lock: kept while locked, forgotten once it says it isn't */
+    public synchronized void rememberLock(String profileKey, boolean locked, @Nullable String message) {
+        if (profileKey == null) {
+            return;
+        }
+
+        if (locked) {
+            mLocks.put(profileKey, message != null ? message : "");
+        } else {
+            mLocks.remove(profileKey);
+        }
+    }
+
+    /** A profile was locked when Hearth last spoke (it can't tell which profile is watching, so any) */
+    public synchronized boolean isLocked() {
+        return !mLocks.isEmpty();
+    }
+
+    /** The kept lock's wording, or null when it had none (or nothing is locked) */
+    @Nullable
+    public synchronized String lockMessage() {
+        for (String message : mLocks.values()) {
+            if (!message.isEmpty()) {
+                return message;
+            }
+        }
+
+        return null;
+    }
 
     /**
      * Hearth gave this profile {@code msLeft} of playing time on {@code day}, at {@code checkedAt} (epoch ms); null
@@ -98,14 +132,24 @@ public final class SilentHearthLimit {
         return least;
     }
 
-    /** key|day|msLeft|checkedAt|playedMs|dayMs, one per profile, to keep across restarts; null when none */
+    /**
+     * key|day|msLeft|checkedAt|playedMs|dayMs, one per profile, and !|key|message per kept lock, to keep across
+     * restarts; null when none
+     */
     @Nullable
     public synchronized String save() {
-        if (mEntries.isEmpty()) {
+        if (mEntries.isEmpty() && mLocks.isEmpty()) {
             return null;
         }
 
         StringBuilder sb = new StringBuilder();
+
+        for (Map.Entry<String, String> lock : mLocks.entrySet()) {
+            if (sb.length() > 0) {
+                sb.append(';');
+            }
+            sb.append(LOCK_MARK).append('|').append(encode(lock.getKey())).append('|').append(encode(lock.getValue()));
+        }
 
         for (Map.Entry<String, Entry> e : mEntries.entrySet()) {
             if (sb.length() > 0) {
@@ -127,6 +171,16 @@ public final class SilentHearthLimit {
 
         for (String item : saved.split(";")) {
             String[] parts = item.split("\\|", -1);
+
+            if (parts.length == 3 && LOCK_MARK.equals(parts[0])) {
+                String key = decode(parts[1]);
+                String message = decode(parts[2]);
+
+                if (key != null) {
+                    mLocks.put(key, message != null ? message : "");
+                }
+                continue;
+            }
 
             // 4 parts: saved before the day's most was kept (it is then the figure left)
             if (parts.length != 4 && parts.length != 6) {

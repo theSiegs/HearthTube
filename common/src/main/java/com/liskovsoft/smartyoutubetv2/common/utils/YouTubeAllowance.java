@@ -12,14 +12,15 @@ import java.util.ArrayDeque;
  * schedule is locked, and when Hearth last read Home Assistant. This says whether HearthTube may play, and if not, why.
  * Plain Java, so it can be unit-tested; {@link HearthAllowance} feeds it.
  * <p>
- * Fail-open: HearthTube never stops just because Home Assistant can't be reached.
+ * The most recent word holds: when Home Assistant can't be reached, what it last said (as Hearth keeps it) still counts.
  * <ul>
  * <li>Hearth's own limit doesn't depend on Home Assistant: it counts as given.</li>
  * <li>Home Assistant's minutes are as of Hearth's last read of them ({@code allowance_checked_at}), which Hearth keeps
  * for the rest of the day when Home Assistant goes away. HearthTube takes off what it played since that read (a local
  * countdown), so Home Assistant's say keeps counting down without it. What's played after the read can't be in
  * Home Assistant's figure yet, so nothing counts twice.</li>
- * <li>Home Assistant's schedule lock counts while that read is fresh ({@link #STALE_AFTER_MS}); a stale one lapses.</li>
+ * <li>Home Assistant's schedule lock counts however old the read is: Hearth keeps it until Home Assistant says
+ * otherwise or the lock's own end passes, and a parent's PIN plays anyway.</li>
  * <li>One older than contract 6: no allowance. No row (Hearth silent): the caller counts down what Hearth last gave,
  * see {@link SilentHearthLimit}.</li>
  * </ul>
@@ -29,12 +30,6 @@ public final class YouTubeAllowance {
     public static final String SOURCE_HOME_ASSISTANT = "home_assistant";
     /** Hearth's provider contract with the allowance */
     public static final int CONTRACT = 6;
-    /**
-     * Home Assistant's read is stale after this long, and its schedule lock lapses. Hearth reads it every minute, but
-     * waits 10 minutes after a failed read: 15 minutes rides out one failed read without dropping a bedtime, while
-     * Home Assistant really being away (two failed reads in a row) doesn't keep the TV locked.
-     */
-    public static final long STALE_AFTER_MS = 15 * 60_000;
     /** Playing is remembered this long, for a Home Assistant read that HearthTube hears of a while after it happened */
     private static final long RECENT_MS = 30 * 60_000;
     private static final long MINUTE_MS = 60_000;
@@ -150,7 +145,7 @@ public final class YouTubeAllowance {
 
         // Home Assistant's own minutes (allowance_source names whose minutes they are, also while Home Assistant's
         // schedule is locked): remembered as of the read, with what's been played since, so they keep counting down
-        // if the lock lapses because Home Assistant went away
+        // once the lock ends
         if (fromHa && row.minutesLeft != null && row.checkedAt != null && row.profileKey != null) {
             if (!isHaRead(row.profileKey, row.checkedAt)) {
                 mHasHaRead = true;
@@ -162,9 +157,8 @@ public final class YouTubeAllowance {
             mHaMessage = row.message;
         }
 
-        boolean fresh = row.checkedAt != null && now - row.checkedAt <= STALE_AFTER_MS;
-
-        if (row.scheduleLocked && fresh) {
+        // Locked by the most recent word, however old: Home Assistant being away isn't a way out of bedtime
+        if (row.scheduleLocked) {
             return new Decision(Verdict.LOCKED, row.message, 0L);
         }
 
