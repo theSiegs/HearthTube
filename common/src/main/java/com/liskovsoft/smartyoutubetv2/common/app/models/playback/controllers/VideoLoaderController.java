@@ -268,11 +268,7 @@ public class VideoLoaderController extends BasePlayerController {
         mKidsRetriedVideoId = video.videoId;
         Log.e(TAG, "Kids profile: %s came signed out (client %s). Resetting to the signed-in client and asking again",
                 video.videoId, formatInfo.getClientInfo() != null ? formatInfo.getClientInfo().getClientName() : null);
-        YouTubeServiceManager.instance().invalidateCache(); // back to the signed-in client first
-        // The other video path (innertube) is signed out too: it's left after one client switch
-        if ("MediaItemFormatInfoImpl".equals(formatInfo.getClass().getSimpleName())) {
-            YouTubeServiceManager.instance().switchNextClientNow();
-        }
+        YouTubeServiceManager.instance().invalidateCache(); // back to the first client, the signed-in TV one
         loadFormatInfo(video);
         return true;
     }
@@ -323,6 +319,9 @@ public class VideoLoaderController extends BasePlayerController {
                 return;
             }
 
+            // The signed-out answer leaves the cache: reopened later it would be served from there, and could be marked
+            // signed in by then (a history sync copies the flag over)
+            YouTubeServiceManager.instance().invalidateCache();
             refuseQuietly(R.string.kids_not_allowed);
             return;
         }

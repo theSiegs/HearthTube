@@ -48,7 +48,23 @@ public final class KidsRefused {
      */
     public static boolean isNotAllowed(Context context, @Nullable MediaItemFormatInfo formatInfo) {
         return formatInfo != null && ParentGate.isKidsProfile(context)
-                && isNotAllowed(KidsMode.isMobileBuild(context), isSignedIn(), formatInfo.isAuth(), formatInfo.isUnplayable());
+                && isNotAllowed(KidsMode.isMobileBuild(context), isSignedIn(), formatInfo.isAuth() && hasAuthHeader(),
+                formatInfo.isUnplayable());
+    }
+
+    /**
+     * The requests really carry the sign-in. With an account selected but its token not refreshed (revoked, or the
+     * refresh failed), the library sends requests signed out while the answers still say "signed in" (they record that
+     * auth was asked for), so a kid would get the video without the supervision. Checked when an answer is judged, after
+     * its request; not at launch, before the first request has set the header up.
+     */
+    private static boolean hasAuthHeader() {
+        try {
+            String header = com.liskovsoft.googlecommon.common.helpers.RetrofitOkHttpHelper.getAuthHeaders().get("Authorization");
+            return header != null && !header.isEmpty();
+        } catch (RuntimeException e) {
+            return false; // can't tell: for a kid, not signed in is the safe answer
+        }
     }
 
     /** Somebody is signed in to YouTube in this app */
