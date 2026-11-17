@@ -167,7 +167,9 @@ public class MobilePlaybackActivity extends MotherActivity implements PlaybackVi
 
         setContentView(createContent());
         applyLayout();
-        registerReceiver(mPipToggle, new IntentFilter(ACTION_PIP_TOGGLE), Context.RECEIVER_NOT_EXPORTED);
+        // ContextCompat: the flag only exists from Android 13; on 12 it keeps the receiver private another way
+        androidx.core.content.ContextCompat.registerReceiver(this, mPipToggle, new IntentFilter(ACTION_PIP_TOGGLE),
+                androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED);
 
         mInitializer = new ExoPlayerInitializer(this);
         mPresenter = PlaybackPresenter.instance(this);
@@ -324,6 +326,9 @@ public class MobilePlaybackActivity extends MotherActivity implements PlaybackVi
         if (mode == MODE_PIP) {
             showControls(false);
         }
+
+        // The small window has its own play/pause button: a pause there mustn't bring up the full controls in it
+        mPlayerView.setUseController(mode != MODE_PIP);
 
         hideSystemBarsInLandscape();
     }
@@ -726,7 +731,11 @@ public class MobilePlaybackActivity extends MotherActivity implements PlaybackVi
             mNoisyRegistered = false;
         }
 
-        mPresenter.onEngineReleased();
+        // A video opened from the small window: this player closes after the new one has started, and the presenter
+        // is the new one's now; its engine stays
+        if (mPresenter.getPlayer() == this) {
+            mPresenter.onEngineReleased();
+        }
 
         if (mSubtitleManager != null && mPlayer.getTextComponent() != null) {
             mPlayer.getTextComponent().removeTextOutput(mSubtitleManager);

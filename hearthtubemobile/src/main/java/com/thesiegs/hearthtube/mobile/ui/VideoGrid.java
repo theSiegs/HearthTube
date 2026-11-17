@@ -56,6 +56,8 @@ public class VideoGrid extends FrameLayout {
     private final RecyclerView mList;
     /** Pulling the list down at its start loads it again ({@link #setOnPullRefresh}); off where nothing is set */
     private final androidx.swiperefreshlayout.widget.SwipeRefreshLayout mPull;
+    /** Stops the spinner when a pull brought nothing after a while */
+    private final Runnable mPullTimeout;
     private final ProgressBar mProgress;
     private final TextView mMessage;
     private final TextView mAction;
@@ -116,6 +118,7 @@ public class VideoGrid extends FrameLayout {
             }
         });
         mPull = new androidx.swiperefreshlayout.widget.SwipeRefreshLayout(context);
+        mPullTimeout = () -> mPull.setRefreshing(false);
         mPull.setEnabled(false);
         mPull.setColorSchemeColors(HearthLook.accent(context));
         mPull.addView(mList, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
@@ -150,14 +153,14 @@ public class VideoGrid extends FrameLayout {
 
     /** Applies a group the way its action says (replace, append, remove...) */
     public void update(VideoGroup group) {
-        mPull.setRefreshing(false);
+        stopRefreshing();
         showMessage(null);
         mRows.update(group);
         refresh();
     }
 
     public void clear() {
-        mPull.setRefreshing(false);
+        stopRefreshing();
         mRows.clear();
         refresh();
     }
@@ -268,12 +271,19 @@ public class VideoGrid extends FrameLayout {
         mPull.setEnabled(refresh != null);
         mPull.setOnRefreshListener(refresh == null ? null : () -> {
             refresh.run();
-            mPull.postDelayed(() -> mPull.setRefreshing(false), 10_000);
+            // An earlier pull's fallback mustn't stop this one's spinner
+            mPull.removeCallbacks(mPullTimeout);
+            mPull.postDelayed(mPullTimeout, 10_000);
         });
     }
 
-    public void stopPullRefresh() {
+    private void stopRefreshing() {
+        mPull.removeCallbacks(mPullTimeout);
         mPull.setRefreshing(false);
+    }
+
+    public void stopPullRefresh() {
+        stopRefreshing();
     }
 
     /** Text over the list (an error, "nothing here"); null or empty hides it */
@@ -284,7 +294,7 @@ public class VideoGrid extends FrameLayout {
     /** Like {@link #showMessage(CharSequence)}, with a button under it (such as "Sign in") when there is something to do */
     public void showMessage(@Nullable CharSequence message, @Nullable CharSequence actionText, @Nullable Runnable action) {
         if (message != null && message.length() > 0) {
-            mPull.setRefreshing(false); // an error or "nothing here" came instead of videos
+            stopRefreshing(); // an error or "nothing here" came instead of videos
         }
         mMessage.setText(message);
         mMessage.setVisibility(message != null && message.length() > 0 ? VISIBLE : GONE);
