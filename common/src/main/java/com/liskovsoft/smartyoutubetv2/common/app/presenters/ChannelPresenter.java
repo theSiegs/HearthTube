@@ -146,8 +146,14 @@ public class ChannelPresenter extends BasePresenter<ChannelView> implements Vide
     }
 
     public void openChannel(Video item) {
-        mChannel = item;
-        extractChannelId(item, this::openChannel);
+        // HearthTube: the page's channel changes only once it opens (a refused one leaves the open page as it was)
+        extractChannelId(item, channelId -> {
+            if (channelId != null && !isRefusedToKid(channelId)
+                    && !com.liskovsoft.smartyoutubetv2.common.utils.LaunchGate.refuse(getContext())) {
+                mChannel = item;
+            }
+            openChannel(channelId);
+        });
     }
 
     public void openChannel(String channelId) {

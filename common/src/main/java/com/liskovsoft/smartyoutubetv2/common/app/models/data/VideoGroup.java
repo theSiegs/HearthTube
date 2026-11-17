@@ -549,7 +549,9 @@ public class VideoGroup {
 
         BlockedChannelData blockedChannelData = BlockedChannelData.instance(GlobalPreferences.context());
 
-        if (blockedChannelData.isEmpty()) {
+        // HearthTube: the channels a parent blocked count too, also when the viewer blocked none themselves
+        if (blockedChannelData.isEmpty()
+                && com.liskovsoft.smartyoutubetv2.common.prefs.ParentBlockData.instance(GlobalPreferences.context()).isEmpty()) {
             return false;
         }
 

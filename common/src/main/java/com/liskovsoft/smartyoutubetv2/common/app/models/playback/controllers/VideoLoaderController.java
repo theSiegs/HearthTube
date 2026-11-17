@@ -319,9 +319,12 @@ public class VideoLoaderController extends BasePlayerController {
                 return;
             }
 
-            // The signed-out answer leaves the cache: reopened later it would be served from there, and could be marked
-            // signed in by then (a history sync copies the flag over)
-            YouTubeServiceManager.instance().invalidateCache();
+            // The signed-out answer leaves the format cache: reopened later it would be served from there, and could be
+            // marked signed in by then (a history sync copies the flag over). Only that cache: a full reset would also
+            // refresh the sign-in, and a failed refresh refuses every video. An unplayable answer is never cached.
+            if (!formatInfo.isUnplayable() && getVideo() != null) {
+                YouTubeServiceManager.instance().reloadPlayerResponse(getVideo().videoId, null);
+            }
             refuseQuietly(R.string.kids_not_allowed);
             return;
         }

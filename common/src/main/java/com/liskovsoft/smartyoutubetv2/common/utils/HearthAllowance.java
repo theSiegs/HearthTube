@@ -35,7 +35,7 @@ public final class HearthAllowance {
     private static final String PREF_DAY = "allowance_day";
     private static final String PREF_SILENT = "silent_hearth_limit";
     /** Played and not taken by Hearth yet ({@link PlayTimer}), so a restart doesn't forget it */
-    private static final String PREF_UNREPORTED = "unreported_ms";
+    private static final String PREF_UNREPORTED = "unreported_day_ms";
     private static boolean sUnreportedRestored;
     private static long sSavedUnreported = -1;
     /** Glint's limit among the kept ones ({@link SilentHearthLimit}), apart from any Hearth profile's */
@@ -291,7 +291,21 @@ public final class HearthAllowance {
         }
 
         sUnreportedRestored = true;
-        long ms = prefs(context).getLong(PREF_UNREPORTED, 0);
+        // Kept as "day:ms": time from an earlier day isn't today's to report (Hearth would charge it to today)
+        String saved = prefs(context).getString(PREF_UNREPORTED, null);
+        long ms = 0;
+
+        if (saved != null) {
+            int colon = saved.lastIndexOf(':');
+            try {
+                if (colon > 0 && saved.substring(0, colon).equals(today(context))) {
+                    ms = Long.parseLong(saved.substring(colon + 1));
+                }
+            } catch (NumberFormatException e) {
+                ms = 0;
+            }
+        }
+
         sSavedUnreported = ms;
         sTimer.restoreUnreported(ms);
     }
@@ -301,7 +315,7 @@ public final class HearthAllowance {
 
         if (ms != sSavedUnreported) {
             sSavedUnreported = ms;
-            prefs(context).edit().putLong(PREF_UNREPORTED, ms).apply();
+            prefs(context).edit().putString(PREF_UNREPORTED, today(context) + ":" + ms).apply();
         }
     }
 
@@ -391,6 +405,7 @@ public final class HearthAllowance {
                     saveUnreported(app);
                 } else {
                     sTimer.giveBack(ms);
+                    saveUnreported(app);
                     Log.d(TAG, "Hearth didn't take %s ms of playing: kept for the next report", ms);
                     return;
                 }

@@ -129,8 +129,9 @@ public class BlockedChannelData implements ProfileChangeListener {
      * Check if a channel is blocked
      */
     public boolean containsChannel(String channelId, String channelName) {
-        // What a parent blocked counts too (by channel id)
-        if (channelId != null && ParentBlockData.instance(mContext).isChannelBlocked(channelId)) {
+        // What a parent blocked counts too: by channel id, or by its name where a card carries only the name
+        ParentBlockData parent = ParentBlockData.instance(mContext);
+        if ((channelId != null && parent.isChannelBlocked(channelId)) || parent.isChannelNameBlocked(channelName)) {
             return true;
         }
 

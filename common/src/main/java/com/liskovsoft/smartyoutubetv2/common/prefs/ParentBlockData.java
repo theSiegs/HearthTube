@@ -94,6 +94,31 @@ public class ParentBlockData implements ProfileChangeListener {
         return has(Item.CHANNEL, channelId);
     }
 
+    /**
+     * A channel blocked by its name (the label it came with), for a card that carries only the channel's name. Off for a
+     * block that has no name of its own (its label is its id).
+     */
+    public synchronized boolean isChannelNameBlocked(String channelName) {
+        if (channelName == null || channelName.trim().isEmpty() || mItems.isEmpty()) {
+            return false;
+        }
+
+        String name = plainName(channelName);
+
+        for (Item item : mItems) {
+            if (item.kind == Item.CHANNEL && !item.label.equals(item.id) && plainName(item.label).equals(name)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static String plainName(String name) {
+        return java.text.Normalizer.normalize(name, java.text.Normalizer.Form.NFKC).trim().replaceAll("\\s+", " ")
+                .toLowerCase(java.util.Locale.ROOT);
+    }
+
     public synchronized boolean isEmpty() {
         return mItems.isEmpty();
     }

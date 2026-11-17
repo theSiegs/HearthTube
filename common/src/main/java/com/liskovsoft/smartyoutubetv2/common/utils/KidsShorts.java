@@ -59,10 +59,12 @@ public final class KidsShorts {
         return text != null && (CLIPS.matcher(text).find() || CLIPS.matcher(KeywordMatcher.fold(text)).find());
     }
 
+    private static final java.util.regex.Pattern SPACED_TAG = java.util.regex.Pattern.compile("#\\s+");
+
     /** "#short(s)" in a title, also as "＃shorts" or "# shorts" */
     private static boolean hasShortTag(String title) {
         String plain = java.text.Normalizer.normalize(title, java.text.Normalizer.Form.NFKC).toLowerCase(java.util.Locale.ROOT);
-        return plain.replaceAll("#\\s+", "#").contains("#short");
+        return SPACED_TAG.matcher(plain).replaceAll("#").contains("#short");
     }
 
     /** Shorts (and TikTok-style clips) are being left out right now */

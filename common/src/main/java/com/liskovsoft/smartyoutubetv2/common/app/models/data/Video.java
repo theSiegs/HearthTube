@@ -875,7 +875,9 @@ public final class Video {
                 BlockedChannelData blockedChannelData = BlockedChannelData.instance(GlobalPreferences.context());
                 nextVideo = Helpers.findFirst(mediaItems,
                         item -> {
-                            if (blockedChannelData.isEmpty()) {
+                            // HearthTube: the channels a parent blocked count too, also when the viewer blocked none
+                            if (blockedChannelData.isEmpty() && com.liskovsoft.smartyoutubetv2.common.prefs.ParentBlockData
+                                    .instance(GlobalPreferences.context()).isEmpty()) {
                                 return item.getVideoId() != null;
                             }
 
