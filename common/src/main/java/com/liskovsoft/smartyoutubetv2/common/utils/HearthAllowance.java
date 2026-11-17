@@ -34,6 +34,10 @@ public final class HearthAllowance {
     private static final String PREF_LOCAL = "local_allowance";
     private static final String PREF_DAY = "allowance_day";
     private static final String PREF_SILENT = "silent_hearth_limit";
+    /** Played and not taken by Hearth yet ({@link PlayTimer}), so a restart doesn't forget it */
+    private static final String PREF_UNREPORTED = "unreported_ms";
+    private static boolean sUnreportedRestored;
+    private static long sSavedUnreported = -1;
     /** Glint's limit among the kept ones ({@link SilentHearthLimit}), apart from any Hearth profile's */
     private static final String GLINT_KEY = "glint";
     /** Reports go to Hearth one at a time, off the main thread (a kids profile's Hearth agent passes them on) */
@@ -92,6 +96,7 @@ public final class HearthAllowance {
         onStopped(context);
         MessageHelpers.showLongMessage(context, refusal);
         player.showProgressBar(false);
+        player.setPlayWhenReady(false); // first, in case closing is slow or fails
         player.finishReally();
         return true;
     }
@@ -115,6 +120,11 @@ public final class HearthAllowance {
         }
     }
 
+    /** True when only a parent's PIN window lets a video play now: ending that window would stop it */
+    public static boolean playsOnlyByParent(Context context) {
+        return ParentGate.isUnlocked() && refusalOf(context, decide(context)) != null;
+    }
+
     /** As {@link #refusal}, saying whether it's a lock or time used up. Asks Hearth afresh each time. */
     @Nullable
     public static Refusal refusalNow(Context context) {
@@ -126,6 +136,11 @@ public final class HearthAllowance {
             return null;
         }
 
+        return refusalOf(context, decision);
+    }
+
+    @Nullable
+    private static Refusal refusalOf(Context context, YouTubeAllowance.Decision decision) {
         switch (decision.verdict) {
             case LOCKED:
                 return new Refusal(true, decision.message != null ? decision.message : context.getString(R.string.youtube_bedtime));
@@ -169,8 +184,13 @@ public final class HearthAllowance {
             return silentDecision(context);
         }
 
+        // Hearth's own minutes count only what it was told: what's played and not reported yet comes off too (a refused
+        // report, or the half minute before the next one). Home Assistant's are counted down from their read already.
+        boolean haMinutes = YouTubeAllowance.SOURCE_HOME_ASSISTANT.equals(hearth.allowanceSource);
+        Integer minutesLeft = hearth.youtubeMinutesLeft != null && !haMinutes
+                ? (int) Math.max(0, hearth.youtubeMinutesLeft - sTimer.unreportedMs() / 60_000L) : hearth.youtubeMinutesLeft;
         YouTubeAllowance.Row row = new YouTubeAllowance.Row(hearth.contractVersion, hearth.key(),
-                hearth.youtubeMinutesLeft, hearth.scheduleLocked, hearth.allowanceMessage, hearth.allowanceSource,
+                minutesLeft, hearth.scheduleLocked, hearth.allowanceMessage, hearth.allowanceSource,
                 hearth.allowanceCheckedAt);
         YouTubeAllowance.Decision decision = allowance(context).decide(row, System.currentTimeMillis());
         save(context);
@@ -241,9 +261,18 @@ public final class HearthAllowance {
 
     /** Counts the playing since the last time (and goes on counting when {@code stillPlaying}) */
     private static void take(Context context, boolean stillPlaying) {
+        restoreUnreported(context);
         long ms = sTimer.take(SystemClock.elapsedRealtime(), stillPlaying);
 
         if (ms <= 0) {
+            return;
+        }
+
+        saveUnreported(context);
+
+        // The countdowns kept on the device are a kid's: an adult's (or a parent's on a shared tablet) watching
+        // mustn't use them up. In a kids profile it counts, a parent's PIN window included.
+        if (!ParentGate.isKidsProfile(context)) {
             return;
         }
 
@@ -253,6 +282,27 @@ public final class HearthAllowance {
         saveLocal(context);
         silent(context).played(ms);
         saveSilent(context);
+    }
+
+    /** Once per process: what was played and not taken by Hearth before a restart waits again */
+    private static synchronized void restoreUnreported(Context context) {
+        if (sUnreportedRestored || context == null) {
+            return;
+        }
+
+        sUnreportedRestored = true;
+        long ms = prefs(context).getLong(PREF_UNREPORTED, 0);
+        sSavedUnreported = ms;
+        sTimer.restoreUnreported(ms);
+    }
+
+    private static synchronized void saveUnreported(Context context) {
+        long ms = sTimer.unreportedMs();
+
+        if (ms != sSavedUnreported) {
+            sSavedUnreported = ms;
+            prefs(context).edit().putLong(PREF_UNREPORTED, ms).apply();
+        }
     }
 
     /** The daily limit a parent set on this device (minutes); 0 is none. Used only without a Hearth. */
@@ -331,12 +381,14 @@ public final class HearthAllowance {
         sReporter.execute(() -> {
             // In a Google TV profile, only while Hearth's agent there is connected (it passes the time on to Hearth);
             // one report's worth at a time, so a long wait is handed over in as many reports as it takes
+            restoreUnreported(app);
             boolean live = sTimer.unreportedMs() >= MIN_REPORT_MS && HearthProfile.live(app, HearthProfile.queryHearth(app)) != null;
             long ms;
 
             while (live && (ms = sTimer.nextReport(MIN_REPORT_MS)) > 0) {
                 if (HearthProfile.reportPlaying(app, ms)) {
                     Log.d(TAG, "Reported %s ms of playing to Hearth", ms);
+                    saveUnreported(app);
                 } else {
                     sTimer.giveBack(ms);
                     Log.d(TAG, "Hearth didn't take %s ms of playing: kept for the next report", ms);

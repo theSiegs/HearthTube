@@ -65,6 +65,11 @@ public final class PlayTimer {
         return ms;
     }
 
+    /** What was waiting for Hearth before a restart (kept by the caller): it waits again */
+    public synchronized void restoreUnreported(long ms) {
+        mUnreportedMs += Math.max(0, ms);
+    }
+
     /** Hearth didn't take this report: it waits for the next */
     public synchronized void giveBack(long ms) {
         mUnreportedMs += Math.max(0, ms);

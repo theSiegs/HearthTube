@@ -104,4 +104,14 @@ public class PlayTimerTest {
         assertEquals(35_000, mTimer.nextReport(1_000));
         assertEquals(0, mTimer.nextReport(1_000));
     }
+
+    @Test
+    public void restoredTimeWaitsForTheNextReport() {
+        // A restart: what Hearth hadn't taken comes back and adds to what plays now
+        mTimer.restoreUnreported(40_000);
+        mTimer.restoreUnreported(-5); // nothing negative
+        mTimer.start(0);
+        mTimer.take(10_000, false);
+        assertEquals(50_000, mTimer.unreportedMs());
+    }
 }
