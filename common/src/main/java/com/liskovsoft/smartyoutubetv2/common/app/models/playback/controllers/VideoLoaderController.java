@@ -327,7 +327,8 @@ public class VideoLoaderController extends BasePlayerController {
         }
 
         // HearthTube: a Short doesn't play in a kids profile, however it got here (search, link, cast, autoplay)
-        if (com.liskovsoft.smartyoutubetv2.common.utils.KidsShorts.isBlockedFormat(getContext(), formatInfo, getVideo().title, getVideo().author)) {
+        if (com.liskovsoft.smartyoutubetv2.common.utils.KidsShorts.isBlockedFormat(getContext(), formatInfo, getVideo().title, getVideo().author)
+                || com.liskovsoft.smartyoutubetv2.common.utils.KidsShorts.isBlockedClip(getContext(), formatInfo.getTitle(), formatInfo.getAuthor())) {
             refuseQuietly(R.string.kids_no_shorts);
             return;
         }

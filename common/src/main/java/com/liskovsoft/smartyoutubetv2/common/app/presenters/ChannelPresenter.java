@@ -155,6 +155,12 @@ public class ChannelPresenter extends BasePresenter<ChannelView> implements Vide
             return;
         }
 
+        // HearthTube: in a kids profile, a channel a parent blocked or one on the AI list doesn't open (by a link or a
+        // card without a channel id, its page would list its videos); like what's left out elsewhere, nothing is said
+        if (isRefusedToKid(channelId)) {
+            return;
+        }
+
         disposeActions();
 
         mChannelId = channelId;
@@ -167,6 +173,19 @@ public class ChannelPresenter extends BasePresenter<ChannelView> implements Vide
         }
 
         getViewManager().startView(ChannelView.class);
+    }
+
+    private boolean isRefusedToKid(String channelId) {
+        android.content.Context context = getContext();
+
+        if (context == null) {
+            return false;
+        }
+
+        boolean listed = com.liskovsoft.smartyoutubetv2.common.prefs.ParentBlockData.instance(context).isChannelBlocked(channelId)
+                || com.liskovsoft.smartyoutubetv2.common.utils.AiSlopList.isBlockedInPlayer(context, channelId, null);
+
+        return listed && com.liskovsoft.smartyoutubetv2.common.utils.ParentGate.isKidsProfile(context);
     }
 
     public String getChannelId() {

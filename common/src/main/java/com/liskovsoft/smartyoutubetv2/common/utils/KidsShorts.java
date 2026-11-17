@@ -54,6 +54,17 @@ public final class KidsShorts {
     private KidsShorts() {
     }
 
+    /** A clip name in the text, as written or folded (full-width letters, "Tik.Tok", "Tik_Tok") */
+    private static boolean isClip(String text) {
+        return text != null && (CLIPS.matcher(text).find() || CLIPS.matcher(KeywordMatcher.fold(text)).find());
+    }
+
+    /** "#short(s)" in a title, also as "＃shorts" or "# shorts" */
+    private static boolean hasShortTag(String title) {
+        String plain = java.text.Normalizer.normalize(title, java.text.Normalizer.Form.NFKC).toLowerCase(java.util.Locale.ROOT);
+        return plain.replaceAll("#\\s+", "#").contains("#short");
+    }
+
     /** Shorts (and TikTok-style clips) are being left out right now */
     public static boolean isHidingShorts() {
         return isHiding(null);
@@ -118,7 +129,7 @@ public final class KidsShorts {
 
         String title = item.getTitle() != null ? item.getTitle().toLowerCase(java.util.Locale.ROOT) : "";
 
-        if (CLIPS.matcher(title).find() || (item.getAuthor() != null && CLIPS.matcher(item.getAuthor()).find())) {
+        if (isClip(title) || isClip(item.getAuthor())) {
             return true;
         }
 
@@ -128,7 +139,7 @@ public final class KidsShorts {
         // A mix or a playlist tile has no length either
         boolean noLength = durationMs <= 0 && item.getPlaylistId() == null;
 
-        return title.contains("#short") || image.contains("/oar") || image.contains("-AG2CIACgA-") || noLength;
+        return hasShortTag(title) || image.contains("/oar") || image.contains("-AG2CIACgA-") || noLength;
     }
 
     /**
@@ -140,7 +151,7 @@ public final class KidsShorts {
     }
 
     static boolean isBlockedClip(boolean kids, String title, String author) {
-        return kids && ((title != null && CLIPS.matcher(title).find()) || (author != null && CLIPS.matcher(author).find()));
+        return kids && (isClip(title) || isClip(author));
     }
 
     /**
@@ -161,8 +172,11 @@ public final class KidsShorts {
             return true;
         }
 
-        MediaFormat format = formatInfo.containsDashFormats() && !formatInfo.getAdaptiveFormats().isEmpty() ?
-                formatInfo.getAdaptiveFormats().get(0) : null;
+        MediaFormat format = firstSized(formatInfo.getAdaptiveFormats());
+
+        if (format == null) {
+            format = firstSized(formatInfo.getUrlFormats());
+        }
 
         if (format == null || format.getWidth() <= 0 || format.getHeight() <= 0 || format.getWidth() >= format.getHeight()) {
             return false;
@@ -176,6 +190,21 @@ public final class KidsShorts {
         }
 
         return lengthMs <= SHORT_MAX_MS;
+    }
+
+    /** The first format that has a picture size (DASH, SABR or a URL list: any of them can play), or null */
+    private static MediaFormat firstSized(java.util.List<MediaFormat> formats) {
+        if (formats == null) {
+            return null;
+        }
+
+        for (MediaFormat format : formats) {
+            if (format != null && format.getWidth() > 0 && format.getHeight() > 0) {
+                return format;
+            }
+        }
+
+        return null;
     }
 
     /** Look and layout > Show Shorts. Off by default; never applies in a kids profile. */

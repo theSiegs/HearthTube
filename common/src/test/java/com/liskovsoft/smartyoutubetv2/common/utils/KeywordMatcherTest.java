@@ -184,4 +184,15 @@ public class KeywordMatcherTest {
         assertEquals(Collections.emptyList(), KeywordMatcher.splitWords(null));
         assertEquals(Collections.emptyList(), KeywordMatcher.splitWords("  !! "));
     }
+
+    @Test
+    public void styledCapitalsAndInvisibleCharactersDontHideAWord() {
+        KeywordMatcher matcher = words("pokemon");
+
+        assertTrue(matcher.matches("\uD835\uDC0F\uD835\uDC0E\uD835\uDC0A\uD835\uDC04\uD835\uDC0C\uD835\uDC0E\uD835\uDC0D cards")); // math bold
+        assertTrue(matcher.matches("\uD83C\uDD3F\uD83C\uDD3E\uD83C\uDD3A\uD83C\uDD34\uD83C\uDD3C\uD83C\uDD3E\uD83C\uDD3D")); // squared
+        assertTrue(matcher.matches("po\u200Bkemon battle")); // zero-width space
+        assertTrue(matcher.matches("poke\u200Dmon")); // zero-width joiner
+        assertFalse(matcher.matches("poker night"));
+    }
 }

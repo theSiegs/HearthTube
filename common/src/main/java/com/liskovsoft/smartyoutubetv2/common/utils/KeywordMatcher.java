@@ -155,7 +155,8 @@ public final class KeywordMatcher {
      * punctuation and symbols one space, or none next to a language written without spaces.
      */
     static String fold(String text) {
-        String decomposed = Normalizer.normalize(text.toLowerCase(Locale.ROOT), Normalizer.Form.NFKD);
+        // Lower case again after NFKD: styled letters (math bold, squared) decompose to capitals
+        String decomposed = Normalizer.normalize(text.toLowerCase(Locale.ROOT), Normalizer.Form.NFKD).toLowerCase(Locale.ROOT);
         StringBuilder result = new StringBuilder(decomposed.length());
         int last = 0; // last letter or digit written
         boolean gap = false;
@@ -163,6 +164,11 @@ public final class KeywordMatcher {
         for (int i = 0; i < decomposed.length(); ) {
             int c = decomposed.codePointAt(i);
             i += Character.charCount(c);
+
+            // Invisible characters (a zero-width space or joiner inside a word) are left out, not a gap
+            if (Character.getType(c) == Character.FORMAT) {
+                continue;
+            }
 
             if (isMark(c)) {
                 if (last != 0 && !gap && !isAccentFolded(last)) {

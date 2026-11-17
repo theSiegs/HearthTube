@@ -496,6 +496,15 @@ public class VideoGroup {
             return;
         }
 
+        // A video a parent blocked (Hearth) is out of a kid's lists too, History, playlists and the queue included:
+        // the kid can't manage it there, and it wouldn't play
+        android.content.Context context = GlobalPreferences.context();
+        if (!video.isChapter && video.videoId != null && context != null
+                && com.liskovsoft.smartyoutubetv2.common.prefs.ParentBlockData.instance(context).isVideoBlocked(video.videoId)
+                && com.liskovsoft.smartyoutubetv2.common.utils.ParentGate.isKidsProfile(context)) {
+            return;
+        }
+
         if (com.liskovsoft.smartyoutubetv2.common.utils.KeywordFilter.isHidden(video)) { // HearthTube: blocked words
             return;
         }

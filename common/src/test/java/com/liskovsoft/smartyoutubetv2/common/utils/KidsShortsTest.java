@@ -94,4 +94,29 @@ public class KidsShortsTest {
         assertTrue(KidsShorts.isHiddenShort(true, video("Mystery", 0)));
         assertTrue(KidsShorts.isHiddenShort(true, video("Instagram reels of the week", 600_000)));
     }
+
+    @Test
+    public void aPortraitShortIsBlockedWhateverKindOfFormatsCame() {
+        MediaFormat portrait = fake(MediaFormat.class, answers("getWidth", 720, "getHeight", 1280));
+        MediaFormat noSize = fake(MediaFormat.class, answers());
+        // SABR only (no DASH), the size on a later format
+        MediaItemFormatInfo sabr = fake(MediaItemFormatInfo.class, answers("containsSabrFormats", true,
+                "getAdaptiveFormats", java.util.Arrays.asList(noSize, portrait), "getLengthSeconds", "40"));
+        // A URL list only
+        MediaItemFormatInfo urls = fake(MediaItemFormatInfo.class, answers("containsUrlFormats", true,
+                "getUrlFormats", Collections.singletonList(portrait), "getLengthSeconds", "40"));
+
+        assertTrue(KidsShorts.isBlockedFormat(true, sabr, "Cat", "Pets"));
+        assertTrue(KidsShorts.isBlockedFormat(true, urls, "Cat", "Pets"));
+    }
+
+    @Test
+    public void clipNamesAndShortTagsAreFoundInOtherSpellings() {
+        assertTrue(KidsShorts.isBlockedClip(true, "Best \uFF34\uFF49\uFF4B\uFF34\uFF4F\uFF4B dances", "Dance")); // full-width
+        assertTrue(KidsShorts.isBlockedClip(true, "Tik.Tok compilation", "Dance"));
+        assertTrue(KidsShorts.isBlockedClip(true, "Tik_Tok compilation", "Dance"));
+        assertTrue(KidsShorts.isHiddenShort(true, video("Cat \uFF03shorts", 600_000)));
+        assertTrue(KidsShorts.isHiddenShort(true, video("Cat # shorts", 600_000)));
+        assertFalse(KidsShorts.isHiddenShort(true, video("Cat documentary", 600_000)));
+    }
 }
