@@ -93,7 +93,8 @@ public final class ParentChannel {
         List<Entry> unsent = log.getUnsent(BATCH);
 
         for (Entry entry : unsent) {
-            if (!HearthProfile.reportStarted(context, entry.timeMs, entry.videoId, entry.title, entry.channel, entry.channelId)) {
+            if (!HearthProfile.reportStarted(context, entry.timeMs, entry.videoId, entry.title, entry.channel, entry.channelId,
+                    entry.parentApproved)) {
                 return;
             }
 

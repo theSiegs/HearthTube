@@ -504,7 +504,8 @@ public class HearthProfile {
      * the main thread. False when Hearth didn't take it (missing, too old, not connected to this profile, or this
      * HearthTube isn't signed with Hearth's key); the caller keeps the entry and sends it again later.
      */
-    public static boolean reportStarted(Context context, long timeMs, String videoId, String title, String channel, String channelId) {
+    public static boolean reportStarted(Context context, long timeMs, String videoId, String title, String channel, String channelId,
+                                        boolean parentApproved) {
         String hearth = context != null && timeMs > 0 && videoId != null ? trustedPackage(context) : null;
         if (hearth == null) {
             return false;
@@ -517,6 +518,10 @@ public class HearthProfile {
             extras.putString("title", title);
             extras.putString("channel", channel);
             extras.putString("channel_id", channelId);
+            // A parent's PIN let it play past the time limit or a lock (optional; an older Hearth ignores it)
+            if (parentApproved) {
+                extras.putBoolean("parent_approved", true);
+            }
             Bundle result = context.getContentResolver().call(uri(hearth, "active"), "report_started", null, extras);
             return result != null && result.getBoolean("ok");
         } catch (Exception e) {

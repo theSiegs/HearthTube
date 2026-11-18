@@ -108,7 +108,8 @@ Not interested, creator blocking or Hidden and blocked screen.
 Written and committed on branch `parent-channel-contract-8` in the Hearth repo (not pushed).
 
 - Columns: `parent_blocks` (text JSON or null), `parent_blocks_version` (integer, 0 when none).
-- Call: `report_started` (extras `time_ms`, `video_id`, `title`, `channel`, `channel_id`).
+- Call: `report_started` (extras `time_ms`, `video_id`, `title`, `channel`, `channel_id`, and `parent_approved` true when a parent's PIN let
+  the video play past the time limit or a lock; absent means false, and an older Hearth ignores it).
 - `contract_version` 8. History line: "added `parent_blocks`, `parent_blocks_version` and the `report_started` call (a kids
   profile's started videos up, the parent's blocked videos, channels and words down). Also in a profile's agent."
 - HearthTube's `HearthProfile.KNOWN_CONTRACT` goes to 8 with its reader; an older Hearth simply has neither, and

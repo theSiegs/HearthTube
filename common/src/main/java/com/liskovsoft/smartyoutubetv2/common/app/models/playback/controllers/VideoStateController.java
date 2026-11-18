@@ -194,7 +194,8 @@ public class VideoStateController extends BasePlayerController {
         if (getVideo() != null && getVideo().videoId != null
                 && com.liskovsoft.smartyoutubetv2.common.utils.ParentGate.isKidsProfile(getContext())) {
             com.liskovsoft.smartyoutubetv2.common.prefs.WatchLogData.instance(getContext())
-                    .record(getVideo().videoId, getVideo().getTitleFull(), getVideo().getAuthor(), getVideo().channelId);
+                    .record(getVideo().videoId, getVideo().getTitleFull(), getVideo().getAuthor(), getVideo().channelId,
+                            com.liskovsoft.smartyoutubetv2.common.utils.ParentGate.isApproved(getVideo().videoId));
             com.liskovsoft.smartyoutubetv2.common.utils.ParentChannel.sync(getContext()); // to the parent through Hearth, when it is there
         }
 

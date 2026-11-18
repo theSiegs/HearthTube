@@ -41,17 +41,24 @@ public class WatchLogData implements ProfileChangeListener {
         public final String channel;
         /** Empty when not known (entries saved before it was kept) */
         public final String channelId;
+        /** A parent's PIN let it play past the time limit or a lock */
+        public final boolean parentApproved;
 
         public Entry(long timeMs, String videoId, String title, String channel) {
             this(timeMs, videoId, title, channel, null);
         }
 
         public Entry(long timeMs, String videoId, String title, String channel, String channelId) {
+            this(timeMs, videoId, title, channel, channelId, false);
+        }
+
+        public Entry(long timeMs, String videoId, String title, String channel, String channelId, boolean parentApproved) {
             this.timeMs = timeMs;
             this.videoId = videoId;
             this.title = title == null ? "" : title;
             this.channel = channel == null ? "" : channel;
             this.channelId = channelId == null ? "" : channelId;
+            this.parentApproved = parentApproved;
         }
     }
 
@@ -70,8 +77,8 @@ public class WatchLogData implements ProfileChangeListener {
     }
 
     /** A video started playing in this profile */
-    public synchronized void record(String videoId, String title, String channel, String channelId) {
-        record(videoId, title, channel, channelId, System.currentTimeMillis());
+    public synchronized void record(String videoId, String title, String channel, String channelId, boolean parentApproved) {
+        record(videoId, title, channel, channelId, parentApproved, System.currentTimeMillis());
     }
 
     synchronized void record(String videoId, String title, String channel, long nowMs) {
@@ -79,15 +86,20 @@ public class WatchLogData implements ProfileChangeListener {
     }
 
     synchronized void record(String videoId, String title, String channel, String channelId, long nowMs) {
+        record(videoId, title, channel, channelId, false, nowMs);
+    }
+
+    synchronized void record(String videoId, String title, String channel, String channelId, boolean parentApproved, long nowMs) {
         if (videoId == null || videoId.isEmpty()) {
             return;
         }
 
-        if (isRepeat(mEntries, videoId, nowMs)) {
+        // A repeat is left out, unless a parent's PIN is what lets it play now: the parent hears of that
+        if (isRepeat(mEntries, videoId, nowMs) && !(parentApproved && !isApprovedRepeat(mEntries, videoId, nowMs))) {
             return;
         }
 
-        mEntries.add(new Entry(nowMs, videoId, title, channel, channelId));
+        mEntries.add(new Entry(nowMs, videoId, title, channel, channelId, parentApproved));
 
         while (mEntries.size() > MAX) {
             mEntries.remove(0);
@@ -106,6 +118,23 @@ public class WatchLogData implements ProfileChangeListener {
             }
 
             if (videoId.equals(entry.videoId)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /** The same video was started a moment ago with a parent's approval already logged */
+    static boolean isApprovedRepeat(List<Entry> entries, String videoId, long nowMs) {
+        for (int i = entries.size() - 1; i >= 0; i--) {
+            Entry entry = entries.get(i);
+
+            if (nowMs - entry.timeMs > SAME_VIDEO_MS) {
+                return false;
+            }
+
+            if (videoId.equals(entry.videoId) && entry.parentApproved) {
                 return true;
             }
         }
@@ -235,15 +264,21 @@ public class WatchLogData implements ProfileChangeListener {
         }
 
         String channelId = fields.length > 4 ? Helpers.parseStr(fields[4]) : null;
+        boolean parentApproved = fields.length > 5 && "1".equals(Helpers.parseStr(fields[5]));
 
         return new Entry(time, id, fields.length > 2 ? Helpers.parseStr(fields[2]) : null, fields.length > 3 ? Helpers.parseStr(fields[3]) : null,
-                "-".equals(channelId) ? null : channelId);
+                "-".equals(channelId) ? null : channelId, parentApproved);
     }
 
     static String serialize(Entry entry) {
         // An empty field would not survive being saved (it is stored as a space)
-        return Helpers.mergeObj(entry.timeMs, entry.videoId, entry.title.isEmpty() ? entry.videoId : entry.title,
-                entry.channel.isEmpty() ? "-" : entry.channel, entry.channelId.isEmpty() ? "-" : entry.channelId);
+        String title = entry.title.isEmpty() ? entry.videoId : entry.title;
+        String channel = entry.channel.isEmpty() ? "-" : entry.channel;
+        String channelId = entry.channelId.isEmpty() ? "-" : entry.channelId;
+
+        // The approval only when there is one, so an ordinary entry is saved as before
+        return entry.parentApproved ? Helpers.mergeObj(entry.timeMs, entry.videoId, title, channel, channelId, "1")
+                : Helpers.mergeObj(entry.timeMs, entry.videoId, title, channel, channelId);
     }
 
     private synchronized void restoreState() {
@@ -256,7 +291,8 @@ public class WatchLogData implements ProfileChangeListener {
             Entry entry = parse(spec);
 
             if (entry != null) {
-                mEntries.add(new Entry(entry.timeMs, entry.videoId, entry.title, "-".equals(entry.channel) ? "" : entry.channel, entry.channelId));
+                mEntries.add(new Entry(entry.timeMs, entry.videoId, entry.title, "-".equals(entry.channel) ? "" : entry.channel,
+                        entry.channelId, entry.parentApproved));
             }
         }
     }

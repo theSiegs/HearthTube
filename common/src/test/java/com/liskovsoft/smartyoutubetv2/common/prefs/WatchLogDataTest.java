@@ -73,6 +73,29 @@ public class WatchLogDataTest {
     }
 
     @Test
+    public void aParentsApprovalSurvivesSavingAndIsOffOtherwise() {
+        Entry approved = WatchLogData.parse(WatchLogData.serialize(new Entry(T0, "abc123", "T", "Chan", "UCchan123", true)));
+        assertTrue(approved.parentApproved);
+        assertEquals("UCchan123", approved.channelId);
+
+        Entry plain = WatchLogData.parse(WatchLogData.serialize(new Entry(T0, "abc123", "T", "Chan", "UCchan123")));
+        assertFalse(plain.parentApproved);
+        // An ordinary entry is saved as before (five fields)
+        assertEquals(WatchLogData.serialize(plain), com.liskovsoft.sharedutils.helpers.Helpers.mergeObj(T0, "abc123", "T", "Chan", "UCchan123"));
+    }
+
+    @Test
+    public void anApprovedStartRightAfterAnOrdinaryOneIsStillLogged() {
+        java.util.List<Entry> entries = new java.util.ArrayList<>();
+        entries.add(new Entry(T0, "abc123", "T", "Chan"));
+        assertTrue(WatchLogData.isRepeat(entries, "abc123", T0 + 60_000));
+        assertFalse(WatchLogData.isApprovedRepeat(entries, "abc123", T0 + 60_000));
+
+        entries.add(new Entry(T0 + 60_000, "abc123", "T", "Chan", null, true));
+        assertTrue(WatchLogData.isApprovedRepeat(entries, "abc123", T0 + 120_000));
+    }
+
+    @Test
     public void noTitleOrChannelSurvivesSaving() {
         Entry entry = WatchLogData.parse(WatchLogData.serialize(new Entry(T0, "abc123", null, null)));
 
