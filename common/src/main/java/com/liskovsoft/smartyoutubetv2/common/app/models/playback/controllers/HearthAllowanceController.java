@@ -13,6 +13,7 @@ import com.liskovsoft.smartyoutubetv2.common.utils.GlintChannel;
 import com.liskovsoft.smartyoutubetv2.common.utils.HearthAllowance;
 import com.liskovsoft.smartyoutubetv2.common.utils.HearthChanges;
 import com.liskovsoft.smartyoutubetv2.common.utils.HearthProfile;
+import com.liskovsoft.smartyoutubetv2.common.utils.ParentGate;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 
 /**
@@ -69,6 +70,8 @@ public class HearthAllowanceController extends BasePlayerController {
     @Override
     public void onPlayEnd() {
         closed();
+        // A parent's approval was for this video: watched to its end, it's spent
+        ParentGate.endApproval();
     }
 
     @Override

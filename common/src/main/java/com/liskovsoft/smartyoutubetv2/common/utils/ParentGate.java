@@ -255,6 +255,35 @@ public final class ParentGate {
     }
 
     /**
+     * The one video a parent let play past the time limit or a lock: the first opened in the PIN's few minutes. Ends
+     * the PIN's window, so the next video (autoplay, up next, another pick) is refused again. Null: none.
+     */
+    private static volatile String sApprovedVideoId;
+    private static volatile long sApprovedAtMs;
+    /** An approval is for watching it now: reopened hours later, it's a video like any other */
+    private static final long APPROVAL_MS = 4 * 60 * 60 * 1_000;
+
+    /** A video is opened while only the PIN's window lets it play: it alone plays on, to its end */
+    public static void approveVideo(String videoId) {
+        sApprovedVideoId = videoId;
+        sApprovedAtMs = android.os.SystemClock.elapsedRealtime();
+        lock();
+        com.liskovsoft.sharedutils.mylogger.Log.i(ParentGate.class.getSimpleName(),
+                "A parent's PIN let video %s play past the time limit or a lock", videoId);
+    }
+
+    /** The parent's approval covers this video */
+    public static boolean isApproved(String videoId) {
+        return videoId != null && videoId.equals(sApprovedVideoId)
+                && android.os.SystemClock.elapsedRealtime() - sApprovedAtMs <= APPROVAL_MS;
+    }
+
+    /** The approved video is done (closed, ended, or another one opened) */
+    public static void endApproval() {
+        sApprovedVideoId = null;
+    }
+
+    /**
      * Asks for the parent PIN that's set now (HearthTube's own), then runs the action: changing or removing it takes
      * knowing it, wherever the setting is opened.
      */

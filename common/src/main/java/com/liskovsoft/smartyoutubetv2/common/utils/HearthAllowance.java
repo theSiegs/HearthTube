@@ -87,7 +87,8 @@ public final class HearthAllowance {
      * stopped it.
      */
     public static boolean stopIfRefused(Context context, @Nullable PlaybackView player) {
-        String refusal = player != null ? refusal(context) : null;
+        String refusal = player != null
+                ? refusal(context, player.getVideo() != null ? player.getVideo().videoId : null) : null;
 
         if (refusal == null) {
             return false;
@@ -105,6 +106,13 @@ public final class HearthAllowance {
     @Nullable
     public static String refusal(Context context) {
         Refusal refusal = refusalNow(context);
+        return refusal != null ? refusal.message : null;
+    }
+
+    /** As {@link #refusal(Context)}, for a video about to open (a parent's approval is for one video only) */
+    @Nullable
+    public static String refusal(Context context, @Nullable String videoId) {
+        Refusal refusal = refusalNow(context, videoId);
         return refusal != null ? refusal.message : null;
     }
 
@@ -128,11 +136,21 @@ public final class HearthAllowance {
     /** As {@link #refusal}, saying whether it's a lock or time used up. Asks Hearth afresh each time. */
     @Nullable
     public static Refusal refusalNow(Context context) {
+        // A parent's approval is for its video in the player: the browse screens close as before
+        com.liskovsoft.smartyoutubetv2.common.app.models.data.Video video = context != null
+                && com.liskovsoft.smartyoutubetv2.common.app.views.ViewManager.instance(context).isPlayerInForeground()
+                ? com.liskovsoft.smartyoutubetv2.common.app.presenters.PlaybackPresenter.instance(context).getVideo() : null;
+        return refusalNow(context, video != null ? video.videoId : null);
+    }
+
+    /** As {@link #refusalNow(Context)}, for this video (the one playing, or about to open) */
+    @Nullable
+    public static Refusal refusalNow(Context context, @Nullable String videoId) {
         YouTubeAllowance.Decision decision = decide(context);
 
-        // A parent just typed the PIN in this profile: the same few minutes the time's-up page stays away, the player
-        // plays too (what plays still counts toward the kid's day)
-        if (ParentGate.isUnlocked()) {
+        // A parent just typed the PIN in this profile: the same few minutes the time's-up page stays away, and the
+        // first video opened then plays on to its end; that one only (what plays still counts toward the kid's day)
+        if (ParentGate.isUnlocked() || ParentGate.isApproved(videoId)) {
             return null;
         }
 

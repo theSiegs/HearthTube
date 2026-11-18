@@ -134,15 +134,17 @@ public class PlaybackPresenter extends BasePresenter<PlaybackView> implements Pl
         }
 
         // HearthTube: nothing plays once Hearth's daily YouTube allowance is used up, or at bedtime
-        String allowanceRefusal = com.liskovsoft.smartyoutubetv2.common.utils.HearthAllowance.refusal(getContext());
+        String allowanceRefusal = com.liskovsoft.smartyoutubetv2.common.utils.HearthAllowance.refusal(getContext(), video.videoId);
         if (allowanceRefusal != null) {
             com.liskovsoft.sharedutils.helpers.MessageHelpers.showLongMessage(getContext(), allowanceRefusal);
             return;
         }
 
-        // HearthTube: watching means the parent is done; the next account change asks for the PIN again. Not when the
-        // PIN window is what lets this video play (time's up): the player's own checks would close it at once.
-        if (!com.liskovsoft.smartyoutubetv2.common.utils.HearthAllowance.playsOnlyByParent(getContext())) {
+        // HearthTube: watching means the parent is done; the next account change asks for the PIN again. When the PIN
+        // window is what lets this video play (time's up, bedtime), the parent approved this video: it alone plays on
+        if (com.liskovsoft.smartyoutubetv2.common.utils.HearthAllowance.playsOnlyByParent(getContext())) {
+            com.liskovsoft.smartyoutubetv2.common.utils.ParentGate.approveVideo(video.videoId);
+        } else {
             com.liskovsoft.smartyoutubetv2.common.utils.ParentGate.lock();
         }
 
