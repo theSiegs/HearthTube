@@ -1,6 +1,7 @@
 package com.liskovsoft.smartyoutubetv2.common.utils;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
@@ -94,6 +95,58 @@ public class AllowanceDayTest {
         restored.restore(mDay.save());
         assertEquals("2026-10-19", restored.today(at(21, 10, 1), 100_000 + MINUTE, 7));
         assertEquals("2026-10-20", restored.today(at(20, 10, 0), 100_000 + DAY, 7));
+    }
+
+    @Test
+    public void movingTheTimeZoneAheadDoesNotStartTomorrowEarly() {
+        TimeZone kiritimati = TimeZone.getTimeZone("Pacific/Kiritimati"); // UTC+14
+        // 19th, 15:00 UTC: already the 20th at UTC+14
+        assertEquals("2026-10-19", mDay.today(at(19, 15, 0), 0, 7, ZONE));
+        assertEquals("2026-10-19", mDay.today(at(19, 15, 1), MINUTE, 7, kiritimati));
+        // The 19th started at midnight UTC: it lasts at least 23 hours, across a restart too
+        AllowanceDay restored = new AllowanceDay(kiritimati);
+        restored.restore(mDay.save());
+        assertEquals("2026-10-19", restored.today(at(19, 22, 59), 8 * HOUR - MINUTE, 7));
+        assertEquals("2026-10-20", restored.today(at(19, 23, 0), 8 * HOUR, 7));
+        // The 20th started then, not at the 20th's midnight at UTC+14 (10:00 UTC on the 19th): no 21st 10 hours later
+        assertEquals("2026-10-20", restored.today(at(20, 10, 30), 19 * HOUR + 30 * MINUTE, 7));
+        assertEquals("2026-10-21", restored.today(at(20, 22, 0), 31 * HOUR, 7));
+    }
+
+    @Test
+    public void movingTheZoneBackAndForthGivesNoExtraDays() {
+        TimeZone ahead = TimeZone.getTimeZone("Pacific/Kiritimati"); // UTC+14
+        TimeZone behind = TimeZone.getTimeZone("Pacific/Pago_Pago"); // UTC-11
+        mDay.today(at(19, 0, 0), 0, 7, ZONE);
+        int days = 0;
+        String last = "2026-10-19";
+
+        // Four real days, the zone flipped every hour
+        for (int hour = 1; hour <= 96; hour++) {
+            String day = mDay.today(at(19, 0, 0) + hour * HOUR, hour * HOUR, 7, hour % 2 == 0 ? ahead : behind);
+            if (!day.equals(last)) {
+                days++;
+                last = day;
+            }
+        }
+
+        assertTrue(days <= 4);
+    }
+
+    @Test
+    public void aRealTripWestKeepsTheDayUntilItsMidnight() {
+        TimeZone newYork = TimeZone.getTimeZone("America/New_York"); // UTC-4 in October
+        mDay.today(at(19, 10, 0), 0, 7, ZONE);
+        // 20th 02:00 UTC is still the 19th in New York
+        assertEquals("2026-10-19", mDay.today(at(20, 2, 0), 16 * HOUR, 7, newYork));
+        // New York's midnight: the 20th
+        assertEquals("2026-10-20", mDay.today(at(20, 4, 1), 18 * HOUR + MINUTE, 7, newYork));
+    }
+
+    @Test
+    public void aSaveWithoutItsZoneStillReads() {
+        mDay.restore("2026-10-19|" + at(19, 10, 0) + "|0|7");
+        assertEquals("2026-10-19", mDay.today(at(19, 10, 1), MINUTE, 7));
     }
 
     @Test
